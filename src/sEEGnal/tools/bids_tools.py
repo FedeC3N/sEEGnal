@@ -13,7 +13,7 @@ import sys
 import mne
 import mne_bids
 
-import sEEGnal.tools.mnetools as mnetools
+import sEEGnal.tools.mne_tools as mnetools
 import sEEGnal.tools.tools as tools
 
 

@@ -14,7 +14,7 @@ import mne
 import numpy
 import scipy.signal
 
-import sEEGnal.io.bids as bids
+import sEEGnal.tools.bids_tools as bids
 import sEEGnal.tools.bss as bss
 import sEEGnal.tools.tools as tools
 import sEEGnal.tools.signal as signal
