@@ -1,0 +1,5 @@
+# Ignore data for testing
+data/
+
+# Ignore .venv
+.venv/
