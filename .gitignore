@@ -7,3 +7,5 @@ data/
 # Ignore Pycharm
 .idea/
 
+# Ignore scripts to run the package for testing
+scripts/
