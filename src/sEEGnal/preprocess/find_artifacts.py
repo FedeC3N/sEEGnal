@@ -12,8 +12,8 @@ import mne
 import numpy as np
 from scipy.signal import find_peaks
 
-import sEEGnal.io.bids as bids
-import sEEGnal.tools.mnetools as aimind_mne
+import sEEGnal.tools.bids_tools as bids
+import sEEGnal.tools.mne_tools as aimind_mne
 
 
 

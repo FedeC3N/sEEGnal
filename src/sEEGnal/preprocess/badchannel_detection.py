@@ -17,10 +17,9 @@ from datetime import datetime as dt, timezone
 import mne
 import mne_icalabel as iclabel
 
-import sEEGnal.io.bids as bids
-import sEEGnal.tools.mnetools as aimind_mne
-import sEEGnal.tools.find_badchannels as find_badchannels
-from sEEGnal.tools.measure_performance import measure_performance
+import sEEGnal.tools.bids_tools as bids
+import sEEGnal.tools.mne_tools as aimind_mne
+import sEEGnal.preprocess.find_badchannels as find_badchannels
 
 
 
@@ -30,7 +29,6 @@ mne.utils.set_log_level(verbose='ERROR')
 
 
 # Modules
-@measure_performance
 def badchannel_detection(config, bids_path):
     """
 

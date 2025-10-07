@@ -19,10 +19,9 @@ from datetime import datetime as dt, timezone
 import mne
 import mne_icalabel as iclabel
 
-import sEEGnal.tools.find_artifacts as find_artifacts
-import sEEGnal.io.bids as bids
-import sEEGnal.tools.mnetools as mnetools
-from sEEGnal.tools.measure_performance import measure_performance
+import sEEGnal.tools.bids_tools as bids
+import sEEGnal.tools.mne_tools as mnetools
+import sEEGnal.preprocess.find_artifacts as find_artifacts
 
 
 
@@ -31,7 +30,6 @@ mne.utils.set_log_level(verbose='ERROR')
 
 
 # Modules
-@measure_performance
 def artifact_detection(config, bids_path):
     """
 

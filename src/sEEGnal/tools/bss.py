@@ -11,7 +11,7 @@ import time
 import scipy, scipy.linalg
 import numpy
 
-import aimind.meeg.tools.auxsobi as auxsobi
+import sEEGnal.tools.auxsobi as auxsobi
 
 
 def sobi ( data, nlag = None, nsource = None ):

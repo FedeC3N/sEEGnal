@@ -17,8 +17,6 @@ import mne
 import numpy
 import mne_bids
 
-import sEEGnal.io.eep as eep
-from sEEGnal.tools.measure_performance import measure_performance
 from sEEGnal.io.read_source_files import read_source_files
 
 
@@ -29,7 +27,6 @@ mne.utils.set_log_level(verbose='ERROR')
 
 
 # Modules
-@measure_performance
 def standardize(config,current_file,bids_path):
     """
 

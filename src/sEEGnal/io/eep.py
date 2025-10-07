@@ -14,8 +14,8 @@ import pandas
 import numpy
 
 import sEEGnal.io.riff as riff
-import aimind.meeg.io.raweep as raweep
-import sEEGnal.tools.mnetools as mnetools
+import sEEGnal.io.raweep as raweep
+import sEEGnal.tools.mne_tools as mne_tools
 
 
 """
@@ -1001,7 +1001,7 @@ def read_mne ( filename ):
     
     
     # Builds the MNE Raw object.
-    mneraw   = mnetools.build_raw ( info, data )
+    mneraw   = mne_tools.build_raw (info, data)
     
     
     # Returns the MNE object.

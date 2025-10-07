@@ -2,7 +2,7 @@
 data/
 
 # Ignore .venv
-.venv/
+.venv*/
 
 # Ignore Pycharm
 .idea/

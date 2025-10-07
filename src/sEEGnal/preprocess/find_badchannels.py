@@ -13,8 +13,8 @@ Created on March 26 2024
 import scipy
 import numpy as np
 
-import sEEGnal.io.bids as bids
-import sEEGnal.tools.mnetools as aimind_mne
+import sEEGnal.tools.bids_tools as bids
+import sEEGnal.tools.mne_tools as aimind_mne
 
 
 
