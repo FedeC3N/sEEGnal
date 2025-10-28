@@ -9,3 +9,4 @@ data/
 
 # Ignore scripts to run the package for testing
 scripts/
+test/
