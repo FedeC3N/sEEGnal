@@ -2,7 +2,6 @@
 name = "sEEGnal"
 version = "1.0.0"
 description = "EEG signal pre-processing tools"
-authors = [{ name = "Tu Nombre", email = "tuemail@example.com" }]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -58,3 +57,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["sEEGnal*"]
+
+[tool.setuptools.package-data]
+sEEGnal = [
+    "tools/*.pyd",
+    "io/*.pyd",
+]

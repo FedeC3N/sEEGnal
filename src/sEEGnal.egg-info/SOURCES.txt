@@ -8,9 +8,10 @@ src/sEEGnal.egg-info/requires.txt
 src/sEEGnal.egg-info/top_level.txt
 src/sEEGnal/io/__init__.py
 src/sEEGnal/io/eep.py
+src/sEEGnal/io/raweep.pyd
 src/sEEGnal/io/read_source_files.py
 src/sEEGnal/io/riff.py
-src/sEEGnal/io/src/setup.py
+src/sEEGnal/io/raweep_src/setup.py
 src/sEEGnal/preprocess/__init__.py
 src/sEEGnal/preprocess/artifact_detection.py
 src/sEEGnal/preprocess/badchannel_detection.py
@@ -19,6 +20,7 @@ src/sEEGnal/preprocess/find_badchannels.py
 src/sEEGnal/standardize/__init__.py
 src/sEEGnal/standardize/standardize.py
 src/sEEGnal/tools/__init__.py
+src/sEEGnal/tools/auxsobi.pyd
 src/sEEGnal/tools/bids_tools.py
 src/sEEGnal/tools/bss.py
 src/sEEGnal/tools/mne_tools.py
