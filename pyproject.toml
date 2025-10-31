@@ -1,3 +1,11 @@
+[build-system]
+requires = [
+  "setuptools>=75",   # or newer
+  "wheel",
+  "numpy>=2.0"        # provides headers during build
+]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "sEEGnal"
 version = "1.0.0"
@@ -50,16 +58,21 @@ dependencies = [
 ]
 
 
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["sEEGnal*"]
+include = ["sEEGnal*", "buildtools*"]
 
-[tool.setuptools.package-data]
-sEEGnal = [
-    "tools/*.pyd",
-    "io/*.pyd",
-]
+# Tell setuptools to use our custom build_ext that injects NumPy headers
+[tool.setuptools]
+cmdclass = { build_ext = "buildtools.build_ext.BuildExt" }
+
+# --- C extensions ---
+[[tool.setuptools.ext-modules]]
+name = "sEEGnal.tools.auxsobi"
+sources = ["src/sEEGnal/tools/auxsobi_src/auxsobi.c"]
+include-dirs = ["src/sEEGnal/tools/auxsobi_src"]
+
+[[tool.setuptools.ext-modules]]
+name = "sEEGnal.io.raweep"
+sources = ["src/sEEGnal/io/raweep_src/raweep.c"]
+include-dirs = ["src/sEEGnal/io/raweep_src"]
