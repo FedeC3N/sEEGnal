@@ -199,7 +199,6 @@ def estimate_artifact_components(config,bids_path,derivatives_label):
         channels_to_exclude=channels_to_exclude,
         resample_frequency=resample_frequency,
         freq_limits=freq_limits,
-        badchannels_to_metadata=True,
         exclude_badchannels=True,
         set_annotations=set_annotations,
         epoch=epoch_definition,

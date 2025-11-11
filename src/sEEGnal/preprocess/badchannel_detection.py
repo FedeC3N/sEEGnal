@@ -187,7 +187,6 @@ def estimate_badchannel_component(config, bids_path):
         channels_to_exclude=channels_to_exclude,
         resample_frequency=resample_frequency,
         freq_limits=freq_limits,
-        badchannels_to_metadata=False,
         exclude_badchannels=False,
         set_annotations=False,
         epoch=epoch_definition,

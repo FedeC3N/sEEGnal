@@ -53,7 +53,6 @@ def EOG_detection(config,bids_path,frontal_channels='all'):
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
         resample_frequency=resample_frequency,
-        badchannels_to_metadata=True,
         exclude_badchannels=True,
         set_annotations=False,
         rereference=True)
@@ -171,7 +170,6 @@ def muscle_detection(config,bids_path):
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
         resample_frequency=resample_frequency,
-        badchannels_to_metadata=True,
         exclude_badchannels=True,
         set_annotations=False,
         rereference=True)
@@ -274,7 +272,6 @@ def sensor_detection(config,bids_path):
         crop_seconds=crop_seconds,
         freq_limits=freq_limits,
         resample_frequency=resample_frequency,
-        badchannels_to_metadata=True,
         exclude_badchannels=True,
         set_annotations=True,
         rereference=True)
@@ -384,7 +381,6 @@ def other_detection(config,bids_path):
         crop_seconds=crop_seconds,
         freq_limits=freq_limits,
         resample_frequency=resample_frequency,
-        badchannels_to_metadata=True,
         exclude_badchannels=True,
         set_annotations=True,
         rereference=True)

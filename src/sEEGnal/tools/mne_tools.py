@@ -523,8 +523,9 @@ def get_epochs(raw, annot=None, length=4, overlap=None, padding=None, preload=Fa
 
 # Function to prepare MNE raw data
 def prepare_raw(config, bids_path, preload=True, channels_to_include=None, channels_to_exclude=None,
-                freq_limits=None, crop_seconds=None, badchannels_to_metadata=True, exclude_badchannels=False,
-                set_annotations=True, epoch=None, resample_frequency=False, rereference=True,rereference_method='average'):
+                freq_limits=None, crop_seconds=None, exclude_badchannels=False,
+                set_annotations=False, epoch=None, resample_frequency=False, rereference=False,rereference_method='average',
+                interpolate_bads=False):
 
     if channels_to_include is None:
         channels_to_include = ['all']
@@ -591,24 +592,18 @@ def prepare_raw(config, bids_path, preload=True, channels_to_include=None, chann
     if epoch:
         raw.crop(tmin=0,tmax=raw.times[-1] - epoch['padding'])
 
+    if exclude_badchannels:
 
-    # Add the badchannel information
-    if badchannels_to_metadata:
-
-        chan = bids.read_chan ( bids_path )
-        badchannels = list ( chan.loc [ chan [ 'status' ] == 'bad' ] [ 'name' ] )
-        '''
-        badchannels = read_badchannels_derivatives(bids_path)
-        '''
+        chan = bids.read_chan(bids_path)
+        badchannels = list(chan.loc[chan['status'] == 'bad']['name'])
 
         # To avoid errors, the badchannels has to be among the channels included in the recording
         badchannels = list(set(badchannels) & set(raw.info['ch_names']))
         raw.info['bads'] = badchannels
 
-        if exclude_badchannels:
-            # To avoid errors if all channels are badchannels (it will be handled in final_qa).
-            if not(len(badchannels) == len(raw.info['ch_names'])):
-                raw = raw.pick(None, exclude='bads')
+        # To avoid errors if all channels are badchannels (it will be handled in final_qa).
+        if not(len(badchannels) == len(raw.info['ch_names'])):
+            raw = raw.pick(None, exclude='bads')
 
     # Set reference
     if rereference:
@@ -623,7 +618,7 @@ def prepare_raw(config, bids_path, preload=True, channels_to_include=None, chann
             # Get the data (shape: n_epochs × n_channels × n_times)
             data = raw.get_data()
 
-            # Compute the median across channels (axis=1 → across channels for each epoch/time)
+            # Compute the median across channels
             median_ref = numpy.median(data, axis=1, keepdims=True)
 
             # Subtract the median reference from all channels
