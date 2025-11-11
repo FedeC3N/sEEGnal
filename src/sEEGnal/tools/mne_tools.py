@@ -601,8 +601,14 @@ def prepare_raw(config, bids_path, preload=True, channels_to_include=None, chann
         badchannels = list(set(badchannels) & set(raw.info['ch_names']))
         raw.info['bads'] = badchannels
 
-        # To avoid errors if all channels are badchannels (it will be handled in final_qa).
-        if not(len(badchannels) == len(raw.info['ch_names'])):
+        # If all channels are badchannels, raise an Exception
+        if (len(badchannels) == len(raw.info['ch_names'])):
+            raise Exception("All channels are marked as bad")
+
+        # Drop or interpolate the badchannels
+        if interpolate_bads==True:
+            raw.interpolate_bads()
+        else:
             raw = raw.pick(None, exclude='bads')
 
     # Set reference
