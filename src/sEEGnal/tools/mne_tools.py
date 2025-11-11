@@ -524,7 +524,7 @@ def get_epochs(raw, annot=None, length=4, overlap=None, padding=None, preload=Fa
 # Function to prepare MNE raw data
 def prepare_raw(config, bids_path, preload=True, channels_to_include=None, channels_to_exclude=None,
                 freq_limits=None, crop_seconds=None, badchannels_to_metadata=True, exclude_badchannels=False,
-                set_annotations=True, epoch=None, resample_frequency=False, rereference=True):
+                set_annotations=True, epoch=None, resample_frequency=False, rereference=True,rereference_method='average'):
 
     if channels_to_include is None:
         channels_to_include = ['all']
@@ -612,6 +612,24 @@ def prepare_raw(config, bids_path, preload=True, channels_to_include=None, chann
 
     # Set reference
     if rereference:
-        raw.set_eeg_reference()
+
+        # Average
+        if rereference_method == 'average':
+            raw.set_eeg_reference(ref_channels='average')
+
+        # Median
+        if rereference_method == 'median':
+
+            # Get the data (shape: n_epochs × n_channels × n_times)
+            data = raw.get_data()
+
+            # Compute the median across channels (axis=1 → across channels for each epoch/time)
+            median_ref = numpy.median(data, axis=1, keepdims=True)
+
+            # Subtract the median reference from all channels
+            data -= median_ref
+
+            # Put the rereferenced data back into the epochs object
+            raw._data = data
 
     return raw
