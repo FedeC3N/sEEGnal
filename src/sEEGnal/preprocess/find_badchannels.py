@@ -78,8 +78,8 @@ def impossible_amplitude_detection(config, bids_path,badchannels):
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
         freq_limits=freq_limits,
-        badchannels_to_metadata=False,
-        exclude_badchannels=False,
+        badchannels_to_metadata=True,
+        exclude_badchannels=True,
         set_annotations=False,
         epoch=epoch_definition,
         rereference=False)
@@ -142,8 +142,8 @@ def power_spectrum_detection(config,bids_path,badchannels):
         channels_to_exclude=channels_to_exclude,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
-        badchannels_to_metadata=False,
-        exclude_badchannels=False,
+        badchannels_to_metadata=True,
+        exclude_badchannels=True,
         set_annotations=False,
         epoch=epoch_definition,
         rereference=False)
@@ -216,8 +216,8 @@ def gel_bridge_detection(config, bids_path,badchannels):
         channels_to_exclude=channels_to_exclude,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
-        badchannels_to_metadata=False,
-        exclude_badchannels=False,
+        badchannels_to_metadata=True,
+        exclude_badchannels=True,
         set_annotations=False,
         rereference=False)
 
@@ -317,8 +317,8 @@ def high_deviation_detection(config, bids_path, badchannels):
         channels_to_exclude=channels_to_exclude,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
-        badchannels_to_metadata=False,
-        exclude_badchannels=False,
+        badchannels_to_metadata=True,
+        exclude_badchannels=True,
         set_annotations=False,
         epoch=epoch_definition,
         rereference=False)
