@@ -18,7 +18,7 @@ import sEEGnal.tools.mne_tools as aimind_mne
 
 
 # Modules
-def EOG_detection(config,bids_path,channels_to_include,frontal_channels='all'):
+def EOG_detection(config,bids_path,frontal_channels='all'):
     """
 
     Detect EOG artifacts
@@ -36,24 +36,27 @@ def EOG_detection(config,bids_path,channels_to_include,frontal_channels='all'):
     sobi = bids.read_sobi(bids_path,'sobi')
 
     # Parameters for loading EEG or MEG recordings
-    channels = sobi.ch_names
     freq_limits = [config['artifact_detection']['EOG']['low_freq'],
                    config['artifact_detection']['EOG']['high_freq']]
     crop_seconds = [config['artifact_detection']['EOG']['crop_seconds']]
     resample_frequency = config['artifact_detection']['EOG']['resampled_frequency']
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load the raw data
     raw = aimind_mne.prepare_raw(
         config,
         bids_path,
         preload=True,
-        channels_to_include=channels,
+        channels_to_include=channels_to_include,
+        channels_to_exclude=channels_to_exclude,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
         resample_frequency=resample_frequency,
         badchannels_to_metadata=True,
         exclude_badchannels=True,
-        set_annotations=False)
+        set_annotations=False,
+        average_reference=True)
 
     # If there is EOG or EKG, remove those components
     components_to_exclude = []
@@ -67,9 +70,6 @@ def EOG_detection(config,bids_path,channels_to_include,frontal_channels='all'):
     if len(components_to_exclude) > 0:
         # Remove the eog components
         sobi.apply(raw, exclude=components_to_exclude)
-
-    # Keep only the desired channel types
-    raw.pick(channels_to_include)
 
     # Filter the data to only keep low frequencies
     raw.filter(1, 5)
@@ -87,7 +87,7 @@ def EOG_detection(config,bids_path,channels_to_include,frontal_channels='all'):
     background_average_deviation = background_raw_data_demean.std(axis=1).mean()
 
     # Select EOG channels
-    frontal_channels = [current_channel for current_channel in frontal_channels if current_channel in channels]
+    frontal_channels = [current_channel for current_channel in frontal_channels if current_channel in channels_to_include]
 
     # Select the present frontal channels
     if len(frontal_channels) > 0:
@@ -135,7 +135,7 @@ def EOG_detection(config,bids_path,channels_to_include,frontal_channels='all'):
 
 
 
-def muscle_detection(config,bids_path,channels_to_include):
+def muscle_detection(config,bids_path):
     """
 
     Detect muscle artifacts
@@ -154,26 +154,27 @@ def muscle_detection(config,bids_path,channels_to_include):
     sobi = bids.read_sobi(bids_path,'sobi_artifacts')
 
     # Parameters for loading EEG recordings
-    channels = sobi.ch_names
     freq_limits = [config['component_estimation']['low_freq'],
                    config['component_estimation']['high_freq']]
     crop_seconds = [config['artifact_detection']['muscle']['crop_seconds']]
     resample_frequency = config['artifact_detection']['muscle']['resampled_frequency']
-    channels_to_exclude = config['artifact_detection']["channels_to_exclude"]
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load raw EEG
     raw = aimind_mne.prepare_raw(
         config,
         bids_path,
         preload=True,
-        channels_to_include=channels,
+        channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
         resample_frequency=resample_frequency,
         badchannels_to_metadata=True,
         exclude_badchannels=True,
-        set_annotations=False)
+        set_annotations=False,
+        average_reference=True)
 
     # Get the muscle components time series
     if len(sobi.labels_['muscle']) > 0:
@@ -237,7 +238,7 @@ def muscle_detection(config,bids_path,channels_to_include):
 
 
 
-def sensor_detection(config,bids_path, channels_to_include):
+def sensor_detection(config,bids_path):
     """
 
     Detect sensor artifacts (jumps)
@@ -256,27 +257,27 @@ def sensor_detection(config,bids_path, channels_to_include):
     sobi = bids.read_sobi(bids_path,'sobi_artifacts')
 
     # Parameters for loading EEG or MEG recordings
-    channels = sobi.ch_names
     freq_limits = [config['artifact_detection']['sensor']['low_freq'],
                    config['artifact_detection']['sensor']['high_freq']]
     crop_seconds = [config['artifact_detection']['sensor']['crop_seconds']]
     resample_frequency = config['artifact_detection']['sensor']['resampled_frequency']
-    channels_to_exclude = config['artifact_detection']["channels_to_exclude"]
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load the raw data
     raw = aimind_mne.prepare_raw(
         config,
         bids_path,
         preload=True,
-        channels_to_include=channels,
+        channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
         crop_seconds=crop_seconds,
         freq_limits=freq_limits,
         resample_frequency=resample_frequency,
         badchannels_to_metadata=True,
         exclude_badchannels=True,
-        set_annotations=True
-    )
+        set_annotations=True,
+        average_reference=True)
 
     # If there is EOG or EKG, remove those components
     components_to_exclude = []
@@ -290,9 +291,6 @@ def sensor_detection(config,bids_path, channels_to_include):
     if len(components_to_exclude) > 0:
         # Remove the eog components
         sobi.apply(raw, exclude=components_to_exclude)
-
-    # Keep the desired channels
-    raw.pick(channels_to_include)
 
     # Filter again in the desired frequencies
     freq_limits = [config['artifact_detection']['sensor']['low_freq'],
@@ -350,7 +348,8 @@ def sensor_detection(config,bids_path, channels_to_include):
     return sensor_index, last_sample, sfreq
 
 
-def other_detection(config,bids_path, channels_to_include):
+
+def other_detection(config,bids_path):
     """
 
     Look for signal with impossible values
@@ -368,27 +367,27 @@ def other_detection(config,bids_path, channels_to_include):
     sobi = bids.read_sobi(bids_path, 'sobi_artifacts')
 
     # Parameters for loading EEG or MEG recordings
-    channels = sobi.ch_names
     freq_limits = [config['component_estimation']['low_freq'],
                    config['component_estimation']['high_freq']]
     crop_seconds = [config['artifact_detection']['other']['crop_seconds']]
     resample_frequency = config['artifact_detection']['other']['resampled_frequency']
-    channels_to_exclude = config['artifact_detection']["channels_to_exclude"]
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load the raw data
     raw = aimind_mne.prepare_raw(
         config,
         bids_path,
         preload=True,
-        channels_to_include=channels,
+        channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
         crop_seconds=crop_seconds,
         freq_limits=freq_limits,
         resample_frequency=resample_frequency,
         badchannels_to_metadata=True,
         exclude_badchannels=True,
-        set_annotations=True
-    )
+        set_annotations=True,
+        average_reference=True)
 
     # If there is EOG or EKG, remove those components
     components_to_exclude = []
@@ -402,9 +401,6 @@ def other_detection(config,bids_path, channels_to_include):
     if len(components_to_exclude) > 0:
         # Remove the eog components
         sobi.apply(raw, exclude=components_to_exclude)
-
-    # Keep the desired channels
-    raw.pick(channels_to_include)
 
     # Filter again in the desired frequencies
     freq_limits = [config['artifact_detection']['other']['low_freq'],
@@ -443,7 +439,6 @@ def other_detection(config,bids_path, channels_to_include):
         other_index = [int(current_index + crop_samples) for current_index in other_index]
 
     return other_index, last_sample, sfreq
-
 
 
 

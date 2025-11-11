@@ -175,8 +175,8 @@ def estimate_badchannel_component(config, bids_path):
                    ]
     resample_frequency = config['component_estimation']['resampled_frequency']
     epoch_definition = config['component_estimation']['epoch_definition']
-    channels_to_include = config['component_estimation']["channels_to_include"]
-    channels_to_exclude = config['component_estimation']["channels_to_exclude"]
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load raw EEG
     raw = aimind_mne.prepare_raw(
@@ -190,7 +190,8 @@ def estimate_badchannel_component(config, bids_path):
         badchannels_to_metadata=False,
         exclude_badchannels=False,
         set_annotations=False,
-        epoch=epoch_definition)
+        epoch=epoch_definition,
+        average_reference=False)
 
     # Run SOBI
     sobi = aimind_mne.sobi(raw)

@@ -524,7 +524,7 @@ def get_epochs(raw, annot=None, length=4, overlap=None, padding=None, preload=Fa
 # Function to prepare MNE raw data
 def prepare_raw(config,bids_path, preload=True, channels_to_include=None, channels_to_exclude=None,
                 freq_limits=None, crop_seconds=None, badchannels_to_metadata=True, exclude_badchannels=False,
-                set_annotations=True, epoch=None, resample_frequency=False):
+                set_annotations=True, epoch=None, resample_frequency=False, average_reference=True):
 
     if channels_to_include is None:
         channels_to_include = ['all']
@@ -539,9 +539,6 @@ def prepare_raw(config,bids_path, preload=True, channels_to_include=None, channe
 
     # Set montage
     raw.set_montage('standard_1005', on_missing='ignore')
-
-    # Set reference
-    raw.set_eeg_reference()
 
     # Remove 50 Hz noise (and harmonics)
     raw.notch_filter(config['component_estimation']['notch_frequencies'])
@@ -612,5 +609,9 @@ def prepare_raw(config,bids_path, preload=True, channels_to_include=None, channe
             # To avoid errors if all channels are badchannels (it will be handled in final_qa).
             if not(len(badchannels) == len(raw.info['ch_names'])):
                 raw = raw.pick(None, exclude='bads')
+
+    # Set reference
+    if average_reference:
+        raw.set_eeg_reference()
 
     return raw

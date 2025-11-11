@@ -41,7 +41,7 @@ def high_impedance_detection(config, bids_path):
     high_impedance_badchannels = list ( channels.loc [ hits, 'name' ] )
 
     # Remove the excluded channels
-    channels_to_exclude = config['badchannel_detection']['channels_to_exclude']
+    channels_to_exclude = config['global']['channels_to_exclude']
     high_impedance_badchannels = [current_channel for current_channel in high_impedance_badchannels if
                                   current_channel not in channels_to_exclude]
 
@@ -66,8 +66,8 @@ def impossible_amplitude_detection(config, bids_path,badchannels):
     # Parameters for loading EEG  recordings
     freq_limits = [config['badchannel_detection']['impossible_amplitude']['low_freq'],
                    config['badchannel_detection']['impossible_amplitude']['high_freq']]
-    channels_to_include = config['badchannel_detection']["channels_to_include"]
-    channels_to_exclude = config['badchannel_detection']["channels_to_exclude"]
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
     epoch_definition = config['badchannel_detection']['impossible_amplitude']["epoch_definition"]
 
     # Load the raw data
@@ -81,7 +81,8 @@ def impossible_amplitude_detection(config, bids_path,badchannels):
         badchannels_to_metadata=False,
         exclude_badchannels=False,
         set_annotations=False,
-        epoch=epoch_definition)
+        epoch=epoch_definition,
+        average_reference=False)
 
     # Exclude the previous badchannels
     raw.drop_channels(badchannels,on_missing='ignore')
@@ -127,8 +128,8 @@ def power_spectrum_detection(config,bids_path,badchannels):
     # Parameters for loading EEG  recordings
     freq_limits = [config['badchannel_detection']['pow_spectrum']['low_freq'],
                    config['badchannel_detection']['pow_spectrum']['high_freq']]
-    channels_to_include = config['badchannel_detection']["channels_to_include"]
-    channels_to_exclude = config['badchannel_detection']["channels_to_exclude"]
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
     crop_seconds = [config['badchannel_detection']["crop_seconds"]]
     epoch_definition = config['badchannel_detection']['pow_spectrum']['epoch_definition']
 
@@ -144,7 +145,8 @@ def power_spectrum_detection(config,bids_path,badchannels):
         badchannels_to_metadata=False,
         exclude_badchannels=False,
         set_annotations=False,
-        epoch=epoch_definition)
+        epoch=epoch_definition,
+        average_reference=False)
 
     # Exclude the previous badchannels
     raw.drop_channels(badchannels, on_missing='ignore')
@@ -201,8 +203,8 @@ def gel_bridge_detection(config, bids_path,badchannels):
     # Parameters for loading EEG  recordings
     freq_limits = [config['component_estimation']['low_freq'],
                    config['component_estimation']['high_freq']]
-    channels_to_include = config['badchannel_detection']["channels_to_include"]
-    channels_to_exclude = config['badchannel_detection']["channels_to_exclude"]
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
     crop_seconds = [config['badchannel_detection']["crop_seconds"]]
 
     # Load the raw EEG
@@ -216,7 +218,8 @@ def gel_bridge_detection(config, bids_path,badchannels):
         crop_seconds=crop_seconds,
         badchannels_to_metadata=False,
         exclude_badchannels=False,
-        set_annotations=False)
+        set_annotations=False,
+        average_reference=False)
 
     # If there is EOG or EKG, remove those components
     components_to_exclude = []
@@ -300,8 +303,8 @@ def high_deviation_detection(config, bids_path, badchannels):
     # Parameters for loading EEG  recordings
     freq_limits = [config['component_estimation']['low_freq'],
                    config['component_estimation']['high_freq']]
-    channels_to_include = config['badchannel_detection']["channels_to_include"]
-    channels_to_exclude = config['badchannel_detection']["channels_to_exclude"]
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
     crop_seconds = [config['badchannel_detection']["crop_seconds"]]
     epoch_definition = config['badchannel_detection']['high_deviation']['epoch_definition']
 
@@ -317,7 +320,8 @@ def high_deviation_detection(config, bids_path, badchannels):
         badchannels_to_metadata=False,
         exclude_badchannels=False,
         set_annotations=False,
-        epoch=epoch_definition)
+        epoch=epoch_definition,
+        average_reference=False)
 
     # If there is EOG or EKG, remove those components
     components_to_exclude = []

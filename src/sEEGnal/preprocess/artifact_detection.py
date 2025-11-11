@@ -108,8 +108,7 @@ def eeg_artifact_detection(config,bids_path):
     # Muscle
     muscle_annotations = muscle_detection(
         config,
-        bids_path,
-        'eeg')
+        bids_path)
 
     # Save the muscle annotations for better jump detection
     _ = bids.write_annot(bids_path,muscle_annotations)
@@ -117,8 +116,7 @@ def eeg_artifact_detection(config,bids_path):
     # Sensor (jumps)
     sensor_annotations = sensor_detection(
         config,
-        bids_path,
-        'eeg')
+        bids_path)
 
     # Combine the annotations
     annotations = muscle_annotations.__add__(sensor_annotations)
@@ -134,8 +132,7 @@ def eeg_artifact_detection(config,bids_path):
     # Muscle
     muscle_annotations = muscle_detection(
         config,
-        bids_path,
-        'eeg')
+        bids_path)
 
     # Save the muscle annotations for better jump detection
     _ = bids.write_annot(bids_path,muscle_annotations)
@@ -143,22 +140,19 @@ def eeg_artifact_detection(config,bids_path):
     # Sensor (jumps)
     sensor_annotations = sensor_detection(
         config,
-        bids_path,
-        'eeg')
+        bids_path)
 
     # EOG
     # Select the frontal channels
     EOG_annotations = EOG_detection(
         config,
         bids_path,
-        'eeg',
         frontal_channels=config['artifact_detection']["frontal_channels"])
 
     # Sensor (jumps)
     other_annotations = other_detection(
         config,
-        bids_path,
-        'eeg')
+        bids_path)
 
     # Merge all the annotations into a MNE Annotation object
     annotations = other_annotations.__add__(EOG_annotations).__add__(muscle_annotations).__add__(sensor_annotations)
@@ -187,8 +181,8 @@ def estimate_artifact_components(config,bids_path,derivatives_label):
                    config['component_estimation']['high_freq']]
     resample_frequency = config['component_estimation']['resampled_frequency']
     epoch_definition = config['component_estimation']['epoch_definition']
-    channels_to_include = config['component_estimation']["channels_to_include"]
-    channels_to_exclude = config['component_estimation']["channels_to_exclude"]
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Include artifacts or not (depending on the current SOBI estimation)
     if derivatives_label == 'sobi_artifacts':
@@ -208,7 +202,8 @@ def estimate_artifact_components(config,bids_path,derivatives_label):
         badchannels_to_metadata=True,
         exclude_badchannels=True,
         set_annotations=set_annotations,
-        epoch=epoch_definition)
+        epoch=epoch_definition,
+        average_reference=True)
 
     # Run SOBI
     sobi = mnetools.sobi(raw)
@@ -236,7 +231,7 @@ def estimate_artifact_components(config,bids_path,derivatives_label):
 
 
 
-def EOG_detection(config,bids_path,channels_to_include, frontal_channels='all'):
+def EOG_detection(config,bids_path, frontal_channels='all'):
     """
 
     Detect EOG artifacts
@@ -255,7 +250,6 @@ def EOG_detection(config,bids_path,channels_to_include, frontal_channels='all'):
     EOG_index,last_sample,sfreq = find_artifacts.EOG_detection(
         config,
         bids_path,
-        channels_to_include,
         frontal_channels=frontal_channels)
 
     # If any artifact
@@ -277,7 +271,7 @@ def EOG_detection(config,bids_path,channels_to_include, frontal_channels='all'):
 
 
 
-def muscle_detection(config,bids_path, channels_to_include):
+def muscle_detection(config,bids_path):
     """
 
     Detect muscle artifacts
@@ -295,8 +289,7 @@ def muscle_detection(config,bids_path, channels_to_include):
     # Look the position of muscular artifacts
     muscle_index, last_sample, sfreq = find_artifacts.muscle_detection(
         config,
-        bids_path,
-        channels_to_include)
+        bids_path)
 
     # If any index
     if len(muscle_index) > 0:
@@ -319,7 +312,7 @@ def muscle_detection(config,bids_path, channels_to_include):
 
 
 
-def sensor_detection(config,bids_path, channels_to_include):
+def sensor_detection(config,bids_path):
     """
 
     Detect sensor artifacts (jumps)
@@ -337,8 +330,7 @@ def sensor_detection(config,bids_path, channels_to_include):
     # Look the position of muscular artifacts
     sensor_index,last_sample,sfreq = find_artifacts.sensor_detection(
         config,
-        bids_path,
-        channels_to_include)
+        bids_path)
 
     # Create as Annotations
     if len(sensor_index) > 0:
@@ -360,7 +352,7 @@ def sensor_detection(config,bids_path, channels_to_include):
 
 
 
-def other_detection(config,bids_path, channels_to_include):
+def other_detection(config,bids_path):
     """
 
     Detect sensor artifacts (jumps)
@@ -378,8 +370,7 @@ def other_detection(config,bids_path, channels_to_include):
     # Look the position of muscular artifacts
     other_index,last_sample,sfreq = find_artifacts.other_detection(
         config,
-        bids_path,
-        channels_to_include)
+        bids_path)
 
     # Create as Annotations
     if len(other_index) > 0:

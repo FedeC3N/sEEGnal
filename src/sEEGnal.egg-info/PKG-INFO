@@ -53,85 +53,20 @@ Package for automatic preprocessing of EEG recordings.
 
 This repository comprises three high-level blocks, namely, standardize, badchannel detection and artifact detection.
 
-## Standardize
-
-Converts the original data structure to a BIDS-compliance data structure.
-
-For more information regarding BIDS, consult [BIDS official website](https://bids-specification.readthedocs.io/en/stable/index.html).
-
-##### Inputs
+## Instalation  
+The files included in the repository allows you to build the sEEGnal package wheel.
+Download the zip and extract the content in a folder.
+Open a terminal in the folder.
 ```
-def standardize(config,current_file,bids_path):
-```
-config (dict): Configuration parameters (paths, parameters, etc).  
-current_file (str): Name of the file to process.  
-bids_path (BIDSpath): Associated bids_path.  
+python -m pip install setuptools wheel build
+python -m build --wheel
+python -m pip install .\dist\*.whl
+````
 
-
-##### Outputs
-results (dict): Main information of the process.
-
-In addition, the module creates new BIDS-folders in the path specified in config.
-
-
-## Badchannel detection
-
-Marks badchannels in EEG recordings based on different criteria.
-
-For EEG:
-
-- Channels with impedances above a certain threshold.
-- Channels with impossible low or high amplitudes.
-- Channels with significantly higher energy in 45-55 Hz range compared to the rest of channels.
-- Channels with gel bridge.
-- Channels with significantly higher standard deviation of amplitude compared to the rest of channels.
-
-##### Inputs
-```
-def badchannel_detection(config,bids_path):
-```
-config (dict): Configuration parameters (paths, parameters, etc).  
-bids_path (BIDSpath): Associated bids_path.
-
-
-##### Outputs
-results (dict): Main information of the process.
-
-In addition, the module creates new BIDS-derivatives files in the corresponding path. The files are:  
-- *_channels.tsv: File with all channels classified as good or bad and the reason of "bad channel". Also include impedance information.
-- *_desc-sobi-badchannels_*: Files with information about the Independent Component Analysis (mixing, unmixing, classification,...)
-
-
-
-## Artifact detection
-
-First, performs an independent component analysis (ICA) and then label the ICs using [MNE-ICALabel](https://mne.tools/mne-icalabel/stable/index.html).
-
-Then looks for EOG arrtifacts, muscle artifacts, sensor artifacts, and "other" artifacts.
-
-- EOG. Filter the recording in low frequencies. Compare frontal channels vs rest of the channels and look for high amplitude peaks significantly different.
-- Muscle. Get the time series reconstructed using "muscle" components. Filter between 110-145 Hz and look for high amplitude bursts.
-- Sensor. Filter the data in low frequencies. Look for high amplitude peaks.
-- Other. Look for bursts with impossible amplitudes.
-
-##### Inputs
-```
-def artifact_detection(config,bids_path):
-```
-config (dict): Configuration parameters (paths, parameters, etc).  
-bids_path (BIDSpath): Associated bids_path.
-
-
-##### Outputs
-results (dict): Main information of the process.
-
-In addition, the module creates new BIDS-derivatives files in the corresponding path. The files are:
-- *_artifacts_annotations: Files with information about the artifacts: onset (seconds), duration (seconds), label (type of artifact).
-- \*_desc-sobi-artifacts: Files with information about the Independent Component Analysis in the artifact detection module (mixing, unmixing, classification,...)
 
 ## Use
 
-An example folder structure for preprocessing a single EEG recording is provided in "demo" folder.
+An example folder structure and scripts needed for preprocessing a single EEG recording are provided in "demo" folder. To run a first test, your test folder should be structured like these:  
 
 ```
 demo
@@ -149,13 +84,21 @@ demo
 		
 		
 #### Files
-- run_sEEGnal provides a script for preprocessing automatically any number of files.  
+- run_sEEGnal.py provides a script for preprocessing automatically any number of files.  
 - confi.json is a mandatory file with all the configuration parameters needed for running sEEGnal: frequencies, channels, filenames, paths, ...  
 - init.py simplifies run_sEEGnal.py by looking for files and defining some parameters.   
 
 ```
 
-After execution, the folder structure would look like these:  
+Steps to run a first test:  
+1- Copy some EEG files in BrainVision format (.eeg, .vhdr, .vmrk).  
+2- Define the specific parameters of your interest in config.json.  
+3- Define you specific folders' path and a regular expression to find your files in init.py.  
+4- Run run_sEEGnal.py using as working directory the top folder (in this case, "demo").  
+
+
+
+After execution, the folder structure will look like these:  
 ```
 demo
 ├───data
@@ -222,6 +165,88 @@ demo
 
 ```
 
+
+## Standardize
+
+Converts the original data structure to a BIDS-compliance data structure.
+
+For more information regarding BIDS, consult [BIDS official website](https://bids-specification.readthedocs.io/en/stable/index.html).
+
+##### Inputs
+```
+from sEEGnal.standardize.standardize import standardize
+
+results = standardize(config,current_file,bids_path)
+```
+config (dict): Configuration parameters (paths, parameters, etc).  
+current_file (str): Name of the file to process.  
+bids_path (BIDSpath): Associated bids_path.  
+
+
+##### Outputs
+results (dict): Main information of the process.
+
+In addition, the module creates new BIDS-folders in the path specified in config.
+
+
+## Badchannel detection
+
+Marks badchannels in EEG recordings based on different criteria.
+
+For EEG:
+
+- Channels with impedances above a certain threshold.
+- Channels with impossible low or high amplitudes.
+- Channels with significantly higher energy in 45-55 Hz range compared to the rest of channels.
+- Channels with gel bridge.
+- Channels with significantly higher standard deviation of amplitude compared to the rest of channels.
+
+##### Inputs
+```
+from sEEGnal.preprocess.badchannel_detection import badchannel_detection
+
+results = badchannel_detection(config,bids_path)
+```
+config (dict): Configuration parameters (paths, parameters, etc).  
+bids_path (BIDSpath): Associated bids_path.
+
+
+##### Outputs
+results (dict): Main information of the process.
+
+In addition, the module creates new BIDS-derivatives files in the corresponding path. The files are:  
+- *_channels.tsv: File with all channels classified as good or bad and the reason of "bad channel". Also include impedance information.
+- *_desc-sobi-badchannels_*: Files with information about the Independent Component Analysis (mixing, unmixing, classification,...)
+
+
+
+## Artifact detection
+
+First, performs an independent component analysis (ICA) and then label the ICs using [MNE-ICALabel](https://mne.tools/mne-icalabel/stable/index.html).
+
+Then looks for EOG arrtifacts, muscle artifacts, sensor artifacts, and "other" artifacts.
+
+- EOG. Filter the recording in low frequencies. Compare frontal channels vs rest of the channels and look for high amplitude peaks significantly different.
+- Muscle. Get the time series reconstructed using "muscle" components. Filter between 110-145 Hz and look for high amplitude bursts.
+- Sensor. Filter the data in low frequencies. Look for high amplitude peaks.
+- Other. Look for bursts with impossible amplitudes.
+
+##### Inputs
+```
+from sEEGnal.preprocess.artifact_detection import artifact_detection
+
+results = artifact_detection(config, bids_path)
+```
+config (dict): Configuration parameters (paths, parameters, etc).  
+bids_path (BIDSpath): Associated bids_path.
+
+
+##### Outputs
+results (dict): Main information of the process.
+
+In addition, the module creates new BIDS-derivatives files in the corresponding path. The files are:
+- *_artifacts_annotations: Files with information about the artifacts: onset (seconds), duration (seconds), label (type of artifact).
+- \*_desc-sobi-artifacts: Files with information about the Independent Component Analysis in the artifact detection module (mixing, unmixing, classification,...)
 
 
 ## Contributors
