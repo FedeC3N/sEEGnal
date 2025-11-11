@@ -103,6 +103,12 @@ def standardize_eeg_file(config, current_file, bids_path):
     source_filepath = os.path.join(config['path']['sourcedata'],current_file)
     mnedata = read_source_files(config,source_filepath)
 
+    # Include and exclude channels explicitly
+    channels_to_include = config['global']['channels_to_include']
+    channels_to_exclude = config['global']['channels_to_exclude']
+    mnedata.pick(channels_to_include)
+    mnedata.drop_channels(channels_to_exclude, on_missing='ignore')
+
     # Adds some project-specific information.
     mnedata.info['line_freq'] = 50
     mnedata.info['subject_info'] = dict()
