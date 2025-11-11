@@ -19,7 +19,8 @@
 				"PO7", "PO8"],
 		"channels_to_exclude": [
 				"VEOGL", "VEOGU", "HEOGR", "HEOGL",
-				"M1", "M2"]
+				"M1", "M2"],
+        "verbose": ""
     },
 
 
