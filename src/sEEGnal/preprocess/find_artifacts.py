@@ -56,7 +56,7 @@ def EOG_detection(config,bids_path,frontal_channels='all'):
         badchannels_to_metadata=True,
         exclude_badchannels=True,
         set_annotations=False,
-        average_reference=True)
+        rereference=True)
 
     # If there is EOG or EKG, remove those components
     components_to_exclude = []
@@ -174,7 +174,7 @@ def muscle_detection(config,bids_path):
         badchannels_to_metadata=True,
         exclude_badchannels=True,
         set_annotations=False,
-        average_reference=True)
+        rereference=True)
 
     # Get the muscle components time series
     if len(sobi.labels_['muscle']) > 0:
@@ -277,7 +277,7 @@ def sensor_detection(config,bids_path):
         badchannels_to_metadata=True,
         exclude_badchannels=True,
         set_annotations=True,
-        average_reference=True)
+        rereference=True)
 
     # If there is EOG or EKG, remove those components
     components_to_exclude = []
@@ -387,7 +387,7 @@ def other_detection(config,bids_path):
         badchannels_to_metadata=True,
         exclude_badchannels=True,
         set_annotations=True,
-        average_reference=True)
+        rereference=True)
 
     # If there is EOG or EKG, remove those components
     components_to_exclude = []

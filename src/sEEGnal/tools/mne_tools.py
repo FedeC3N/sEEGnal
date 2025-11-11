@@ -522,9 +522,9 @@ def get_epochs(raw, annot=None, length=4, overlap=None, padding=None, preload=Fa
 
 
 # Function to prepare MNE raw data
-def prepare_raw(config,bids_path, preload=True, channels_to_include=None, channels_to_exclude=None,
+def prepare_raw(config, bids_path, preload=True, channels_to_include=None, channels_to_exclude=None,
                 freq_limits=None, crop_seconds=None, badchannels_to_metadata=True, exclude_badchannels=False,
-                set_annotations=True, epoch=None, resample_frequency=False, average_reference=True):
+                set_annotations=True, epoch=None, resample_frequency=False, rereference=True):
 
     if channels_to_include is None:
         channels_to_include = ['all']
@@ -611,7 +611,7 @@ def prepare_raw(config,bids_path, preload=True, channels_to_include=None, channe
                 raw = raw.pick(None, exclude='bads')
 
     # Set reference
-    if average_reference:
+    if rereference:
         raw.set_eeg_reference()
 
     return raw

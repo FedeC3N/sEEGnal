@@ -82,7 +82,7 @@ def impossible_amplitude_detection(config, bids_path,badchannels):
         exclude_badchannels=False,
         set_annotations=False,
         epoch=epoch_definition,
-        average_reference=False)
+        rereference=False)
 
     # Exclude the previous badchannels
     raw.drop_channels(badchannels,on_missing='ignore')
@@ -146,7 +146,7 @@ def power_spectrum_detection(config,bids_path,badchannels):
         exclude_badchannels=False,
         set_annotations=False,
         epoch=epoch_definition,
-        average_reference=False)
+        rereference=False)
 
     # Exclude the previous badchannels
     raw.drop_channels(badchannels, on_missing='ignore')
@@ -219,7 +219,7 @@ def gel_bridge_detection(config, bids_path,badchannels):
         badchannels_to_metadata=False,
         exclude_badchannels=False,
         set_annotations=False,
-        average_reference=False)
+        rereference=False)
 
     # If there is EOG or EKG, remove those components
     components_to_exclude = []
@@ -321,7 +321,7 @@ def high_deviation_detection(config, bids_path, badchannels):
         exclude_badchannels=False,
         set_annotations=False,
         epoch=epoch_definition,
-        average_reference=False)
+        rereference=False)
 
     # If there is EOG or EKG, remove those components
     components_to_exclude = []

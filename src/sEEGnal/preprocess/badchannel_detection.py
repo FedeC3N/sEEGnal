@@ -191,7 +191,7 @@ def estimate_badchannel_component(config, bids_path):
         exclude_badchannels=False,
         set_annotations=False,
         epoch=epoch_definition,
-        average_reference=False)
+        rereference=False)
 
     # Run SOBI
     sobi = aimind_mne.sobi(raw)

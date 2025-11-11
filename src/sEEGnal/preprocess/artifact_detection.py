@@ -203,7 +203,7 @@ def estimate_artifact_components(config,bids_path,derivatives_label):
         exclude_badchannels=True,
         set_annotations=set_annotations,
         epoch=epoch_definition,
-        average_reference=True)
+        rereference=True)
 
     # Run SOBI
     sobi = mnetools.sobi(raw)
