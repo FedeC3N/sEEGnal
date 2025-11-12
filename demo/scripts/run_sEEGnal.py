@@ -39,40 +39,29 @@ for current_index in range(len(files)):
 
         print('Working with sub ' + current_sub + ' ses ' + current_ses + ' task ' + current_task)
 
-        try:
+        # Run the selected processes
+        if run[0]:
+            print('   Standardize', end='. ')
+            results = standardize(config,current_file,bids_path)
+            print(' Result ' + results['result'])
 
-            # Run the selected processes
-            if run[0]:
-                print('   Standardize', end='. ')
-                results = standardize(config,current_file,bids_path)
-                print(' Result ' + results['result'])
+        if run[1]:
+            print('   Badchannel detection', end='. ')
+            results = badchannel_detection(config,bids_path)
+            print(' Result ' + results['result'])
+            if results['result'] == 'error' and config['global']['verbose'] == 'full':
+                print(results['details'])
 
-            if run[1]:
-                print('   Badchannel detection', end='. ')
-                results = badchannel_detection(config,bids_path)
-                print(' Result ' + results['result'])
-
-            if run[2]:
-                print('   Artifact Detection', end='. ')
-                results = artifact_detection(config, bids_path)
-                print(' Result ' + results['result'])
-
-
-        except:
-            print('ERROR')
-            errors.append(current_file)
+        if run[2]:
+            print('   Artifact Detection', end='. ')
+            results = artifact_detection(config, bids_path)
+            print(' Result ' + results['result'])
+            if results['result'] == 'error' and config['global']['verbose'] == 'full':
+                print(results['details'])
 
 
         print()
         print()
         print()
-
-
-# Finally print the errors to check
-if len(errors):
-
-    from pprint import pprint
-    print('LIST OF ERRORS')
-    pprint(errors)
 
 
