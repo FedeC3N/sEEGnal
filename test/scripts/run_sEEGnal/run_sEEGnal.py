@@ -35,7 +35,7 @@ for current_index in range(len(files)):
         current_task    = task[current_index]
 
         # Create the subjects following AI-Mind protocol
-        bids_path = create_bids_path(config,current_file,current_sub,current_ses,current_task)
+        bids_path = create_bids_path(config,current_sub,current_ses,current_task)
 
         print('Working with sub ' + current_sub + ' ses ' + current_ses + ' task ' + current_task)
 
