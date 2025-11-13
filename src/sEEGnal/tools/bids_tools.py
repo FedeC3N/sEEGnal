@@ -614,7 +614,7 @@ def build_derivative ( bids_path, tail ):
 
 
 
-def create_bids_path(config,current_file,current_sub,current_ses,current_task):
+def create_bids_path(config,current_sub,current_ses,current_task):
 
     # Remove the unallowed characters
     current_sub = current_sub.replace('-','')
