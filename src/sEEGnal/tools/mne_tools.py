@@ -6,7 +6,6 @@ Created on Mon Feb 20 12:40:25 2023
 @author: bru
 """
 
-
 import re
 import datetime
 
@@ -20,83 +19,66 @@ import sEEGnal.tools.tools as tools
 import sEEGnal.tools.signal as signal
 import sEEGnal.tools.spheres as spheres
 
-
 # Lists the valid MNE objects.
-mnevalid = (
-    mne.io.BaseRaw,
-    mne.BaseEpochs )
+mnevalid = (mne.io.BaseRaw, mne.BaseEpochs)
 
 # Sets the verbosity level for MNE.
-mne.set_log_level ( verbose = 'ERROR' )
-
+mne.set_log_level(verbose='ERROR')
 
 
 # Function for two-pass filtering on MNE objects.
-def filtfilt ( mnedata, num = 1, den = 1, hilbert = False ):
+def filtfilt(mnedata, num=1, den=1, hilbert=False):
     """ Wrapper to apply two-pass filtering to MNE objects."""
-    
-    
+
     # Checks if the data is a valid MNE object.
-    if not isinstance ( mnedata, mnevalid ):
-        
-        print ( 'Unsupported data type.' )
+    if not isinstance(mnedata, mnevalid):
+
+        print('Unsupported data type.')
         return None
-    
-    
+
     # Creates a copy of the input data.
-    mnedata  = mnedata.copy ()
+    mnedata = mnedata.copy()
 
     # Gets the raw data matrix.
-    rawdata  = mnedata.get_data ()
-
+    rawdata = mnedata.get_data()
 
     # For IIR filters uses SciPy (faster and more accurate).
-    if numpy.array ( den ).size != 1:
+    if numpy.array(den).size != 1:
 
         # Gets the data metadata.
-        dshape   = rawdata.shape
-        nsample  = dshape [-1]
+        dshape = rawdata.shape
+        nsample = dshape[-1]
 
         # Reshapes the data into a 2D array.
-        rawdata  = rawdata.reshape ( ( -1, nsample ) )
+        rawdata = rawdata.reshape((-1, nsample))
 
         # Filters the data.
-        rawdata  = scipy.signal.filtfilt (
-            num,
-            den,
-            rawdata )
+        rawdata = scipy.signal.filtfilt(num, den, rawdata)
 
         # Restores the original data shape.
-        rawdata  = rawdata.reshape ( dshape )
+        rawdata = rawdata.reshape(dshape)
 
     # For FIR filters use FFT (much faster, same accuracy).
     else:
 
         # Filters the data.
-        rawdata  = signal.filtfilt (
-            rawdata,
-            num = num,
-            den = den,
-            hilbert = hilbert )
-    
+        rawdata = signal.filtfilt(rawdata, num=num, den=den, hilbert=hilbert)
+
     # Replaces the data and marks it as loaded.
     mnedata._data = rawdata
     mnedata.preload = True
-    
+
     ## Creates a new MNE object with the filtered data.
     #mnedata   = mne.EpochsArray ( rawdata, data.info, events = data.events, verbose = False )
-    
+
     ## Creates a new MNE object with the filtered data.
     #mnedata    = mne.io.RawArray ( rawdata, data.info, verbose = False )
-    
+
     # Returns the MNE object.
     return mnedata
 
 
-
-def decimate (
-        mnedata,
-        ratio = 1 ):
+def decimate(mnedata, ratio=1):
     """Decimates an MNE object with no filtering."""
     """
     Based on MNE 1.7 functions:
@@ -106,79 +88,66 @@ def decimate (
     https://github.com/mne-tools/mne-python/blob/maint/1.7/mne/utils/mixin.py
     """
 
-
     # Checks if the data is a valid MNE object.
-    if not isinstance ( mnedata, mnevalid ):
+    if not isinstance(mnedata, mnevalid):
 
-        print ( 'Unsupported data type.' )
+        print('Unsupported data type.')
         return None
-
 
     # Ratio is 1 does nothing.
     if ratio == 1:
         return mnedata
 
-
     # Creates a copy of the input data.
-    mnedata  = mnedata.copy ()
-
+    mnedata = mnedata.copy()
 
     # Gets the raw data matrix.
-    rawdata  = mnedata.get_data ()
+    rawdata = mnedata.get_data()
 
     # Decimates the raw data matrix in the last dimension.
-    decdata = rawdata [ ..., :: ratio ]
+    decdata = rawdata[..., ::ratio]
 
     # Replaces the data and marks it as loaded.
     mnedata._data = decdata
     mnedata.preload = True
 
-
     # Updates the sampling rate.
-    with mnedata.info._unlock ():
-        mnedata.info [ 'sfreq' ] = mnedata.info [ 'sfreq' ] / ratio
-
+    with mnedata.info._unlock():
+        mnedata.info['sfreq'] = mnedata.info['sfreq'] / ratio
 
     # Updates the mne.Raw information.
-    if isinstance ( mnedata, mne.io.BaseRaw ):
+    if isinstance(mnedata, mne.io.BaseRaw):
         n_news = numpy.array(decdata.shape[1:])
-        mnedata._cropped_samp = int ( numpy.round ( mnedata._cropped_samp * ratio ) )
-        mnedata._first_samps = numpy.round ( mnedata._first_samps * ratio ).astype ( int )
-        mnedata._last_samps = numpy.array ( mnedata._first_samps ) + n_news - 1
-        mnedata._raw_lengths [ :1 ] = list ( n_news )
+        mnedata._cropped_samp = int(numpy.round(mnedata._cropped_samp * ratio))
+        mnedata._first_samps = numpy.round(mnedata._first_samps * ratio).astype(int)
+        mnedata._last_samps = numpy.array(mnedata._first_samps) + n_news - 1
+        mnedata._raw_lengths[:1] = list(n_news)
 
     # Updates the mne.Epochs information.
-    if isinstance ( mnedata, mne.BaseEpochs ):
+    if isinstance(mnedata, mne.BaseEpochs):
         mnedata._decim = 1
-        mnedata._set_times ( mnedata._raw_times [ :: ratio ] )
-        mnedata._update_first_last ()
-
+        mnedata._set_times(mnedata._raw_times[::ratio])
+        mnedata._update_first_last()
 
     # Returns the MNE object.
     return mnedata
 
 
-
-def fixchan (
-        mnedata,
-        elec = None ):
+def fixchan(mnedata, elec=None):
     """Wrapper to apply spherical splines channel reconstruction to MNE objects."""
 
-
     # Checks if the data is a valid MNE object.
-    if not isinstance ( mnedata, mnevalid ):
+    if not isinstance(mnedata, mnevalid):
 
-        print ( 'Unsupported data type.' )
+        print('Unsupported data type.')
         return None
 
-
     # Creates a copy of the input data.
-    mnedata  = mnedata.copy ()
+    mnedata = mnedata.copy()
 
     # If no bad channels does nothing.
-    if len ( mnedata.info [ 'bads' ] ) == 0:
+    if len(mnedata.info['bads']) == 0:
         return mnedata
-
 
     # If no electrode definition provided, loads the 10-05 default montage.
     if elec is None:
@@ -186,50 +155,37 @@ def fixchan (
         elec = elec.get_positions()['ch_pos']
 
     # Generates the reduced montage for the data.
-    elec = {
-        ch: elec [ ch ]
-        for ch in elec.keys ()
-        if ch in mnedata.ch_names }
+    elec = {ch: elec[ch] for ch in elec.keys() if ch in mnedata.ch_names}
 
     # Generates the reduced montage for the good channels.
-    elec1 = {
-        ch: elec [ ch ]
-        for ch in elec.keys ()
-        if ch not in mnedata.info [ 'bads' ] }
+    elec1 = {ch: elec[ch] for ch in elec.keys() if ch not in mnedata.info['bads']}
 
     # Generates the reduced montage for the bad channels.
-    elec2 = {
-        ch: elec [ ch ]
-        for ch in elec.keys ()
-        if ch in mnedata.info [ 'bads' ] }
-
+    elec2 = {ch: elec[ch] for ch in elec.keys() if ch in mnedata.info['bads']}
 
     # If no bad channels returns the untouched data.
-    if len ( elec2 ) == 0:
+    if len(elec2) == 0:
         return mnedata
 
-
     # Gets the reconstruction matrix.
-    wPot  = spheres.spline_int ( elec1, elec2 )
+    wPot = spheres.spline_int(elec1, elec2)
 
     # Gets the data-to-data transformation matrix.
-    d2d   = numpy.eye ( len ( mnedata.ch_names ) )
+    d2d = numpy.eye(len(mnedata.ch_names))
 
     # Gets the indexes of the good and bad channels.
-    hits1 = tools.find_matches ( list ( elec1.keys () ), mnedata.ch_names )
-    hits2 = tools.find_matches ( list ( elec2.keys () ), mnedata.ch_names )
+    hits1 = tools.find_matches(list(elec1.keys()), mnedata.ch_names)
+    hits2 = tools.find_matches(list(elec2.keys()), mnedata.ch_names)
 
     # Zeroes the bad channels.
-    d2d [ hits2, hits2 ] = 0
+    d2d[hits2, hits2] = 0
 
     # Adds the reconstruction mapping for the bad channels.
-    d2d [ numpy.ix_ ( hits2, hits1 ) ] = wPot
-
+    d2d[numpy.ix_(hits2, hits1)] = wPot
 
     # Gets the raw data matrix.
     #rawdata = mnedata.get_data ( copy = True )
-    rawdata = mnedata.get_data ()
-
+    rawdata = mnedata.get_data()
     """
     # Rewrites the raw data as epochs * samples * channels.
     shape   = rawdata.shape
@@ -244,19 +200,17 @@ def fixchan (
     fixdata = fixdata.reshape ( shape )
     """
 
-
     # Rewrites the raw data as epochs * channels * samples.
-    shape   = rawdata.shape
-    tmpdata = rawdata.reshape ( ( -1, ) + shape [ -2: ] )
+    shape = rawdata.shape
+    tmpdata = rawdata.reshape((-1, ) + shape[-2:])
 
     # Fixes the bad channels epoch-wise.
-    fixdata = numpy.zeros ( tmpdata.shape )
-    for i in range ( tmpdata.shape [0] ):
-        fixdata [ i ] = numpy.dot ( d2d, tmpdata [ i ] )
+    fixdata = numpy.zeros(tmpdata.shape)
+    for i in range(tmpdata.shape[0]):
+        fixdata[i] = numpy.dot(d2d, tmpdata[i])
 
     # Restores the original data shape.
-    fixdata = fixdata.reshape ( shape )
-
+    fixdata = fixdata.reshape(shape)
 
     # Updates the MNE object.
     mnedata._data = fixdata
@@ -265,186 +219,160 @@ def fixchan (
     return mnedata
 
 
-
 # Perform SOBI on MNE object
-def sobi (
-        mnedata,
-        nlag = None,
-        nsource = None ):
+def sobi(mnedata, nlag=None, nsource=None):
     ''' Wrapper to estimating SOBI componentes from MNE objects.'''
-    
-    
+
     # Checks if the data is a valid MNE object.
-    if not isinstance ( mnedata, mnevalid ):
-        
-        print ( 'Unsupported data type.' )
+    if not isinstance(mnedata, mnevalid):
+
+        print('Unsupported data type.')
         return None
-    
-    
+
     # Creates a copy of the input data.
-    mnedata  = mnedata.copy ()
-    
+    mnedata = mnedata.copy()
+
     # Gets the channel labels.
-    chname   = mnedata.ch_names
-    
+    chname = mnedata.ch_names
+
     # Gets the raw data matrix.
-    rawdata  = mnedata.get_data ()
-    
-    
+    rawdata = mnedata.get_data()
+
     # Estimates the SOBI mixing matrix.
-    mixing, unmixing  = bss.sobi ( rawdata, nlag = nlag, nsource = nsource )
-    
-    
+    mixing, unmixing = bss.sobi(rawdata, nlag=nlag, nsource=nsource)
+
     # Builds the MNE ICA object.
-    mnesobi  = build_bss ( mixing, unmixing, chname, method = 'sobi' )
-    
+    mnesobi = build_bss(mixing, unmixing, chname, method='sobi')
+
     # Returns the MNE ICA object.
     return mnesobi
 
 
-def build_raw ( info, data, montage = None ):
-    
-    
+def build_raw(info, data, montage=None):
+
     # Lists the channels in the data.
-    ch_label = info [ 'channels' ] [ 'label' ]
-    
-    
+    ch_label = info['channels']['label']
+
     # If no montage assumes the standard 10-05.
     if montage is None:
-        montage  = mne.channels.make_standard_montage ( 'standard_1005' )
-    
-    
+        montage = mne.channels.make_standard_montage('standard_1005')
+
     # Identifies the EEG, EOG, ECG, and EMG channels.
-    ind_eeg  = numpy.where ( numpy.in1d ( ch_label, montage.ch_names ) )
-    ind_eog  = numpy.where ( [ re.search ( 'EOG', label ) != None for label in ch_label ] )
-    ind_ecg  = numpy.where ( [ re.search ( 'CLAV', label ) != None for label in ch_label ] )
-    ind_emg  = numpy.where ( [ re.search ( 'EMG', label ) != None for label in ch_label ] )
-    
+    ind_eeg = numpy.where(numpy.in1d(ch_label, montage.ch_names))
+    ind_eog = numpy.where([re.search('EOG', label) != None for label in ch_label])
+    ind_ecg = numpy.where([re.search('CLAV', label) != None for label in ch_label])
+    ind_emg = numpy.where([re.search('EMG', label) != None for label in ch_label])
+
     # Marks all the channels as EEG.
-    ch_types = numpy.array ( [ 'eeg' ] * len ( ch_label ) )
+    ch_types = numpy.array(['eeg'] * len(ch_label))
 
     # Sets the channel types.
-    ch_types [ ind_eeg ] = 'eeg'
-    ch_types [ ind_eog ] = 'eog'
-    ch_types [ ind_ecg ] = 'ecg'
-    ch_types [ ind_emg ] = 'emg'
-    
-    
+    ch_types[ind_eeg] = 'eeg'
+    ch_types[ind_eog] = 'eog'
+    ch_types[ind_ecg] = 'ecg'
+    ch_types[ind_emg] = 'emg'
+
     # Creates the MNE-Python information object.
-    mneinfo  = mne.create_info ( 
-        ch_names  = list ( info [ 'channels' ] [ 'label' ] ),
-        sfreq     = info [ 'sample_rate' ],
-        ch_types  = list ( ch_types ) )
-    
+    mneinfo = mne.create_info(
+        ch_names=list(info['channels']['label']), sfreq=info['sample_rate'], ch_types=list(ch_types)
+    )
+
     # Adds the montage, if provided.
     if montage is not None:
-        mneinfo.set_montage ( montage )
-    
-    
+        mneinfo.set_montage(montage)
+
     # Creates the MNE-Python raw data object.
-    mneraw   = mne.io.RawArray ( data.T, mneinfo, verbose = False )
-    
+    mneraw = mne.io.RawArray(data.T, mneinfo, verbose=False)
+
     # Overwrites the default parameters.
-    mneraw.set_meas_date ( info [ 'acquisition_time' ] )
-    
+    mneraw.set_meas_date(info['acquisition_time'])
+
     # Adds the calibration factor.
-    mneraw._cals = numpy.ones ( len ( ch_label ) )
-    
+    mneraw._cals = numpy.ones(len(ch_label))
+
     # Marks the 'active' channels.
-    mneraw._read_picks = [ numpy.arange ( len ( ch_label ) ) ]
-    
-    
+    mneraw._read_picks = [numpy.arange(len(ch_label))]
+
     # Gets the information about the impedances, if any.
     if 'impedances' in info:
-        
+
         # Takes only the first measurement.
         if len(info['impedances']) > 0:
-            impmeta    = info [ 'impedances' ] [0]
-            impedances = impmeta [ 'measurement' ]
+            impmeta = info['impedances'][0]
+            impedances = impmeta['measurement']
 
             # Fills the extra information for MNE.
-            for channel, value in impedances.items ():
+            for channel, value in impedances.items():
 
-                impedances [ channel ] = {
-                    'imp':           value,
-                    'imp_unit':      impmeta [ 'unit' ],
-                    'imp_meas_time': datetime.datetime.fromtimestamp ( impmeta [ 'time' ] ) }
-
+                impedances[channel] = {
+                    'imp': value,
+                    'imp_unit': impmeta['unit'],
+                    'imp_meas_time': datetime.datetime.fromtimestamp(impmeta['time'])
+                }
 
             # Adds the impedances to the MNE object.
             mneraw.impedances = impedances
-    
-    
+
     # Gets the annotations, if any.
-    annotations = mne.Annotations (
-        [ annot [ 'onset' ] for annot in info [ 'events' ] ],
-        [ annot [ 'duration' ] for annot in info [ 'events' ] ],
-        [ annot [ 'description' ] for annot in info [ 'events' ] ] )
-    
+    annotations = mne.Annotations(
+        [annot['onset'] for annot in info['events']], [annot['duration'] for annot in info['events']],
+        [annot['description'] for annot in info['events']]
+    )
+
     # Adds the annotations to the MNE object.
-    mneraw.set_annotations ( annotations )
-        
-    
+    mneraw.set_annotations(annotations)
+
     # Returns the MNE Raw object.
     return mneraw
 
 
+def build_bss(mixing, unmixing, chname, icname=None, method='bss'):
 
-def build_bss ( mixing, unmixing, chname, icname = None, method = 'bss' ):
-    
-    
     # Gets the number of channels and components.
-    nchannel = mixing.shape [0]
-    nsource  = mixing.shape [1]
-    
+    nchannel = mixing.shape[0]
+    nsource = mixing.shape[1]
+
     # Generates the labels for the components, if no provided.
     if icname is None:
-        
+
         # Creates the labels.
-        icname   = [
-            'IC%03d' % ( index + 1 )
-            for index in range ( nsource ) ]
-    
-    
+        icname = ['IC%03d' % (index + 1) for index in range(nsource)]
+
     # If the matrices are not square adds some dummy components.
     if nchannel != nsource:
-        
+
         # Creates the dummy components.
         ndummy = nchannel - nsource
-        mdummy = numpy.zeros ( [ nchannel, ndummy ] )
-        
+        mdummy = numpy.zeros([nchannel, ndummy])
+
         # Creates the dummy labels.
-        ldummy = [
-            'DUM%03d' % ( index + 1 )
-            for index in range ( ndummy ) ]
-        
+        ldummy = ['DUM%03d' % (index + 1) for index in range(ndummy)]
+
         # Concatenates the matrix and the labels.
-        mixing   = numpy.append ( mixing, mdummy, 1 )
-        unmixing = numpy.append ( unmixing, mdummy.T, 0 )
-        icname   = icname + ldummy
-    
-    
+        mixing = numpy.append(mixing, mdummy, 1)
+        unmixing = numpy.append(unmixing, mdummy.T, 0)
+        icname = icname + ldummy
+
     # Creates a dummy MNE ICA object.
-    mnebss   = mne.preprocessing.ICA ()
-    
+    mnebss = mne.preprocessing.ICA()
+
     # Fills the object with the SOBI data.
-    mnebss.ch_names         = chname
-    mnebss._ica_names       = icname
-    mnebss.mixing_matrix_   = mixing
+    mnebss.ch_names = chname
+    mnebss._ica_names = icname
+    mnebss.mixing_matrix_ = mixing
     mnebss.unmixing_matrix_ = unmixing
-    
+
     # Fills some dummy metadata.
-    mnebss.current_fit             = 'raw'
-    mnebss.method                  = method
-    mnebss.n_components_           = mixing.shape[0]
-    mnebss.n_iter_                 = 0
-    mnebss.n_samples_              = 0
-    mnebss.pca_components_         = numpy.eye ( nchannel )
-    mnebss.pca_explained_variance_ = numpy.ones ( nchannel )
-    mnebss.pca_mean_               = numpy.zeros ( nchannel )
-    mnebss.pre_whitener_           = 0.01 * numpy.ones ( [ nchannel, 1 ] )
-    
-    
+    mnebss.current_fit = 'raw'
+    mnebss.method = method
+    mnebss.n_components_ = mixing.shape[0]
+    mnebss.n_iter_ = 0
+    mnebss.n_samples_ = 0
+    mnebss.pca_components_ = numpy.eye(nchannel)
+    mnebss.pca_explained_variance_ = numpy.ones(nchannel)
+    mnebss.pca_mean_ = numpy.zeros(nchannel)
+    mnebss.pre_whitener_ = 0.01 * numpy.ones([nchannel, 1])
+
     # Returns the MNE ICA object.
     return mnebss
 
@@ -479,7 +407,7 @@ def get_epochs(raw, annot=None, length=4, overlap=None, padding=None, preload=Fa
         # Checks if the artifacts overlap.
         if artend[index - 1] > artbeg[index]:
             # Extendes the previous artifact, if required.
-            artend[index - 1] = numpy.max(artend[index - 1: index + 1])
+            artend[index - 1] = numpy.max(artend[index - 1:index + 1])
 
             # Removes the current artifact.
             artbeg = numpy.delete(artbeg, index)
@@ -514,18 +442,31 @@ def get_epochs(raw, annot=None, length=4, overlap=None, padding=None, preload=Fa
     events[:, 2] = 1
 
     # Generates a MNE epoch structure from the data and the events.
-    epochs = mne.Epochs(raw, events, tmin=-padding, tmax=length + padding, baseline=None, verbose=False,
-                        preload=preload)
+    epochs = mne.Epochs(
+        raw, events, tmin=-padding, tmax=length + padding, baseline=None, verbose=False, preload=preload
+    )
 
     # Returns the epochs object.
     return epochs
 
 
 # Function to prepare MNE raw data
-def prepare_raw(config, bids_path, preload=True, channels_to_include=None, channels_to_exclude=None,
-                freq_limits=None, crop_seconds=None, exclude_badchannels=False,
-                set_annotations=False, epoch=None, resample_frequency=False, rereference=False,rereference_method='average',
-                interpolate_bads=False):
+def prepare_eeg(
+    config,
+    bids_path,
+    preload=True,
+    channels_to_include=None,
+    channels_to_exclude=None,
+    freq_limits=None,
+    crop_seconds=None,
+    exclude_badchannels=False,
+    set_annotations=False,
+    epoch=None,
+    resample_frequency=False,
+    rereference=False,
+    rereference_method='average',
+    interpolate_bads=False
+):
 
     if channels_to_include is None:
         channels_to_include = ['all']
@@ -546,16 +487,16 @@ def prepare_raw(config, bids_path, preload=True, channels_to_include=None, chann
 
     # Include and exclude channels explicitly
     raw.pick(channels_to_include)
-    raw.drop_channels(channels_to_exclude,on_missing='ignore')
+    raw.drop_channels(channels_to_exclude, on_missing='ignore')
 
     # Add the annotations if requested
     if set_annotations:
         # Reads the annotations.
-        annotations = bids.read_annot ( bids_path )
+        annotations = bids.read_annot(bids_path)
 
         # Adds the annotations to the MNE object.
-        if len ( annotations ):
-            raw.set_annotations ( annotations )
+        if len(annotations):
+            raw.set_annotations(annotations)
 
     # Remove the beggining and the end of the recording
     if crop_seconds:
@@ -571,8 +512,14 @@ def prepare_raw(config, bids_path, preload=True, channels_to_include=None, chann
     # if (len(epoch.keys()) == 3):
     if epoch:
         if ('length' in epoch.keys()) and ('overlap' in epoch.keys()) and ('padding' in epoch.keys()):
-            raw = get_epochs(raw,annot=raw.annotations,length=epoch['length'],overlap=epoch['overlap'],
-                                    padding=epoch['padding'],preload=preload)
+            raw = get_epochs(
+                raw,
+                annot=raw.annotations,
+                length=epoch['length'],
+                overlap=epoch['overlap'],
+                padding=epoch['padding'],
+                preload=preload
+            )
         else:
             raise ValueError("Dictionary definition must be {'length':[],'overlap':[],'padding':[]}")
 
@@ -590,7 +537,7 @@ def prepare_raw(config, bids_path, preload=True, channels_to_include=None, chann
 
     # Remove the padding after filtering
     if epoch:
-        raw.crop(tmin=0,tmax=raw.times[-1] - epoch['padding'])
+        raw.crop(tmin=0, tmax=raw.times[-1] - epoch['padding'])
 
     if exclude_badchannels:
 
@@ -606,7 +553,7 @@ def prepare_raw(config, bids_path, preload=True, channels_to_include=None, chann
             raise Exception("All channels are marked as bad")
 
         # Drop or interpolate the badchannels
-        if interpolate_bads==True:
+        if interpolate_bads == True:
             raw.interpolate_bads()
         else:
             raw = raw.pick(None, exclude='bads')

@@ -21,11 +21,8 @@ import sEEGnal.tools.bids_tools as bids
 import sEEGnal.tools.mne_tools as aimind_mne
 import sEEGnal.preprocess.find_badchannels as find_badchannels
 
-
-
 # Set the output levels
 mne.utils.set_log_level(verbose='ERROR')
-
 
 
 # Modules
@@ -54,40 +51,41 @@ def badchannel_detection(config, bids_path):
             # Save the results
             now = dt.now(timezone.utc)
             formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
-            results = {'result':'ok',
-                       'bids_basename':bids_path.basename,
-                       "date":formatted_now,
-                       'badchannels': badchannels
-                       }
+            results = {
+                'result': 'ok',
+                'bids_basename': bids_path.basename,
+                "date": formatted_now,
+                'badchannels': badchannels
+            }
 
         except Exception as e:
 
             # Save the error
             now = dt.now(timezone.utc)
             formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
-            results = {'result':'error',
-                   'bids_basename':bids_path.basename,
-                   "date":formatted_now,
-                   "details": f"Exception: {str(e)}, {traceback.format_exc()}"
-                   }
+            results = {
+                'result': 'error',
+                'bids_basename': bids_path.basename,
+                "date": formatted_now,
+                "details": f"Exception: {str(e)}, {traceback.format_exc()}"
+            }
 
     else:
 
         # Not accepted type to process
         now = dt.now(timezone.utc)
         formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
-        results = {'result':'error',
-                   'file':bids_path.basename,
-                   'details':'Not accepted type of file to process',
-                   'date':formatted_now
-                   }
-
+        results = {
+            'result': 'error',
+            'file': bids_path.basename,
+            'details': 'Not accepted type of file to process',
+            'date': formatted_now
+        }
 
     return results
 
 
-
-def eeg_badchannel_detection(config,bids_path):
+def eeg_badchannel_detection(config, bids_path):
     """
 
     Call the badchannel detection processes one by one for each type of recording.
@@ -112,10 +110,10 @@ def eeg_badchannel_detection(config,bids_path):
     """
 
     # Initialzies the derivatives.
-    bids.init_derivatives (bids_path)
+    bids.init_derivatives(bids_path)
 
     # Estimate Independent Components
-    estimate_badchannel_component(config,bids_path)
+    estimate_badchannel_component(config, bids_path)
 
     # Create an empty list to append badchannels
     badchannels = []
@@ -128,19 +126,21 @@ def eeg_badchannel_detection(config,bids_path):
     badchannels_description.extend(current_badchannel_description)
 
     # Find channels with biologically impossible amplitude
-    impossible_amplitude_badchannels = find_badchannels.impossible_amplitude_detection(config, bids_path,badchannels)
+    impossible_amplitude_badchannels = find_badchannels.impossible_amplitude_detection(config, bids_path, badchannels)
     badchannels.extend(impossible_amplitude_badchannels)
-    current_badchannel_description = ['bad_impossible_amplitude_badchannels' for i in range(len(impossible_amplitude_badchannels))]
+    current_badchannel_description = [
+        'bad_impossible_amplitude_badchannels' for i in range(len(impossible_amplitude_badchannels))
+    ]
     badchannels_description.extend(current_badchannel_description)
 
     # Find abnormal power spectrum
-    power_spectrum_badchannels = find_badchannels.power_spectrum_detection(config, bids_path,badchannels)
+    power_spectrum_badchannels = find_badchannels.power_spectrum_detection(config, bids_path, badchannels)
     badchannels.extend(power_spectrum_badchannels)
     current_badchannel_description = ['bad_power_spectrum' for i in range(len(power_spectrum_badchannels))]
     badchannels_description.extend(current_badchannel_description)
 
     # Find channels with gel bridge
-    gel_bridge_badchannels = find_badchannels.gel_bridge_detection(config, bids_path,badchannels)
+    gel_bridge_badchannels = find_badchannels.gel_bridge_detection(config, bids_path, badchannels)
     badchannels.extend(gel_bridge_badchannels)
     current_badchannel_description = ['bad_gel_bridge' for i in range(len(gel_bridge_badchannels))]
     badchannels_description.extend(current_badchannel_description)
@@ -152,9 +152,8 @@ def eeg_badchannel_detection(config,bids_path):
     badchannels_description.extend(current_badchannel_description)
 
     # Save the results
-    bids.update_badchans (bids_path, badchannels, badchannels_description)
+    bids.update_badchans(bids_path, badchannels, badchannels_description)
     return badchannels
-
 
 
 def estimate_badchannel_component(config, bids_path):
@@ -170,16 +169,14 @@ def estimate_badchannel_component(config, bids_path):
     """
 
     # Parameters for loading EEG recordings
-    freq_limits = [config['component_estimation']['low_freq'],
-                   config['component_estimation']['high_freq']
-                   ]
+    freq_limits = [config['component_estimation']['low_freq'], config['component_estimation']['high_freq']]
     resample_frequency = config['component_estimation']['resampled_frequency']
     epoch_definition = config['component_estimation']['epoch_definition']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load raw EEG
-    raw = aimind_mne.prepare_raw(
+    raw = aimind_mne.prepare_eeg(
         config,
         bids_path,
         preload=True,
@@ -190,7 +187,8 @@ def estimate_badchannel_component(config, bids_path):
         exclude_badchannels=False,
         set_annotations=False,
         epoch=epoch_definition,
-        rereference=False)
+        rereference=False
+    )
 
     # Run SOBI
     sobi = aimind_mne.sobi(raw)
@@ -200,7 +198,10 @@ def estimate_badchannel_component(config, bids_path):
 
     # Check the probabilities max probabilities of each category and find those under 0.7
     max_probability = sobi.labels_scores_.max(axis=1)
-    index_unclear = [i for i in range(len(max_probability)) if max_probability[i] < config['component_estimation']['unclear_threshold']]
+    index_unclear = [
+        i for i in range(len(max_probability))
+        if max_probability[i] < config['component_estimation']['unclear_threshold']
+    ]
 
     # Re-arrange the label matrix and assign "other" to the unclears
     labels = ['brain', 'muscle', 'eog', 'ecg', 'line_noise', 'ch_noise']
@@ -213,6 +214,4 @@ def estimate_badchannel_component(config, bids_path):
     sobi.labels_['other'] = dummy.copy()
 
     # Writes the SOBI data into the derivatives folder.
-    _ = bids.write_sobi (bids_path, sobi, 'sobi-badchannels')
-
-
+    _ = bids.write_sobi(bids_path, sobi, 'sobi-badchannels')

@@ -23,8 +23,6 @@ import sEEGnal.tools.bids_tools as bids
 import sEEGnal.tools.mne_tools as mnetools
 import sEEGnal.preprocess.find_artifacts as find_artifacts
 
-
-
 # Set the output levels
 mne.utils.set_log_level(verbose='ERROR')
 
@@ -50,44 +48,46 @@ def artifact_detection(config, bids_path):
         try:
 
             # Detect badchannels in the current recording
-            annotations = eeg_artifact_detection(config,bids_path)
+            annotations = eeg_artifact_detection(config, bids_path)
 
             # Save the results
             now = dt.now(timezone.utc)
             formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
-            results = {'result':'ok',
-                       'bids_basename':bids_path.basename,
-                       "date":formatted_now,
-                       'annotations':annotations
-                       }
+            results = {
+                'result': 'ok',
+                'bids_basename': bids_path.basename,
+                "date": formatted_now,
+                'annotations': annotations
+            }
 
         except Exception as e:
 
             # Save the error
             now = dt.now(timezone.utc)
             formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
-            results = {'result':'error',
-                       'bids_basename':bids_path.basename,
-                       "date":formatted_now,
-                       "details":f"Exception: {str(e)}, {traceback.format_exc()}"
-                       }
+            results = {
+                'result': 'error',
+                'bids_basename': bids_path.basename,
+                "date": formatted_now,
+                "details": f"Exception: {str(e)}, {traceback.format_exc()}"
+            }
 
     else:
 
         # Not accepted type to process
         now = dt.now(timezone.utc)
         formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
-        results = {'result':'error',
-                   'file':bids_path.basename,
-                   'details':'Not accepted type of file to process',
-                   'date':formatted_now
-                   }
+        results = {
+            'result': 'error',
+            'file': bids_path.basename,
+            'details': 'Not accepted type of file to process',
+            'date': formatted_now
+        }
 
     return results
 
 
-
-def eeg_artifact_detection(config,bids_path):
+def eeg_artifact_detection(config, bids_path):
     """
 
     Call the artifact detection proceesses one by one for each type of recording.
@@ -106,17 +106,13 @@ def eeg_artifact_detection(config,bids_path):
 
     # Muscle and sensor artifact detection.
     # Muscle
-    muscle_annotations = muscle_detection(
-        config,
-        bids_path)
+    muscle_annotations = muscle_detection(config, bids_path)
 
     # Save the muscle annotations for better jump detection
-    _ = bids.write_annot(bids_path,muscle_annotations)
+    _ = bids.write_annot(bids_path, muscle_annotations)
 
     # Sensor (jumps)
-    sensor_annotations = sensor_detection(
-        config,
-        bids_path)
+    sensor_annotations = sensor_detection(config, bids_path)
 
     # Combine the annotations
     annotations = muscle_annotations.__add__(sensor_annotations)
@@ -125,46 +121,38 @@ def eeg_artifact_detection(config,bids_path):
     _ = bids.write_annot(bids_path, annotations)
 
     # Estimate the SOBI components to detect artifacts
-    estimate_artifact_components(config,bids_path,'sobi')
+    estimate_artifact_components(config, bids_path, 'sobi')
 
     # I have to find again all the artifacts
     # For EEG
     # Muscle
-    muscle_annotations = muscle_detection(
-        config,
-        bids_path)
+    muscle_annotations = muscle_detection(config, bids_path)
 
     # Save the muscle annotations for better jump detection
-    _ = bids.write_annot(bids_path,muscle_annotations)
+    _ = bids.write_annot(bids_path, muscle_annotations)
 
     # Sensor (jumps)
-    sensor_annotations = sensor_detection(
-        config,
-        bids_path)
+    sensor_annotations = sensor_detection(config, bids_path)
 
     # EOG
     # Select the frontal channels
     EOG_annotations = EOG_detection(
-        config,
-        bids_path,
-        frontal_channels=config['artifact_detection']["frontal_channels"])
+        config, bids_path, frontal_channels=config['artifact_detection']["frontal_channels"]
+    )
 
     # Sensor (jumps)
-    other_annotations = other_detection(
-        config,
-        bids_path)
+    other_annotations = other_detection(config, bids_path)
 
     # Merge all the annotations into a MNE Annotation object
     annotations = other_annotations.__add__(EOG_annotations).__add__(muscle_annotations).__add__(sensor_annotations)
 
     # Save the annotations in BIDS format
-    _ = bids.write_annot(bids_path,annotations)
+    _ = bids.write_annot(bids_path, annotations)
 
     return annotations
 
 
-
-def estimate_artifact_components(config,bids_path,derivatives_label):
+def estimate_artifact_components(config, bids_path, derivatives_label):
     """
 
     Estimate ICA using SOBI algorithm after excluding badchannels. Then label each component.
@@ -177,8 +165,7 @@ def estimate_artifact_components(config,bids_path,derivatives_label):
     """
 
     # Parameters for loading EEG recordings
-    freq_limits = [config['component_estimation']['low_freq'],
-                   config['component_estimation']['high_freq']]
+    freq_limits = [config['component_estimation']['low_freq'], config['component_estimation']['high_freq']]
     resample_frequency = config['component_estimation']['resampled_frequency']
     epoch_definition = config['component_estimation']['epoch_definition']
     channels_to_include = config['global']["channels_to_include"]
@@ -191,7 +178,7 @@ def estimate_artifact_components(config,bids_path,derivatives_label):
         set_annotations = True
 
     # Load raw EEG
-    raw = mnetools.prepare_raw(
+    raw = mnetools.prepare_eeg(
         config,
         bids_path,
         preload=True,
@@ -203,7 +190,8 @@ def estimate_artifact_components(config,bids_path,derivatives_label):
         set_annotations=set_annotations,
         epoch=epoch_definition,
         rereference=True,
-        interpolate_bads=True)
+        interpolate_bads=True
+    )
 
     # Run SOBI
     sobi = mnetools.sobi(raw)
@@ -213,8 +201,10 @@ def estimate_artifact_components(config,bids_path,derivatives_label):
 
     # Check the probabilities max probabilities of each category and find those under 0.7
     max_probability = sobi.labels_scores_.max(axis=1)
-    index_unclear = [i for i in range(len(max_probability)) if
-                     max_probability[i] < config['component_estimation']['unclear_threshold']]
+    index_unclear = [
+        i for i in range(len(max_probability))
+        if max_probability[i] < config['component_estimation']['unclear_threshold']
+    ]
 
     # Re-arrange the label matrix and assign "other" to the unclears
     labels = ['brain', 'muscle', 'eog', 'ecg', 'line_noise', 'ch_noise']
@@ -227,11 +217,10 @@ def estimate_artifact_components(config,bids_path,derivatives_label):
     sobi.labels_['other'] = dummy.copy()
 
     # Writes the SOBI data into the derivatives folder.
-    _ = bids.write_sobi (bids_path, sobi, derivatives_label)
+    _ = bids.write_sobi(bids_path, sobi, derivatives_label)
 
 
-
-def EOG_detection(config,bids_path, frontal_channels='all'):
+def EOG_detection(config, bids_path, frontal_channels='all'):
     """
 
     Detect EOG artifacts
@@ -247,20 +236,13 @@ def EOG_detection(config,bids_path, frontal_channels='all'):
     """
 
     # Find EOG aritfacts index
-    EOG_index,last_sample,sfreq = find_artifacts.EOG_detection(
-        config,
-        bids_path,
-        frontal_channels=frontal_channels)
+    EOG_index, last_sample, sfreq = find_artifacts.EOG_detection(config, bids_path, frontal_channels=frontal_channels)
 
     # If any artifact
     if len(EOG_index) > 0:
 
         # Create the annotations
-        EOG_annotations = find_artifacts.create_annotations(
-            EOG_index,
-            last_sample,
-            sfreq,
-            'bad_EOG')
+        EOG_annotations = find_artifacts.create_annotations(EOG_index, last_sample, sfreq, 'bad_EOG')
 
     else:
 
@@ -270,8 +252,7 @@ def EOG_detection(config,bids_path, frontal_channels='all'):
     return EOG_annotations
 
 
-
-def muscle_detection(config,bids_path):
+def muscle_detection(config, bids_path):
     """
 
     Detect muscle artifacts
@@ -287,9 +268,7 @@ def muscle_detection(config,bids_path):
     """
 
     # Look the position of muscular artifacts
-    muscle_index, last_sample, sfreq = find_artifacts.muscle_detection(
-        config,
-        bids_path)
+    muscle_index, last_sample, sfreq = find_artifacts.muscle_detection(config, bids_path)
 
     # If any index
     if len(muscle_index) > 0:
@@ -297,11 +276,8 @@ def muscle_detection(config,bids_path):
         # Create the annotations
         muscle_index.sort()
         muscle_annotations = find_artifacts.create_annotations(
-            muscle_index,
-            last_sample,
-            sfreq,
-            'bad_muscle',
-            fictional_artifact_duration=0.5)
+            muscle_index, last_sample, sfreq, 'bad_muscle', fictional_artifact_duration=0.5
+        )
 
     else:
 
@@ -311,8 +287,7 @@ def muscle_detection(config,bids_path):
     return muscle_annotations
 
 
-
-def sensor_detection(config,bids_path):
+def sensor_detection(config, bids_path):
     """
 
     Detect sensor artifacts (jumps)
@@ -328,9 +303,7 @@ def sensor_detection(config,bids_path):
     """
 
     # Look the position of muscular artifacts
-    sensor_index,last_sample,sfreq = find_artifacts.sensor_detection(
-        config,
-        bids_path)
+    sensor_index, last_sample, sfreq = find_artifacts.sensor_detection(config, bids_path)
 
     # Create as Annotations
     if len(sensor_index) > 0:
@@ -338,11 +311,8 @@ def sensor_detection(config,bids_path):
         # Create the annotations
         sensor_index.sort()  # First sort the list
         sensor_annotations = find_artifacts.create_annotations(
-            sensor_index,
-            last_sample,
-            sfreq,
-            'bad_jump',
-            fictional_artifact_duration=0.3)
+            sensor_index, last_sample, sfreq, 'bad_jump', fictional_artifact_duration=0.3
+        )
 
     # If no artifacts, create empty Annotation
     else:
@@ -351,8 +321,7 @@ def sensor_detection(config,bids_path):
     return sensor_annotations
 
 
-
-def other_detection(config,bids_path):
+def other_detection(config, bids_path):
     """
 
     Detect sensor artifacts (jumps)
@@ -368,9 +337,7 @@ def other_detection(config,bids_path):
     """
 
     # Look the position of muscular artifacts
-    other_index,last_sample,sfreq = find_artifacts.other_detection(
-        config,
-        bids_path)
+    other_index, last_sample, sfreq = find_artifacts.other_detection(config, bids_path)
 
     # Create as Annotations
     if len(other_index) > 0:
@@ -378,16 +345,11 @@ def other_detection(config,bids_path):
         # Create the annotations
         other_index.sort()  # First sort the list
         sensor_annotations = find_artifacts.create_annotations(
-            other_index,
-            last_sample,
-            sfreq,
-            'bad_other',
-            fictional_artifact_duration=0.3)
+            other_index, last_sample, sfreq, 'bad_other', fictional_artifact_duration=0.3
+        )
 
     # If no artifacts, create empty Annotation
     else:
         sensor_annotations = mne.Annotations(onset=[], duration=[], description=[])
 
     return sensor_annotations
-
-

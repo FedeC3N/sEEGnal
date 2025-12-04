@@ -16,9 +16,8 @@ import sEEGnal.tools.bids_tools as bids
 import sEEGnal.tools.mne_tools as aimind_mne
 
 
-
 # Modules
-def EOG_detection(config,bids_path,frontal_channels='all'):
+def EOG_detection(config, bids_path, frontal_channels='all'):
     """
 
     Detect EOG artifacts
@@ -33,18 +32,17 @@ def EOG_detection(config,bids_path,frontal_channels='all'):
     """
 
     # Read the ICA information
-    sobi = bids.read_sobi(bids_path,'sobi')
+    sobi = bids.read_sobi(bids_path, 'sobi')
 
     # Parameters for loading EEG or MEG recordings
-    freq_limits = [config['artifact_detection']['EOG']['low_freq'],
-                   config['artifact_detection']['EOG']['high_freq']]
+    freq_limits = [config['artifact_detection']['EOG']['low_freq'], config['artifact_detection']['EOG']['high_freq']]
     crop_seconds = [config['artifact_detection']['EOG']['crop_seconds']]
     resample_frequency = config['artifact_detection']['EOG']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load the raw data
-    raw = aimind_mne.prepare_raw(
+    raw = aimind_mne.prepare_eeg(
         config,
         bids_path,
         preload=True,
@@ -56,7 +54,8 @@ def EOG_detection(config,bids_path,frontal_channels='all'):
         exclude_badchannels=True,
         set_annotations=False,
         rereference=True,
-        interpolate_bads=True)
+        interpolate_bads=True
+    )
 
     # If there is EOG or EKG, remove those components
     components_to_exclude = []
@@ -75,7 +74,9 @@ def EOG_detection(config,bids_path,frontal_channels='all'):
     raw.filter(1, 5)
 
     # Select no-frontal channels used to estimate the non-EOG deviation
-    background_channels = [current_channel for current_channel in raw.ch_names if current_channel not in frontal_channels]
+    background_channels = [
+        current_channel for current_channel in raw.ch_names if current_channel not in frontal_channels
+    ]
 
     # Select the background data
     background_raw = raw.copy()
@@ -83,11 +84,12 @@ def EOG_detection(config,bids_path,frontal_channels='all'):
 
     # Average deviation of the recording
     background_raw_data = background_raw.get_data().copy()
-    background_raw_data_demean = background_raw_data - background_raw_data.mean(axis=1)[:, np.newaxis]
-    background_average_deviation = background_raw_data_demean.std(axis=1).mean()
+    background_average_deviation = background_raw_data.std(axis=1).mean()
 
     # Select EOG channels
-    frontal_channels = [current_channel for current_channel in frontal_channels if current_channel in channels_to_include]
+    frontal_channels = [
+        current_channel for current_channel in frontal_channels if current_channel in channels_to_include
+    ]
 
     # Select the present frontal channels
     if len(frontal_channels) > 0:
@@ -95,8 +97,7 @@ def EOG_detection(config,bids_path,frontal_channels='all'):
 
     # If no frontal channels, no EOG artifacts
     else:
-        return [],[],[]
-
+        return [], [], []
 
     # Get the data
     channel_data = raw.get_data().copy()
@@ -104,10 +105,12 @@ def EOG_detection(config,bids_path,frontal_channels='all'):
     # Go one by one through the channels looking for EOG artifacts
     for ichannel in range(len(raw.ch_names)):
 
-        current_channel_data = channel_data[ichannel,:] - channel_data[ichannel,:].mean()
+        current_channel_data = channel_data[ichannel, :] - channel_data[ichannel, :].mean()
 
         # Consider a peak everything above 10 std
-        current_peaks = np.nonzero(abs(current_channel_data) > config['artifact_detection']['EOG']['ratio'] * background_average_deviation)[0]
+        current_peaks = np.nonzero(
+            abs(current_channel_data) > config['artifact_detection']['EOG']['ratio'] * background_average_deviation
+        )[0]
 
         # Find the peaks
         # If it is the first channel, create the variable
@@ -119,7 +122,7 @@ def EOG_detection(config,bids_path,frontal_channels='all'):
 
             # If not empty, append
             if len(current_peaks) > 0:
-                EOG_index = np.append(EOG_index,current_peaks)
+                EOG_index = np.append(EOG_index, current_peaks)
 
     # Extra outputs
     last_sample = raw.last_samp
@@ -131,11 +134,10 @@ def EOG_detection(config,bids_path,frontal_channels='all'):
         last_sample = int(last_sample + 2 * crop_samples)
         EOG_index = [int(current_index + crop_samples) for current_index in EOG_index]
 
-    return EOG_index,last_sample,sfreq
+    return EOG_index, last_sample, sfreq
 
 
-
-def muscle_detection(config,bids_path):
+def muscle_detection(config, bids_path):
     """
 
     Detect muscle artifacts
@@ -151,18 +153,17 @@ def muscle_detection(config,bids_path):
     """
 
     # Read the ICA information
-    sobi = bids.read_sobi(bids_path,'sobi_artifacts')
+    sobi = bids.read_sobi(bids_path, 'sobi_artifacts')
 
     # Parameters for loading EEG recordings
-    freq_limits = [config['component_estimation']['low_freq'],
-                   config['component_estimation']['high_freq']]
+    freq_limits = [config['component_estimation']['low_freq'], config['component_estimation']['high_freq']]
     crop_seconds = [config['artifact_detection']['muscle']['crop_seconds']]
     resample_frequency = config['artifact_detection']['muscle']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load raw EEG
-    raw = aimind_mne.prepare_raw(
+    raw = aimind_mne.prepare_eeg(
         config,
         bids_path,
         preload=True,
@@ -174,7 +175,8 @@ def muscle_detection(config,bids_path):
         exclude_badchannels=True,
         set_annotations=False,
         rereference=True,
-        interpolate_bads=True)
+        interpolate_bads=True
+    )
 
     # Get the muscle components time series
     if len(sobi.labels_['muscle']) > 0:
@@ -184,7 +186,6 @@ def muscle_detection(config,bids_path):
         sources.pick(sobi.labels_['muscle'])
 
         muscle_components_time_courses = sources.get_data().copy()
-
 
     # If no muscular, we use the whole matrix but without eog (it confused the muscle artifact detection)
     elif len(sobi.labels_['eog']) > 0:
@@ -200,7 +201,6 @@ def muscle_detection(config,bids_path):
         # Get the data
         muscle_components_time_courses = sources.get_data().copy()
 
-
     # If not, used the whole matrix
     else:
 
@@ -209,16 +209,15 @@ def muscle_detection(config,bids_path):
         muscle_components_time_courses = sources.get_data().copy()
 
     # Find the peaks of each channel (peak = signal > 10*std)
-    muscle_components_time_courses_demean = muscle_components_time_courses - muscle_components_time_courses.mean(axis=1)[:,np.newaxis]
-    muscle_components_time_courses_std = muscle_components_time_courses_demean.std(axis=1)
+    muscle_components_time_courses_std = muscle_components_time_courses.std(axis=1)
     muscle_index = []
     for ichannel in range(len(muscle_components_time_courses_std)):
 
-        current_channel = muscle_components_time_courses_demean[ichannel,:]
+        current_channel = muscle_components_time_courses[ichannel, :]
         current_std = muscle_components_time_courses_std[ichannel]
-        current_peaks,_ = find_peaks(
-            abs(current_channel),
-            height=config['artifact_detection']['muscle']['threshold'] * current_std)
+        current_peaks, _ = find_peaks(
+            abs(current_channel), height=config['artifact_detection']['muscle']['threshold'] * current_std
+        )
 
         # If any, add to list
         if len(current_peaks) > 0:
@@ -237,8 +236,7 @@ def muscle_detection(config,bids_path):
     return muscle_index, last_sample, sfreq
 
 
-
-def sensor_detection(config,bids_path):
+def sensor_detection(config, bids_path):
     """
 
     Detect sensor artifacts (jumps)
@@ -254,18 +252,19 @@ def sensor_detection(config,bids_path):
     """
 
     # Read the ICA information
-    sobi = bids.read_sobi(bids_path,'sobi_artifacts')
+    sobi = bids.read_sobi(bids_path, 'sobi_artifacts')
 
     # Parameters for loading EEG or MEG recordings
-    freq_limits = [config['artifact_detection']['sensor']['low_freq'],
-                   config['artifact_detection']['sensor']['high_freq']]
+    freq_limits = [
+        config['artifact_detection']['sensor']['low_freq'], config['artifact_detection']['sensor']['high_freq']
+    ]
     crop_seconds = [config['artifact_detection']['sensor']['crop_seconds']]
     resample_frequency = config['artifact_detection']['sensor']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load the raw data
-    raw = aimind_mne.prepare_raw(
+    raw = aimind_mne.prepare_eeg(
         config,
         bids_path,
         preload=True,
@@ -277,7 +276,8 @@ def sensor_detection(config,bids_path):
         exclude_badchannels=True,
         set_annotations=True,
         rereference=True,
-        interpolate_bads=True)
+        interpolate_bads=True
+    )
 
     # If there is EOG or EKG, remove those components
     components_to_exclude = []
@@ -293,22 +293,21 @@ def sensor_detection(config,bids_path):
         sobi.apply(raw, exclude=components_to_exclude)
 
     # Filter again in the desired frequencies
-    freq_limits = [config['artifact_detection']['sensor']['low_freq'],
-                   config['artifact_detection']['sensor']['high_freq']]
-    raw.filter(freq_limits[0],freq_limits[1])
+    freq_limits = [
+        config['artifact_detection']['sensor']['low_freq'], config['artifact_detection']['sensor']['high_freq']
+    ]
+    raw.filter(freq_limits[0], freq_limits[1])
 
     # Create Epoch object of 1 second to estimate the average std discarding first the muscle artefacts
-    dummy_events = mne.make_fixed_length_events(raw,duration=0.5)
-    raw_epoched = mne.Epochs(raw,events=dummy_events,reject_by_annotation=True,
-                             baseline=None,tmin=0,tmax=0.5)
+    dummy_events = mne.make_fixed_length_events(raw, duration=0.5)
+    raw_epoched = mne.Epochs(raw, events=dummy_events, reject_by_annotation=True, baseline=None, tmin=0, tmax=0.5)
     raw_epoched.drop_bad()
 
     # Get the clean data
     raw_data = raw_epoched.get_data().copy()
 
     # Estimate the std of each channel
-    raw_data_demean = raw_data - raw_data.mean(axis=2)[:,:,np.newaxis]
-    raw_data_std = raw_data_demean.std(axis=2)
+    raw_data_std = raw_data.std(axis=2)
     raw_data_std_average = raw_data_std.mean(axis=0)
 
     # Get the original data
@@ -319,20 +318,18 @@ def sensor_detection(config,bids_path):
     sensor_index = []
 
     # Windows size
-    window_size = int(np.floor(0.1*raw.info['sfreq']))
+    window_size = int(np.floor(0.1 * raw.info['sfreq']))
 
     # Use a sliding windows to find jumps. A jump is defined as a windows with 3*std
     for i in range(raw_data.shape[1] - window_size + 1):
 
         # Get the data of the current window
-        current_window = (raw_data[:,i:i + window_size])
-        current_window = current_window - current_window.mean(axis=1)[:,np.newaxis]
+        current_window = (raw_data[:, i:i + window_size])
 
         # Check if the std of any channel is > 3*raw_std
-        if any(current_window.std(axis=1) > config['artifact_detection']['sensor']['ratio']*raw_data_std_average):
-            sensor_index = sensor_index + np.arange(i,i+window_size).tolist()
+        if any(current_window.std(axis=1) > config['artifact_detection']['sensor']['ratio'] * raw_data_std_average):
+            sensor_index = sensor_index + np.arange(i, i + window_size).tolist()
             sensor_index = list(set(sensor_index))
-
 
     # Extra outputs
     last_sample = raw.last_samp
@@ -340,16 +337,14 @@ def sensor_detection(config,bids_path):
 
     # If you have crop the recordings, put the indexes according to the original number of samples
     if crop_seconds:
-        crop_samples = crop_seconds[0]*sfreq
+        crop_samples = crop_seconds[0] * sfreq
         last_sample = int(last_sample + 2 * crop_samples)
         sensor_index = [int(current_index + crop_samples) for current_index in sensor_index]
-
 
     return sensor_index, last_sample, sfreq
 
 
-
-def other_detection(config,bids_path):
+def other_detection(config, bids_path):
     """
 
     Look for signal with impossible values
@@ -367,15 +362,14 @@ def other_detection(config,bids_path):
     sobi = bids.read_sobi(bids_path, 'sobi_artifacts')
 
     # Parameters for loading EEG or MEG recordings
-    freq_limits = [config['component_estimation']['low_freq'],
-                   config['component_estimation']['high_freq']]
+    freq_limits = [config['component_estimation']['low_freq'], config['component_estimation']['high_freq']]
     crop_seconds = [config['artifact_detection']['other']['crop_seconds']]
     resample_frequency = config['artifact_detection']['other']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load the raw data
-    raw = aimind_mne.prepare_raw(
+    raw = aimind_mne.prepare_eeg(
         config,
         bids_path,
         preload=True,
@@ -387,7 +381,8 @@ def other_detection(config,bids_path):
         exclude_badchannels=True,
         set_annotations=True,
         rereference=True,
-        interpolate_bads=True)
+        interpolate_bads=True
+    )
 
     # If there is EOG or EKG, remove those components
     components_to_exclude = []
@@ -403,30 +398,27 @@ def other_detection(config,bids_path):
         sobi.apply(raw, exclude=components_to_exclude)
 
     # Filter again in the desired frequencies
-    freq_limits = [config['artifact_detection']['other']['low_freq'],
-                   config['artifact_detection']['other']['high_freq']]
+    freq_limits = [
+        config['artifact_detection']['other']['low_freq'], config['artifact_detection']['other']['high_freq']
+    ]
     raw.filter(freq_limits[0], freq_limits[1])
 
     # De-mean the channels
     raw_data = raw.get_data().copy()
-    mean_per_channel = raw_data.mean(axis=1)
-    raw_data_demean = raw_data - mean_per_channel[:, np.newaxis]
 
     # Estimate the average standard deviation of each epoch
-    raw_data_demean_abs = np.abs(raw_data_demean)
+    raw_data_demean_abs = np.abs(raw_data)
 
     # Check if the std of any channel is > 3*raw_std
     other_index = []
     for ichannel in range(raw_data_demean_abs.shape[0]):
 
-        current_channel = raw_data_demean_abs[ichannel,:]
-        current_peaks, _ = find_peaks(
-            current_channel, height=config['artifact_detection']['other']['threshold'])
+        current_channel = raw_data_demean_abs[ichannel, :]
+        current_peaks, _ = find_peaks(current_channel, height=config['artifact_detection']['other']['threshold'])
 
         # If any, add to list
         if len(current_peaks) > 0:
             other_index = other_index + current_peaks.tolist()
-
 
     # Extra outputs
     last_sample = raw.last_samp
@@ -441,8 +433,7 @@ def other_detection(config,bids_path):
     return other_index, last_sample, sfreq
 
 
-
-def create_annotations(peaks_index,last_sample,sfreq,annotation_description,fictional_artifact_duration=0.5):
+def create_annotations(peaks_index, last_sample, sfreq, annotation_description, fictional_artifact_duration=0.5):
     """
 
     Create artifacts with certain duration.
@@ -460,22 +451,21 @@ def create_annotations(peaks_index,last_sample,sfreq,annotation_description,fict
     """
 
     # Transform duration into samples
-    fictional_artifact_duration_in_samples = int(fictional_artifact_duration*sfreq)
+    fictional_artifact_duration_in_samples = int(fictional_artifact_duration * sfreq)
 
     # Convert peaks into artifact
-    new_peaks_index,duration_in_samples = merge_peaks(peaks_index,last_sample,fictional_artifact_duration_in_samples)
+    new_peaks_index, duration_in_samples = merge_peaks(peaks_index, last_sample, fictional_artifact_duration_in_samples)
 
     # Create the MNE annotations
-    new_seconds_start = new_peaks_index/sfreq
-    artifact_duration = duration_in_samples/sfreq
+    new_seconds_start = new_peaks_index / sfreq
+    artifact_duration = duration_in_samples / sfreq
     description = annotation_description
-    annotations = mne.Annotations(new_seconds_start,artifact_duration,description)
+    annotations = mne.Annotations(new_seconds_start, artifact_duration, description)
 
     return annotations
 
 
-
-def merge_peaks(peaks_index,last_sample,fictional_artifact_duration_in_samples):
+def merge_peaks(peaks_index, last_sample, fictional_artifact_duration_in_samples):
     """
 
     Create artifacts with certain duration.
@@ -500,11 +490,12 @@ def merge_peaks(peaks_index,last_sample,fictional_artifact_duration_in_samples):
     new_peak_index = []
 
     # With a sliding windows, save the index where peaks are present within the current sliding window position
-    for i in range(0,len(peaks_vector) - fictional_artifact_duration_in_samples + 1,fictional_artifact_duration_in_samples):
+    for i in range(0, len(peaks_vector) - fictional_artifact_duration_in_samples + 1,
+                   fictional_artifact_duration_in_samples):
 
         # Get the samples within the current window position
         if fictional_artifact_duration_in_samples < last_sample:
-            current_values = peaks_vector[i+1:i+1 + fictional_artifact_duration_in_samples].copy()
+            current_values = peaks_vector[i + 1:i + 1 + fictional_artifact_duration_in_samples].copy()
 
         else:
             current_values = peaks_vector[i + 1:].copy()
@@ -519,17 +510,17 @@ def merge_peaks(peaks_index,last_sample,fictional_artifact_duration_in_samples):
     end_peak_index = np.array(end_peak_index)
 
     # If any windows touch each other, merge them
-    for iartifact in range(1,len(new_peak_index)-1):
-        if (end_peak_index[iartifact] - new_peak_index[iartifact+1]) == 0:
-            new_peak_index[iartifact+1] = new_peak_index[iartifact]
+    for iartifact in range(1, len(new_peak_index) - 1):
+        if (end_peak_index[iartifact] - new_peak_index[iartifact + 1]) == 0:
+            new_peak_index[iartifact + 1] = new_peak_index[iartifact]
             new_peak_index[iartifact] = -1000
 
     # Update the new merged peaks
-    mask =  new_peak_index > 0
+    mask = new_peak_index > 0
     new_peak_index = new_peak_index[mask]
     end_peak_index = end_peak_index[mask]
 
     # Define the artifact duration
     duration_in_samples = end_peak_index - new_peak_index
 
-    return new_peak_index,duration_in_samples
+    return new_peak_index, duration_in_samples

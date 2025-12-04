@@ -12,7 +12,7 @@ Federico Ramírez-Toraño
 import os
 import matplotlib.pyplot as plt
 
-from sEEGnal.tools.mne_tools import prepare_raw
+from sEEGnal.tools.mne_tools import prepare_eeg
 from sEEGnal.tools.bids_tools import create_bids_path, read_sobi
 
 # Select a subjet
@@ -31,7 +31,7 @@ config = {'component_estimation':{}}
 config['component_estimation']['notch_frequencies'] = [50, 100, 150, 200, 250]
 
 # Load the clean data
-clean_data = prepare_raw(
+clean_data = prepare_eeg(
         config,
         bids_path,
         preload=True,

@@ -19,15 +19,12 @@ import mne_bids
 
 from sEEGnal.io.read_source_files import read_source_files
 
-
-
 # Set the output levels
 mne.utils.set_log_level(verbose='ERROR')
 
 
-
 # Modules
-def standardize(config,current_file,bids_path):
+def standardize(config, current_file, bids_path):
     """
 
     Checks the type of file to standardize
@@ -48,41 +45,38 @@ def standardize(config,current_file,bids_path):
         try:
 
             # Standardize
-            bids_basename = standardize_eeg_file(config,current_file, bids_path)
+            bids_basename = standardize_eeg_file(config, current_file, bids_path)
 
             # Save the results
             now = dt.now(timezone.utc)
             formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
-            results = {'result': 'ok',
-                       'file': current_file,
-                       'bids_basename': bids_basename,
-                       "date":formatted_now
-                       }
+            results = {'result': 'ok', 'file': current_file, 'bids_basename': bids_basename, "date": formatted_now}
 
         except Exception as e:
 
             # Save the error
             now = dt.now(timezone.utc)
             formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
-            results = {'result': 'error',
-                       'file': current_file,
-                       'details': f"Exception: {str(e)}, {traceback.format_exc()}",
-                       'date': formatted_now
-                       }
+            results = {
+                'result': 'error',
+                'file': current_file,
+                'details': f"Exception: {str(e)}, {traceback.format_exc()}",
+                'date': formatted_now
+            }
 
     else:
 
         # Not accepted type to process
         now = dt.now(timezone.utc)
         formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
-        results = {'result':'error',
-                   'file':current_file,
-                   'details': 'Not accepted type of file to process',
-                   'date': formatted_now
-                   }
+        results = {
+            'result': 'error',
+            'file': current_file,
+            'details': 'Not accepted type of file to process',
+            'date': formatted_now
+        }
 
     return results
-
 
 
 def standardize_eeg_file(config, current_file, bids_path):
@@ -100,8 +94,8 @@ def standardize_eeg_file(config, current_file, bids_path):
     """
 
     # Reads the data as an MNE object.
-    source_filepath = os.path.join(config['path']['sourcedata'],current_file)
-    mnedata = read_source_files(config,source_filepath)
+    source_filepath = os.path.join(config['path']['sourcedata'], current_file)
+    mnedata = read_source_files(config, source_filepath)
 
     # Include and exclude channels explicitly
     channels_to_include = config['global']['channels_to_include']
@@ -115,11 +109,7 @@ def standardize_eeg_file(config, current_file, bids_path):
     mnedata.info['subject_info']['his_id'] = bids_path.subject
 
     # Writes the data into the BIDS path.
-    mne_bids.write_raw_bids(
-        mnedata, bids_path,
-        allow_preload=True,
-        format='BrainVision',
-        overwrite=True)
+    mne_bids.write_raw_bids(mnedata, bids_path, allow_preload=True, format='BrainVision', overwrite=True)
 
     # Reads the channels information.
     ch_tsv = bids_path.copy().update(suffix='channels', extension='.tsv')
@@ -141,10 +131,3 @@ def standardize_eeg_file(config, current_file, bids_path):
     mne_bids.tsv_handler._to_tsv(ch_data, ch_tsv)
 
     return bids_path.basename
-
-
-
-
-
-
-
