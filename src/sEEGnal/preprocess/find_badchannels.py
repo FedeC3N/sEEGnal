@@ -18,36 +18,6 @@ import sEEGnal.tools.mne_tools as aimind_mne
 
 
 # Modules
-def high_impedance_detection(config, bids_path):
-    """
-
-    Look for badchannels based on their impedance
-
-    :arg
-    config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
-
-    :returns
-    List of badchannels
-
-    """
-
-    # Reads the channels information.
-    channels = bids.read_chan(bids_path)
-
-    # Identifies the channels with high impedance (higher than 200).
-    hits = channels['impedance'] > config['badchannel_detection']['high_impedance']['threshold']
-    high_impedance_badchannels = list(channels.loc[hits, 'name'])
-
-    # Remove the excluded channels
-    channels_to_exclude = config['global']['channels_to_exclude']
-    high_impedance_badchannels = [
-        current_channel for current_channel in high_impedance_badchannels if current_channel not in channels_to_exclude
-    ]
-
-    return high_impedance_badchannels
-
-
 def impossible_amplitude_detection(config, bids_path, badchannels):
     """
 

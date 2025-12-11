@@ -22,7 +22,7 @@ def read_source_files(config, source_filepath):
     if extension == 'vhdr':
 
         # Read the file
-        mnedata = mne.io.read_raw(source_filepath, preload=True)
+        mnedata = mne.io.read_raw_brainvision(source_filepath, preload=True)
 
         # Create RawArray
         mnedata = mne.io.RawArray(mnedata.get_data(), mnedata.info)

@@ -119,12 +119,6 @@ def eeg_badchannel_detection(config, bids_path):
     badchannels = []
     badchannels_description = []
 
-    # Find channels with high impedance
-    high_impedance_badchannels = find_badchannels.high_impedance_detection(config, bids_path)
-    badchannels.extend(high_impedance_badchannels)
-    current_badchannel_description = ['bad_high_impedance' for i in range(len(high_impedance_badchannels))]
-    badchannels_description.extend(current_badchannel_description)
-
     # Find channels with biologically impossible amplitude
     impossible_amplitude_badchannels = find_badchannels.impossible_amplitude_detection(config, bids_path, badchannels)
     badchannels.extend(impossible_amplitude_badchannels)
