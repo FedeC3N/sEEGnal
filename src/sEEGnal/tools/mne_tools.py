@@ -13,11 +13,12 @@ import mne
 import numpy
 import scipy.signal
 
-import sEEGnal.tools.bids_tools as bids
 import sEEGnal.tools.bss as bss
 import sEEGnal.tools.tools as tools
 import sEEGnal.tools.signal as signal
 import sEEGnal.tools.spheres as spheres
+import sEEGnal.tools.bids_tools as bids
+from sEEGnal.io.read_source_files import read_source_files
 
 # Lists the valid MNE objects.
 mnevalid = (mne.io.BaseRaw, mne.BaseEpochs)
@@ -465,7 +466,9 @@ def prepare_eeg(
     resample_frequency=False,
     rereference=False,
     rereference_method='average',
-    interpolate_bads=False
+    interpolate_bads=False,
+    components_to_include=None,
+    components_to_exclude=None
 ):
 
     if channels_to_include is None:
@@ -474,10 +477,7 @@ def prepare_eeg(
         channels_to_exclude = []
 
     # Read the file
-    raw = mne.io.read_raw_brainvision(bids_path, preload=preload)
-
-    # Create RawArray
-    raw = mne.io.RawArray(raw.get_data(), raw.info)
+    raw = read_source_files(str(bids_path.fpath))
 
     # Set montage
     raw.set_montage('standard_1005', on_missing='ignore')

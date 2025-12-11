@@ -95,7 +95,7 @@ def standardize_eeg_file(config, current_file, bids_path):
 
     # Reads the data as an MNE object.
     source_filepath = os.path.join(config['path']['sourcedata'], current_file)
-    mnedata = read_source_files(config, source_filepath)
+    mnedata = read_source_files(source_filepath)
 
     # Include and exclude channels explicitly
     channels_to_include = config['global']['channels_to_include']

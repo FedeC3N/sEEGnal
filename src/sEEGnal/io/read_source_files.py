@@ -13,7 +13,7 @@ import mne
 import sEEGnal.io.eep as eep
 
 
-def read_source_files(config, source_filepath):
+def read_source_files(source_filepath):
 
     # Detect the EEG file type based on the extension
     extension = source_filepath.split('.')[-1]
