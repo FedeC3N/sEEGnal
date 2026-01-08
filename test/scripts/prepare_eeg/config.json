@@ -1,0 +1,159 @@
+{
+
+
+    "global":{
+        "channels_to_include": [
+				"Fp1", "Fpz", "Fp2", "F7", "F3", "Fz", "F4", "F8",
+				"FC5", "FC1", "FC2", "FC6", "T7", "C3", "Cz", "C4", "T8",
+				"CP5", "CP1", "CP2", "CP6", "P7", "P3", "Pz", "P4", "P8",
+				"POz", "O1", "O2",
+				"AF7", "AF3", "AF4", "AF8",
+				"F5", "F1", "F2", "F6",
+				"FC3", "FCz", "FC4",
+				"C5", "C1", "C2", "C6",
+				"CP3", "CP4",
+				"P5", "P1", "P2", "P6",
+				"PO3", "PO4",
+				"FT7", "FT8",
+				"TP7", "TP8",
+				"PO7", "PO8"],
+		"channels_to_exclude": [
+				"VEOGL", "VEOGU", "HEOGR", "HEOGL",
+				"M1", "M2"],
+        "verbose": ""
+    },
+
+
+	"visualization":{
+        "low_freq_limit": 2,
+		"high_freq_limit":45
+	},
+
+
+	"component_estimation":{
+		"low_freq": 1,
+		"high_freq": 100,
+		"resampled_frequency":500,
+		"notch_frequencies": [50, 100, 150, 200, 250],
+		"unclear_threshold": 0.7,
+		"epoch_definition":{
+			"length": 4,
+			"overlap": 0,
+			"padding": 2
+		}
+	},
+
+
+	"standardization":{
+	},
+
+
+	"badchannel_detection":{
+		"notch_frequencies": [50, 100, 150, 200, 250],
+		"crop_seconds": 10,
+		"high_impedance": {
+			"threshold": 200
+		},
+		"impossible_amplitude": {
+			"low_freq": 2,
+			"high_freq": 150,
+			"low_threshold":0.000001,
+			"high_threshold":0.0005,
+			"percentage_threshold": 0.5,
+			"epoch_definition":{
+				"length": 1,
+				"overlap": 0,
+				"padding": 0
+			}
+		},
+		"pow_spectrum": {
+			"threshold": 3,
+			"low_freq":45,
+			"high_freq":55,
+			"percentage_threshold": 0.5,
+			"epoch_definition":{
+				"length": 4,
+				"overlap": 0,
+				"padding": 2
+			}
+		},
+		"gel_bridge": {
+			"threshold":0.999,
+			"low_freq": 8,
+			"high_freq": 45,
+			"neighbour_distance": 0.05,
+			"seq_threshold":0.5,
+			"epoch_definition":{
+				"length": 4,
+				"overlap": 0,
+				"padding": 0
+			}
+		},
+		"high_deviation":{
+			"threshold": 3,
+			"low_freq":2,
+			"high_freq":45,
+			"percentage_threshold": 0.5,
+			"epoch_definition":{
+				"length": 4,
+				"overlap": 0,
+				"padding": 2
+			}
+		}
+	},
+
+
+	"artifact_detection":{
+		"notch_frequencies": [50, 100, 150, 200, 250],
+        "frontal_channels": ["Fp1","Fpz","Fp2","AF7","AF8"],
+		"muscle":{
+			"low_freq":110,
+			"high_freq":145,
+			"crop_seconds": 10,
+			"resampled_frequency":500,
+			"threshold": 10,
+			"epoch_definition":{
+				"length": 4,
+				"overlap": 0,
+				"padding": 2
+			}
+		},
+		"sensor":{
+			"low_freq":0.5,
+			"high_freq":2,
+			"crop_seconds": 10,
+			"resampled_frequency":500,
+			"threshold": 0.99,
+			"ratio": 5,
+			"epoch_definition":{
+				"length": 4,
+				"overlap": 0,
+				"padding": 2
+			}
+		},
+		"other":{
+			"low_freq":2,
+			"high_freq":45,
+			"crop_seconds": 10,
+			"resampled_frequency":500,
+			"threshold": 0.0005,
+			"epoch_definition":{
+				"length": 4,
+				"overlap": 0,
+				"padding": 2
+			}
+		},
+		"EOG":{
+			"low_freq":2,
+			"high_freq":5,
+			"crop_seconds": 10,
+			"resampled_frequency":500,
+			"ratio": 10,
+			"epoch_definition":{
+				"length": 4,
+				"overlap": 0,
+				"padding": 2
+			}
+		}
+	}
+}

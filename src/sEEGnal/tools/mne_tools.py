@@ -455,89 +455,104 @@ def get_epochs(raw, annot=None, length=4, overlap=None, padding=None, preload=Fa
 def prepare_eeg(
     config,
     bids_path,
-    preload=True,
-    channels_to_include=None,
-    channels_to_exclude=None,
+    preload=False,
+    channels_to_include=['all'],
+    channels_to_exclude=[],
+    apply_sobi = False,
+    resample_frequency=False,
+    notch_filter=False,
     freq_limits=None,
     crop_seconds=None,
     exclude_badchannels=False,
-    set_annotations=False,
-    epoch=None,
-    resample_frequency=False,
-    rereference=False,
-    rereference_method='average',
     interpolate_bads=False,
-    components_to_include=None,
-    components_to_exclude=None
+    set_annotations=False,
+    rereference=False,
+    epoch=None
 ):
 
-    if channels_to_include is None:
-        channels_to_include = ['all']
-    if channels_to_exclude is None:
-        channels_to_exclude = []
+    ##################################################################
+    # Load EEG and montage
+    ##################################################################
 
     # Read the file
-    raw = read_source_files(str(bids_path.fpath))
+    raw = read_source_files(str(bids_path.fpath),preload=preload)
 
     # Set montage
     raw.set_montage('standard_1005', on_missing='ignore')
-
-    # Remove 50 Hz noise (and harmonics)
-    raw.notch_filter(config['component_estimation']['notch_frequencies'])
 
     # Include and exclude channels explicitly
     raw.pick(channels_to_include)
     raw.drop_channels(channels_to_exclude, on_missing='ignore')
 
-    # Add the annotations if requested
-    if set_annotations:
-        # Reads the annotations.
-        annotations = bids.read_annot(bids_path)
+    ##################################################################
+    # Include / exclude components
+    ##################################################################
 
-        # Adds the annotations to the MNE object.
-        if len(annotations):
-            raw.set_annotations(annotations)
+    if apply_sobi:
 
-    # Remove the beggining and the end of the recording
-    if crop_seconds:
-        if len(crop_seconds) == 1:
-            raw.crop(tmin=crop_seconds[0], tmax=raw.times[-1] - crop_seconds[0])
-        elif len(crop_seconds) == 2:
-            raw.crop(tmin=crop_seconds[0], tmax=raw.times[-1] - crop_seconds[1])
-        else:
-            raise ValueError("The crop vector must have one or two elements")
-            # print('The crop vector must have one or two elements')
+        # Load the SOBI
+        # Read the ICA information
+        sobi = bids.read_sobi(bids_path, apply_sobi['desc'])
 
-    # Epoch the data
-    # if (len(epoch.keys()) == 3):
-    if epoch:
-        if ('length' in epoch.keys()) and ('overlap' in epoch.keys()) and ('padding' in epoch.keys()):
-            raw = get_epochs(
-                raw,
-                annot=raw.annotations,
-                length=epoch['length'],
-                overlap=epoch['overlap'],
-                padding=epoch['padding'],
-                preload=preload
-            )
-        else:
-            raise ValueError("Dictionary definition must be {'length':[],'overlap':[],'padding':[]}")
+        # IClabel recommend to filter between 1 and 100
+        raw.filter(1, 100)
 
+        # Select the components and remove
+        IClabel_componets = ['brain', 'muscle', 'eog', 'ecg', 'line_noise',
+                             'ch_noise', 'other']
+        include = set(apply_sobi['components_to_include'] or IClabel_componets)
+        exclude = set(apply_sobi['components_to_exclude'] or [])
+        final_inclusion_list = list(include - exclude)
+
+        # If any to apply
+        if len(IClabel_componets) != len(final_inclusion_list):
+
+            final_inclusion_index = [sobi.labels_[current_label] for
+                                     current_label in final_inclusion_list]
+            final_inclusion_index = sum(final_inclusion_index, [])
+
+            # Apply
+            sobi.apply(raw, include=final_inclusion_index)
+
+    ##################################################################
     # Downsample
+    ##################################################################
+
     if resample_frequency:
         raw.resample(resample_frequency)
+
+    ##################################################################
+    # Filters
+    ##################################################################
+
+    # Remove 50 Hz noise (and harmonics)
+    if notch_filter:
+
+        # Check the maximum frequency I can use
+        notch_freqs = [current_freq for current_freq in config['component_estimation']['notch_frequencies']
+                       if current_freq < resample_frequency/2 ]
+
+        # Apply the filter if any
+        if len(notch_freqs) > 0:
+            raw.notch_filter(notch_freqs)
 
     # Filter the data
     if freq_limits:
         if len(freq_limits) != 2:
-            raise ValueError("You need to define two frequency limits to filter")
+            raise ValueError(
+                "You need to define two frequency limits to filter")
             # print('You need to define two frequency limits to filter')
         else:
+
+            # Check the maximum frequency I can use
+            if freq_limits[1] > raw.info['sfreq']/2:
+                freq_limits[1] = raw.info['sfreq']/2 - 0.01
+
             raw.filter(freq_limits[0], freq_limits[1])
 
-    # Remove the padding after filtering
-    if epoch:
-        raw.crop(tmin=0, tmax=raw.times[-1] - epoch['padding'])
+    ##################################################################
+    # Remove bad channels
+    ##################################################################
 
     if exclude_badchannels:
 
@@ -558,26 +573,63 @@ def prepare_eeg(
         else:
             raw = raw.pick(None, exclude='bads')
 
+    ##################################################################
+    # Add the annotations if requested
+    ##################################################################
+
+    if set_annotations:
+
+        # Reads the annotations.
+        annotations = bids.read_annot(bids_path)
+
+        # Adds the annotations to the MNE object.
+        if len(annotations):
+            raw.set_annotations(annotations)
+
+    ##################################################################
+    # Crop (in seconds)
+    ##################################################################
+
+    if crop_seconds:
+        raw.crop(tmin=crop_seconds, tmax=raw.times[-1] - crop_seconds)
+
+    ##################################################################
     # Set reference
-    if rereference:
+    ##################################################################
 
-        # Average
-        if rereference_method == 'average':
-            raw.set_eeg_reference(ref_channels='average')
+    # Average
+    if rereference == 'average':
+        raw.set_eeg_reference(ref_channels='average')
 
-        # Median
-        if rereference_method == 'median':
+    # Median
+    if rereference == 'median':
+        # Get the data (shape: n_epochs × n_channels × n_times)
+        data = raw.get_data()
 
-            # Get the data (shape: n_epochs × n_channels × n_times)
-            data = raw.get_data()
+        # Compute the median across channels
+        median_ref = numpy.median(data, axis=1, keepdims=True)
 
-            # Compute the median across channels
-            median_ref = numpy.median(data, axis=1, keepdims=True)
+        # Subtract the median reference from all channels
+        data -= median_ref
 
-            # Subtract the median reference from all channels
-            data -= median_ref
+        # Put the rereferenced data back into the epochs object
+        raw._data = data
 
-            # Put the rereferenced data back into the epochs object
-            raw._data = data
+    ##################################################################
+    # Epoch the data
+    ##################################################################
+
+    if epoch:
+        if ('length' in epoch.keys()) and ('overlap' in epoch.keys()) and ('padding' in epoch.keys()):
+            raw = get_epochs(
+                raw,
+                annot=raw.annotations,
+                length=epoch['length'],
+                overlap=epoch['overlap'],
+                padding=epoch['padding'],
+                preload=preload
+            )
+        else:
+            raise ValueError("Dictionary definition must be {'length':[],'overlap':[],'padding':[]}")
 
     return raw

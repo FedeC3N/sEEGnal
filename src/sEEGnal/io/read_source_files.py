@@ -13,7 +13,7 @@ import mne
 import sEEGnal.io.eep as eep
 
 
-def read_source_files(source_filepath):
+def read_source_files(source_filepath,preload=True):
 
     # Detect the EEG file type based on the extension
     extension = source_filepath.split('.')[-1]
@@ -22,7 +22,7 @@ def read_source_files(source_filepath):
     if extension == 'vhdr':
 
         # Read the file
-        mnedata = mne.io.read_raw_brainvision(source_filepath, preload=True)
+        mnedata = mne.io.read_raw_brainvision(source_filepath, preload=preload)
 
         # Create RawArray
         mnedata = mne.io.RawArray(mnedata.get_data(), mnedata.info)
