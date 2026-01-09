@@ -17,7 +17,7 @@ import sEEGnal.tools.mne_tools as mne_tools
 
 
 # Modules
-def EOG_detection(config, bids_path, frontal_channels='all'):
+def EOG_detection(config, bids_path):
     """
 
     Detect EOG artifacts
@@ -85,6 +85,7 @@ def EOG_detection(config, bids_path, frontal_channels='all'):
     background_average_deviation = background_raw_data.std(axis=1).mean()
 
     # Select EOG channels
+    frontal_channels = config['artifact_detection']["frontal_channels"]
     frontal_channels = [
         current_channel for current_channel in frontal_channels if current_channel in channels_to_include
     ]

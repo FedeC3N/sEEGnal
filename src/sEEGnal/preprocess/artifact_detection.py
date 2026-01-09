@@ -136,9 +136,7 @@ def eeg_artifact_detection(config, bids_path):
 
     # EOG
     # Select the frontal channels
-    EOG_annotations = EOG_detection(
-        config, bids_path, frontal_channels=config['artifact_detection']["frontal_channels"]
-    )
+    EOG_annotations = EOG_detection(config, bids_path)
 
     # Sensor (jumps)
     other_annotations = other_detection(config, bids_path)
@@ -232,7 +230,7 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
     _ = bids.write_sobi(bids_path, sobi, derivatives_label)
 
 
-def EOG_detection(config, bids_path, frontal_channels='all'):
+def EOG_detection(config, bids_path):
     """
 
     Detect EOG artifacts
@@ -248,7 +246,7 @@ def EOG_detection(config, bids_path, frontal_channels='all'):
     """
 
     # Find EOG aritfacts index
-    EOG_index, last_sample, sfreq = find_artifacts.EOG_detection(config, bids_path, frontal_channels=frontal_channels)
+    EOG_index, last_sample, sfreq = find_artifacts.EOG_detection(config, bids_path)
 
     # If any artifact
     if len(EOG_index) > 0:
