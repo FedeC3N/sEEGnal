@@ -529,7 +529,7 @@ def prepare_eeg(
     if notch_filter:
 
         # Check the maximum frequency I can use
-        notch_freqs = [current_freq for current_freq in config['component_estimation']['notch_frequencies']
+        notch_freqs = [current_freq for current_freq in config['global']['notch_frequencies']
                        if current_freq < resample_frequency/2 ]
 
         # Apply the filter if any

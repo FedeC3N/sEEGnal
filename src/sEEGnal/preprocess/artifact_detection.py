@@ -20,7 +20,7 @@ import mne
 import mne_icalabel as iclabel
 
 import sEEGnal.tools.bids_tools as bids
-import sEEGnal.tools.mne_tools as mnetools
+import sEEGnal.tools.mne_tools as mne_tools
 import sEEGnal.preprocess.find_artifacts as find_artifacts
 
 # Set the output levels
@@ -165,9 +165,12 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
     """
 
     # Parameters for loading EEG recordings
-    freq_limits = [config['component_estimation']['low_freq'], config['component_estimation']['high_freq']]
-    resample_frequency = config['component_estimation']['resampled_frequency']
-    epoch_definition = config['component_estimation']['epoch_definition']
+    freq_limits         = [
+        config['component_estimation']['low_freq'],
+        config['component_estimation']['high_freq']
+    ]
+    crop_seconds = config['component_estimation']['crop_seconds']
+    resample_frequency  = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
@@ -178,7 +181,7 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
         set_annotations = True
 
     # Load raw EEG
-    raw = mnetools.prepare_eeg(
+    raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
@@ -186,15 +189,15 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
         channels_to_exclude=channels_to_exclude,
         resample_frequency=resample_frequency,
         freq_limits=freq_limits,
+        crop_seconds=crop_seconds,
         exclude_badchannels=True,
+        interpolate_bads=True,
         set_annotations=set_annotations,
-        epoch=epoch_definition,
-        rereference=True,
-        interpolate_bads=True
+        rereference='average'
     )
 
     # Run SOBI
-    sobi = mnetools.sobi(raw)
+    sobi = mne_tools.sobi(raw)
 
     # Label de ICs
     _ = iclabel.label_components(raw, sobi, method='iclabel')

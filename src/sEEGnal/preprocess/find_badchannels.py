@@ -10,8 +10,8 @@ Created on March 26 2024
 """
 
 # Imports
-import scipy
 import numpy as np
+from scipy.stats import median_abs_deviation
 
 import sEEGnal.tools.bids_tools as bids
 import sEEGnal.tools.mne_tools as aimind_mne
@@ -33,13 +33,14 @@ def impossible_amplitude_detection(config, bids_path, badchannels):
     """
 
     # Parameters for loading EEG  recordings
-    freq_limits = [
+    channels_to_include = config['global']['channels_to_include']
+    channels_to_exclude = config['global']['channels_to_exclude']
+    freq_limits         = [
         config['badchannel_detection']['impossible_amplitude']['low_freq'],
         config['badchannel_detection']['impossible_amplitude']['high_freq']
     ]
-    channels_to_include = config['global']["channels_to_include"]
-    channels_to_exclude = config['global']["channels_to_exclude"]
-    epoch_definition = config['badchannel_detection']['impossible_amplitude']["epoch_definition"]
+    crop_seconds        = config['badchannel_detection']['crop_seconds']
+    epoch_definition    = config['badchannel_detection']['impossible_amplitude']['epoch_definition']
 
     # Load the raw data
     raw = aimind_mne.prepare_eeg(
@@ -48,9 +49,10 @@ def impossible_amplitude_detection(config, bids_path, badchannels):
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
+        notch_filter=True,
         freq_limits=freq_limits,
+        crop_seconds=crop_seconds,
         exclude_badchannels=True,
-        set_annotations=False,
         epoch=epoch_definition,
         rereference=False
     )
@@ -62,15 +64,15 @@ def impossible_amplitude_detection(config, bids_path, badchannels):
     raw_data_std = raw_data.std(axis=2)
 
     # Use the low and high threshold to define impossible amplitudes
-    hits_low = raw_data_std < config['badchannel_detection']['impossible_amplitude']["low_threshold"]
-    hits_high = raw_data_std > config['badchannel_detection']['impossible_amplitude']["high_threshold"]
+    hits_low = raw_data_std < config['badchannel_detection']['impossible_amplitude']['low_threshold']
+    hits_high = raw_data_std > config['badchannel_detection']['impossible_amplitude']['high_threshold']
 
     # Get the number of occurrences per channel in percentage
     hits = hits_low | hits_high
     hits = hits.sum(axis=0) / raw_data_std.shape[0]
 
     # Define as badchannel if many epochs are bads
-    hits = np.flatnonzero(hits > config['badchannel_detection']['impossible_amplitude']["percentage_threshold"])
+    hits = np.flatnonzero(hits > config['badchannel_detection']['impossible_amplitude']['percentage_threshold'])
     impossible_amplitude_badchannels = [raw.ch_names[hit] for hit in hits]
 
     return impossible_amplitude_badchannels
@@ -91,14 +93,14 @@ def power_spectrum_detection(config, bids_path, badchannels):
     """
 
     # Parameters for loading EEG  recordings
-    freq_limits = [
+    freq_limits         = [
         config['badchannel_detection']['pow_spectrum']['low_freq'],
         config['badchannel_detection']['pow_spectrum']['high_freq']
     ]
-    channels_to_include = config['global']["channels_to_include"]
-    channels_to_exclude = config['global']["channels_to_exclude"]
-    crop_seconds = [config['badchannel_detection']["crop_seconds"]]
-    epoch_definition = config['badchannel_detection']['pow_spectrum']['epoch_definition']
+    channels_to_include = config['global']['channels_to_include']
+    channels_to_exclude = config['global']['channels_to_exclude']
+    crop_seconds        = config['badchannel_detection']['crop_seconds']
+    epoch_definition    = config['badchannel_detection']['pow_spectrum']['epoch_definition']
 
     # Load the raw data
     raw = aimind_mne.prepare_eeg(
@@ -110,37 +112,34 @@ def power_spectrum_detection(config, bids_path, badchannels):
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
         exclude_badchannels=True,
-        set_annotations=False,
         epoch=epoch_definition,
-        rereference=False
     )
 
     # Compute the power spectrum
-    psd = raw.compute_psd(method='welch', fmin=freq_limits[0], fmax=freq_limits[1], average='mean')
-    psd_data = psd.get_data().copy()
+    psd             = raw.compute_psd(method='welch', fmin=freq_limits[0], fmax=freq_limits[1], average='mean')
+    band_power      = np.trapz(psd.get_data(),psd.freqs,axis=2)
+    band_power_log  = np.log10(band_power)
 
-    # Compute the variance (equivalent to power)
-    raw_data = raw.get_data().copy()
-    var_data = raw_data.var(axis=2)
+    # Create the counter of bad epochs
+    bad_epochs      = np.zeros_like(band_power_log, dtype=bool)
 
-    # Get the average of each epoch and channel
-    hits = np.empty((var_data.shape[0], var_data.shape[1]))
-    for ichannel in range(var_data.shape[1]):
+    # For each window, find the outliers
+    for iwindow in range(band_power_log.shape[0]):
 
-        # Remove the current channel to estimate the average value of the power spectrum in the rest of the recording
-        current_channel_pow = var_data[:, ichannel]
-        rest_pow = np.delete(var_data, ichannel, 1)
-        rest_pow = rest_pow.sum(axis=1).mean(axis=0)
+        # Estimate the median and the Median Absolute Deviation
+        median  = np.median(band_power_log[iwindow,:])
+        mad     = median_abs_deviation(band_power_log[iwindow,:])
 
-        # Find the epochs where the current channel is above the threshold
-        threshold = config['badchannel_detection']['pow_spectrum']['threshold'] * rest_pow
-        hits[:, ichannel] = current_channel_pow > threshold
+        # Define bad channels using Z-score
+        bad_epochs[iwindow,:] = ((band_power_log[iwindow,:] - median) / mad >
+                               config['badchannel_detection']['pow_spectrum']['threshold'])
+
 
     # Get the number of occurrences per channel in percentage
-    hits = hits.sum(axis=0) / psd_data.shape[0]
+    hits = bad_epochs.sum(axis=0) / bad_epochs.shape[0]
 
     # Define as badchannel if many epochs are bads
-    hits = np.flatnonzero(hits > config['badchannel_detection']['pow_spectrum']["percentage_threshold"])
+    hits = np.flatnonzero(hits > config['badchannel_detection']['pow_spectrum']['percentage_threshold'])
     power_spectrum_badchannels = [raw.ch_names[hit] for hit in hits]
 
     return power_spectrum_badchannels
@@ -164,14 +163,19 @@ def gel_bridge_detection(config, bids_path, badchannels):
     # Create empty list to append badchannels
     gel_bridge_badchannels = []
 
-    # Read the ICA information
-    sobi = bids.read_sobi(bids_path, 'sobi-badchannels')
-
     # Parameters for loading EEG  recordings
-    freq_limits = [config['component_estimation']['low_freq'], config['component_estimation']['high_freq']]
-    channels_to_include = config['global']["channels_to_include"]
-    channels_to_exclude = config['global']["channels_to_exclude"]
-    crop_seconds = [config['badchannel_detection']["crop_seconds"]]
+    sobi                = {
+        'desc': 'sobi-badchannels',
+        'components_to_include': [],
+        'components_to_exclude': ['eog','ecg']
+    }
+    freq_limits         = [
+        config['badchannel_detection']['gel_bridge']['low_freq'],
+        config['badchannel_detection']['gel_bridge']['high_freq']
+    ]
+    channels_to_include = config['global']['channels_to_include']
+    channels_to_exclude = config['global']['channels_to_exclude']
+    crop_seconds        = config['badchannel_detection']['crop_seconds']
 
     # Load the raw EEG
     raw = aimind_mne.prepare_eeg(
@@ -180,32 +184,12 @@ def gel_bridge_detection(config, bids_path, badchannels):
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
+        apply_sobi=sobi,
         freq_limits=freq_limits,
+        notch_filter=True,
         crop_seconds=crop_seconds,
-        exclude_badchannels=True,
-        set_annotations=False,
-        rereference=False
+        exclude_badchannels=True
     )
-
-    # If there is EOG or EKG, remove those components
-    components_to_exclude = []
-    if 'eog' in sobi.labels_.keys():
-        components_to_exclude.append(sobi.labels_['eog'])
-    if 'ecg' in sobi.labels_.keys():
-        components_to_exclude.append(sobi.labels_['ecg'])
-    components_to_exclude = sum(components_to_exclude, [])
-
-    # If desired components, apply them.
-    if len(components_to_exclude) > 0:
-        # Remove the eog components
-        sobi.apply(raw, exclude=components_to_exclude)
-
-    # Filter again in the desired frequencies
-    freq_limits = [
-        config['badchannel_detection']['gel_bridge']['low_freq'],
-        config['badchannel_detection']['gel_bridge']['high_freq']
-    ]
-    raw.filter(freq_limits[0], freq_limits[1])
 
     # Get the data
     raw_data = raw.get_data().copy()
@@ -261,14 +245,19 @@ def high_deviation_detection(config, bids_path, badchannels):
 
     """
 
-    # Read the ICA information
-    sobi = bids.read_sobi(bids_path, 'sobi-badchannels')
-
     # Parameters for loading EEG  recordings
-    freq_limits = [config['component_estimation']['low_freq'], config['component_estimation']['high_freq']]
-    channels_to_include = config['global']["channels_to_include"]
-    channels_to_exclude = config['global']["channels_to_exclude"]
-    crop_seconds = [config['badchannel_detection']["crop_seconds"]]
+    sobi = {
+        'desc': 'sobi-badchannels',
+        'components_to_include': [],
+        'components_to_exclude': ['eog', 'ecg']
+    }
+    freq_limits = [
+        config['badchannel_detection']['high_deviation']['low_freq'],
+        config['badchannel_detection']['high_deviation']['high_freq']
+    ]
+    channels_to_include = config['global']['channels_to_include']
+    channels_to_exclude = config['global']['channels_to_exclude']
+    crop_seconds = config['badchannel_detection']['crop_seconds']
     epoch_definition = config['badchannel_detection']['high_deviation']['epoch_definition']
 
     # Load the raw data
@@ -278,33 +267,12 @@ def high_deviation_detection(config, bids_path, badchannels):
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
+        apply_sobi=sobi,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
         exclude_badchannels=True,
-        set_annotations=False,
         epoch=epoch_definition,
-        rereference=False
     )
-
-    # If there is EOG or EKG, remove those components
-    components_to_exclude = []
-    if 'eog' in sobi.labels_.keys():
-        components_to_exclude.append(sobi.labels_['eog'])
-    if 'ecg' in sobi.labels_.keys():
-        components_to_exclude.append(sobi.labels_['ecg'])
-    components_to_exclude = sum(components_to_exclude, [])
-
-    # If desired components, apply them.
-    if len(components_to_exclude) > 0:
-        # Remove the eog components
-        sobi.apply(raw, exclude=components_to_exclude)
-
-    # Filter again in the desired frequencies
-    freq_limits = [
-        config['badchannel_detection']['high_deviation']['low_freq'],
-        config['badchannel_detection']['high_deviation']['high_freq']
-    ]
-    raw.filter(freq_limits[0], freq_limits[1])
 
     # Get a new copy of the data
     raw_data = raw.get_data().copy()
@@ -326,7 +294,7 @@ def high_deviation_detection(config, bids_path, badchannels):
     hits = hits.sum(axis=0) / hits.shape[0]
 
     # Define as badchannel if many epochs are bads
-    hits = np.flatnonzero(hits > config['badchannel_detection']['high_deviation']["percentage_threshold"])
+    hits = np.flatnonzero(hits > config['badchannel_detection']['high_deviation']['percentage_threshold'])
     high_deviation_badchannels = [raw.ch_names[hit] for hit in hits]
 
     return high_deviation_badchannels

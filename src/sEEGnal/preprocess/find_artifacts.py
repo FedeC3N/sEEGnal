@@ -13,7 +13,7 @@ import numpy as np
 from scipy.signal import find_peaks
 
 import sEEGnal.tools.bids_tools as bids
-import sEEGnal.tools.mne_tools as aimind_mne
+import sEEGnal.tools.mne_tools as mne_tools
 
 
 # Modules
@@ -31,47 +31,36 @@ def EOG_detection(config, bids_path, frontal_channels='all'):
 
     """
 
-    # Read the ICA information
-    sobi = bids.read_sobi(bids_path, 'sobi')
-
-    # Parameters for loading EEG or MEG recordings
-    freq_limits = [config['artifact_detection']['EOG']['low_freq'], config['artifact_detection']['EOG']['high_freq']]
-    crop_seconds = [config['artifact_detection']['EOG']['crop_seconds']]
-    resample_frequency = config['artifact_detection']['EOG']['resampled_frequency']
+    # Parameters for loading EEG recordings
+    sobi                = {
+        'desc': 'sobi',
+        'components_to_include': [],
+        'components_to_exclude': ['eog','ecg']
+    }
+    freq_limits         = [
+        config['artifact_detection']['EOG']['low_freq'],
+        config['artifact_detection']['EOG']['high_freq']
+    ]
+    crop_seconds        = config['artifact_detection']['EOG']['crop_seconds']
+    resample_frequency  = config['artifact_detection']['EOG']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load the raw data
-    raw = aimind_mne.prepare_eeg(
+    raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
+        apply_sobi=sobi,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
         resample_frequency=resample_frequency,
         exclude_badchannels=True,
-        set_annotations=False,
-        rereference=True,
-        interpolate_bads=True
+        interpolate_bads=True,
+        rereference='average'
     )
-
-    # If there is EOG or EKG, remove those components
-    components_to_exclude = []
-    if 'eog' in sobi.labels_.keys():
-        components_to_exclude.append(sobi.labels_['eog'])
-    if 'ecg' in sobi.labels_.keys():
-        components_to_exclude.append(sobi.labels_['ecg'])
-    components_to_exclude = sum(components_to_exclude, [])
-
-    # If desired components, apply them.
-    if len(components_to_exclude) > 0:
-        # Remove the eog components
-        sobi.apply(raw, exclude=components_to_exclude)
-
-    # Filter the data to only keep low frequencies
-    raw.filter(1, 5)
 
     # Select no-frontal channels used to estimate the non-EOG deviation
     background_channels = [
@@ -130,7 +119,7 @@ def EOG_detection(config, bids_path, frontal_channels='all'):
 
     # If you have crop the recordings, put the indexes according to the original number of samples
     if crop_seconds:
-        crop_samples = crop_seconds[0] * sfreq
+        crop_samples = crop_seconds * sfreq
         last_sample = int(last_sample + 2 * crop_samples)
         EOG_index = [int(current_index + crop_samples) for current_index in EOG_index]
 
@@ -156,14 +145,17 @@ def muscle_detection(config, bids_path):
     sobi = bids.read_sobi(bids_path, 'sobi_artifacts')
 
     # Parameters for loading EEG recordings
-    freq_limits = [config['component_estimation']['low_freq'], config['component_estimation']['high_freq']]
-    crop_seconds = [config['artifact_detection']['muscle']['crop_seconds']]
-    resample_frequency = config['artifact_detection']['muscle']['resampled_frequency']
+    freq_limits         = [
+        config['component_estimation']['low_freq'],
+        config['component_estimation']['high_freq']
+    ]
+    crop_seconds        = config['artifact_detection']['muscle']['crop_seconds']
+    resample_frequency  = config['artifact_detection']['muscle']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load raw EEG
-    raw = aimind_mne.prepare_eeg(
+    raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
@@ -173,9 +165,8 @@ def muscle_detection(config, bids_path):
         crop_seconds=crop_seconds,
         resample_frequency=resample_frequency,
         exclude_badchannels=True,
-        set_annotations=False,
-        rereference=True,
-        interpolate_bads=True
+        interpolate_bads=True,
+        rereference='average'
     )
 
     # Get the muscle components time series
@@ -229,7 +220,7 @@ def muscle_detection(config, bids_path):
 
     # If you have crop the recordings, put the indexes according to the original number of samples
     if crop_seconds:
-        crop_samples = crop_seconds[0] * sfreq
+        crop_samples = crop_seconds * sfreq
         last_sample = int(last_sample + 2 * crop_samples)
         muscle_index = [int(current_index + crop_samples) for current_index in muscle_index]
 
@@ -251,52 +242,37 @@ def sensor_detection(config, bids_path):
 
     """
 
-    # Read the ICA information
-    sobi = bids.read_sobi(bids_path, 'sobi_artifacts')
-
-    # Parameters for loading EEG or MEG recordings
-    freq_limits = [
-        config['artifact_detection']['sensor']['low_freq'], config['artifact_detection']['sensor']['high_freq']
+    # Parameters for loading EEG recordings
+    sobi                = {
+        'desc': 'sobi',
+        'components_to_include': [],
+        'components_to_exclude': ['eog', 'ecg']
+    }
+    freq_limits         = [
+        config['artifact_detection']['sensor']['low_freq'],
+        config['artifact_detection']['sensor']['high_freq']
     ]
-    crop_seconds = [config['artifact_detection']['sensor']['crop_seconds']]
-    resample_frequency = config['artifact_detection']['sensor']['resampled_frequency']
+    crop_seconds        = config['artifact_detection']['sensor']['crop_seconds']
+    resample_frequency  = config['artifact_detection']['sensor']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load the raw data
-    raw = aimind_mne.prepare_eeg(
+    raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
+        apply_sobi=sobi,
         crop_seconds=crop_seconds,
         freq_limits=freq_limits,
         resample_frequency=resample_frequency,
         exclude_badchannels=True,
+        interpolate_bads=True,
         set_annotations=True,
-        rereference=True,
-        interpolate_bads=True
+        rereference='average'
     )
-
-    # If there is EOG or EKG, remove those components
-    components_to_exclude = []
-    if 'eog' in sobi.labels_.keys():
-        components_to_exclude.append(sobi.labels_['eog'])
-    if 'ecg' in sobi.labels_.keys():
-        components_to_exclude.append(sobi.labels_['ecg'])
-    components_to_exclude = sum(components_to_exclude, [])
-
-    # If desired components, apply them.
-    if len(components_to_exclude) > 0:
-        # Remove the eog components
-        sobi.apply(raw, exclude=components_to_exclude)
-
-    # Filter again in the desired frequencies
-    freq_limits = [
-        config['artifact_detection']['sensor']['low_freq'], config['artifact_detection']['sensor']['high_freq']
-    ]
-    raw.filter(freq_limits[0], freq_limits[1])
 
     # Create Epoch object of 1 second to estimate the average std discarding first the muscle artefacts
     dummy_events = mne.make_fixed_length_events(raw, duration=0.5)
@@ -337,7 +313,7 @@ def sensor_detection(config, bids_path):
 
     # If you have crop the recordings, put the indexes according to the original number of samples
     if crop_seconds:
-        crop_samples = crop_seconds[0] * sfreq
+        crop_samples = crop_seconds * sfreq
         last_sample = int(last_sample + 2 * crop_samples)
         sensor_index = [int(current_index + crop_samples) for current_index in sensor_index]
 
@@ -358,50 +334,37 @@ def other_detection(config, bids_path):
 
     """
 
-    # Read the ICA information
-    sobi = bids.read_sobi(bids_path, 'sobi_artifacts')
-
-    # Parameters for loading EEG or MEG recordings
-    freq_limits = [config['component_estimation']['low_freq'], config['component_estimation']['high_freq']]
-    crop_seconds = [config['artifact_detection']['other']['crop_seconds']]
-    resample_frequency = config['artifact_detection']['other']['resampled_frequency']
+    # Parameters for loading EEG recordings
+    sobi                = {
+        'desc': 'sobi',
+        'components_to_include': [],
+        'components_to_exclude': ['eog', 'ecg']
+    }
+    freq_limits         = [
+        config['artifact_detection']['other']['low_freq'],
+        config['artifact_detection']['other']['high_freq']
+    ]
+    crop_seconds        = config['artifact_detection']['other']['crop_seconds']
+    resample_frequency  = config['artifact_detection']['other']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load the raw data
-    raw = aimind_mne.prepare_eeg(
+    raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
-        crop_seconds=crop_seconds,
-        freq_limits=freq_limits,
+        apply_sobi=sobi,
         resample_frequency=resample_frequency,
+        freq_limits=freq_limits,
+        crop_seconds=crop_seconds,
         exclude_badchannels=True,
+        interpolate_bads=True,
         set_annotations=True,
-        rereference=True,
-        interpolate_bads=True
+        rereference='average'
     )
-
-    # If there is EOG or EKG, remove those components
-    components_to_exclude = []
-    if 'eog' in sobi.labels_.keys():
-        components_to_exclude.append(sobi.labels_['eog'])
-    if 'ecg' in sobi.labels_.keys():
-        components_to_exclude.append(sobi.labels_['ecg'])
-    components_to_exclude = sum(components_to_exclude, [])
-
-    # If desired components, apply them.
-    if len(components_to_exclude) > 0:
-        # Remove the eog components
-        sobi.apply(raw, exclude=components_to_exclude)
-
-    # Filter again in the desired frequencies
-    freq_limits = [
-        config['artifact_detection']['other']['low_freq'], config['artifact_detection']['other']['high_freq']
-    ]
-    raw.filter(freq_limits[0], freq_limits[1])
 
     # De-mean the channels
     raw_data = raw.get_data().copy()
@@ -426,7 +389,7 @@ def other_detection(config, bids_path):
 
     # If you have crop the recordings, put the indexes according to the original number of samples
     if crop_seconds:
-        crop_samples = crop_seconds[0] * sfreq
+        crop_samples = crop_seconds * sfreq
         last_sample = int(last_sample + 2 * crop_samples)
         other_index = [int(current_index + crop_samples) for current_index in other_index]
 

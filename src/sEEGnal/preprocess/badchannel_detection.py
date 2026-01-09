@@ -18,7 +18,7 @@ import mne
 import mne_icalabel as iclabel
 
 import sEEGnal.tools.bids_tools as bids
-import sEEGnal.tools.mne_tools as aimind_mne
+import sEEGnal.tools.mne_tools as mne_tools
 import sEEGnal.preprocess.find_badchannels as find_badchannels
 
 # Set the output levels
@@ -163,14 +163,17 @@ def estimate_badchannel_component(config, bids_path):
     """
 
     # Parameters for loading EEG recordings
-    freq_limits = [config['component_estimation']['low_freq'], config['component_estimation']['high_freq']]
-    resample_frequency = config['component_estimation']['resampled_frequency']
-    epoch_definition = config['component_estimation']['epoch_definition']
+    freq_limits         = [
+        config['component_estimation']['low_freq'],
+        config['component_estimation']['high_freq']
+    ]
+    crop_seconds        = config['component_estimation']['crop_seconds']
+    resample_frequency  = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
     # Load raw EEG
-    raw = aimind_mne.prepare_eeg(
+    raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
@@ -178,14 +181,14 @@ def estimate_badchannel_component(config, bids_path):
         channels_to_exclude=channels_to_exclude,
         resample_frequency=resample_frequency,
         freq_limits=freq_limits,
+        crop_seconds=crop_seconds,
         exclude_badchannels=False,
         set_annotations=False,
-        epoch=epoch_definition,
         rereference=False
     )
 
     # Run SOBI
-    sobi = aimind_mne.sobi(raw)
+    sobi = mne_tools.sobi(raw)
 
     # Label de ICs
     _ = iclabel.label_components(raw, sobi, 'iclabel')
