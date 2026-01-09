@@ -455,27 +455,29 @@ def get_epochs(raw, annot=None, length=4, overlap=None, padding=None, preload=Fa
 def prepare_eeg(
     config,
     bids_path,
+    raw=False,
     preload=False,
     channels_to_include=['all'],
     channels_to_exclude=[],
     apply_sobi = False,
     resample_frequency=False,
     notch_filter=False,
-    freq_limits=None,
-    crop_seconds=None,
+    freq_limits=False,
+    crop_seconds=False,
     exclude_badchannels=False,
     interpolate_bads=False,
     set_annotations=False,
     rereference=False,
-    epoch=None
+    epoch=False
 ):
 
     ##################################################################
     # Load EEG and montage
     ##################################################################
 
-    # Read the file
-    raw = read_source_files(str(bids_path.fpath),preload=preload)
+    if not raw:
+        # Read the file
+        raw = read_source_files(str(bids_path.fpath),preload=preload)
 
     # Set montage
     raw.set_montage('standard_1005', on_missing='ignore')
