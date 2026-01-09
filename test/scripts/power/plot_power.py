@@ -9,58 +9,66 @@ Federico Ramírez-Toraño
 """
 
 # Imports
-import os
 import matplotlib.pyplot as plt
 
+from init import init
 from sEEGnal.tools.mne_tools import prepare_eeg
 from sEEGnal.tools.bids_tools import create_bids_path, read_sobi
 
-# Select a subjet
-config = {'path': {}}
-config['path']['data_root'] = os.path.join('data')
-current_sub = '003'
-current_ses = '0'
-current_task = '4EC'
+# Init the database
+config, files, sub, ses, task = init()
 
-# Get the BIDS path
+# current info
+subject_index = 0
+current_file = files[subject_index]
+current_sub = sub[subject_index]
+current_ses = ses[subject_index]
+current_task = task[subject_index]
+
+# Create the subjects following AI-Mind protocol
 bids_path = create_bids_path(config, current_sub, current_ses, current_task)
 
 # Parameters to load the data
+sobi                = {
+        'desc': 'sobi',
+        'components_to_include': ['brain','other'],
+        'components_to_exclude': []
+    }
+freq_limits         = [
+        config['component_estimation']['low_freq'],
+        config['component_estimation']['high_freq']
+]
+crop_seconds = config['component_estimation']['crop_seconds']
+resample_frequency = config['component_estimation']['resampled_frequency']
+channels_to_include = config['global']["channels_to_include"]
+channels_to_exclude = config['global']["channels_to_exclude"]
 epoch_definition = {"length": 4, "overlap": 0, "padding": 0}
-config = {'component_estimation': {}}
-config['component_estimation']['notch_frequencies'] = [50, 100, 150, 200, 250]
+
 
 # Load the clean data
 clean_data = prepare_eeg(
+        config,
+        bids_path,
+        preload=True,
+        channels_to_include=channels_to_include,
+        channels_to_exclude=channels_to_exclude,
+        freq_limits=freq_limits,
+        resample_frequency=resample_frequency,
+        exclude_badchannels=True,
+        interpolate_bads=True,
+        set_annotations=True,
+        crop_seconds=crop_seconds,
+        rereference='average'
+    )
+
+# Apply SOBI
+clean_data = prepare_eeg(
     config,
     bids_path,
-    preload=True,
+    raw=clean_data,
+    apply_sobi=sobi,
     freq_limits=[2, 45],
-    crop_seconds=10,
-    resample_frequency=500,
-    exclude_badchannels=True,
-    set_annotations=True,
-    rereference=True,
-    interpolate_bads=True,
-    epoch=epoch_definition
 )
-
-# Remove artefactual components
-# Load the component label
-sobi = read_sobi(bids_path, 'sobi')
-
-# Select the components of interest
-components_to_include = []
-if 'brain' in sobi.labels_.keys():
-    components_to_include.append(sobi.labels_['brain'])
-if 'other' in sobi.labels_.keys():
-    components_to_include.append(sobi.labels_['other'])
-components_to_include = sum(components_to_include, [])
-
-# If desired components, apply them.
-if len(components_to_include) > 0:
-    # Remove the eog components
-    sobi.apply(clean_data, include=components_to_include)
 
 # Estimate the power
 spectrum = clean_data.compute_psd(
@@ -69,6 +77,6 @@ spectrum = clean_data.compute_psd(
     fmax=45,
 )
 
-spectrum = spectrum.average()
+clean_data.plot(block=False,duration=20)
 spectrum.plot(dB=False, amplitude=True)
 plt.show(block=True)

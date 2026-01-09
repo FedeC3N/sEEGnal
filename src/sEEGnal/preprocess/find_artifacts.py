@@ -72,6 +72,7 @@ def EOG_detection(config, bids_path):
     )
 
     # Select no-frontal channels used to estimate the non-EOG deviation
+    frontal_channels = config['artifact_detection']['frontal_channels']
     background_channels = [
         current_channel for current_channel in raw.ch_names if current_channel not in frontal_channels
     ]
