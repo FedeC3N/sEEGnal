@@ -100,30 +100,22 @@
 		"muscle":{
 			"low_freq":110,
 			"high_freq":145,
-			"crop_seconds": 10,
-			"resampled_frequency":500,
 			"threshold": 10
 		},
 		"sensor":{
 			"low_freq":0.5,
 			"high_freq":2,
-			"crop_seconds": 10,
-			"resampled_frequency":500,
 			"threshold": 0.99,
 			"ratio": 5
 		},
 		"other":{
 			"low_freq":2,
 			"high_freq":45,
-			"crop_seconds": 10,
-			"resampled_frequency":500,
 			"threshold": 0.0005
 		},
 		"EOG":{
 			"low_freq":2,
 			"high_freq":5,
-			"crop_seconds": 10,
-			"resampled_frequency":500,
 			"ratio": 10
 		}
 	}

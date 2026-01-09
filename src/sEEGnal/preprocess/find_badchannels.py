@@ -148,8 +148,7 @@ def power_spectrum_detection(config, bids_path, badchannels):
 def gel_bridge_detection(config, bids_path, badchannels):
     """
 
-    Look for badchannels based on gel bridges. It is based on correlation and the idea that the correlation must happen
-    continuously in time over certain point.
+    Look for badchannels based on gel bridges. It is based on correlation and physical distance
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
@@ -173,6 +172,7 @@ def gel_bridge_detection(config, bids_path, badchannels):
         config['badchannel_detection']['gel_bridge']['low_freq'],
         config['badchannel_detection']['gel_bridge']['high_freq']
     ]
+    resample_frequency  = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
     crop_seconds        = config['badchannel_detection']['crop_seconds']
@@ -184,10 +184,25 @@ def gel_bridge_detection(config, bids_path, badchannels):
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
+        resample_frequency=resample_frequency,
+        crop_seconds=crop_seconds
+    )
+
+    # Apply SOBI
+    raw = aimind_mne.prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
         apply_sobi=sobi,
+    )
+
+    # Filter
+    raw = aimind_mne.prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
         freq_limits=freq_limits,
         notch_filter=True,
-        crop_seconds=crop_seconds,
         exclude_badchannels=True
     )
 

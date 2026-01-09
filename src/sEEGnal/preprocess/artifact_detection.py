@@ -170,15 +170,9 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
         config['component_estimation']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
-    resample_frequency  = config['component_estimation']['resampled_frequency']
+    resample_frequency = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
-
-    # Include artifacts or not (depending on the current SOBI estimation)
-    if derivatives_label == 'sobi_artifacts':
-        set_annotations = False
-    else:
-        set_annotations = True
 
     # Load raw EEG
     raw = mne_tools.prepare_eeg(
@@ -187,14 +181,29 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
-        resample_frequency=resample_frequency,
         freq_limits=freq_limits,
-        crop_seconds=crop_seconds,
+        resample_frequency=resample_frequency,
         exclude_badchannels=True,
         interpolate_bads=True,
-        set_annotations=set_annotations,
+        set_annotations=True,
+        crop_seconds=crop_seconds,
         rereference='average'
     )
+
+    # Crop the artifactual part if second SOBI
+    if derivatives_label == 'sobi':
+
+        # Create epochs and discard the bads
+        epochs = mne.make_fixed_length_epochs(
+            raw,
+            duration=0.5,
+        )
+        epochs.drop_bad()
+        epochs.load_data()
+
+        # Rename for consistency
+        raw = epochs.copy()
+
 
     # Run SOBI
     sobi = mne_tools.sobi(raw)

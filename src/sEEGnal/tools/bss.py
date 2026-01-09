@@ -36,7 +36,7 @@ def sobi(data, nlag=None, nsource=None):
 
     # If no requested otherwise, sets the number of lags to 1/3 of the data.
     if nlag is None:
-        nlag = min(100, numpy.ceil(nsample / 3))
+        nlag = min(100, int(numpy.ceil(nsample / 3)))
 
     # If no requested otherwise, uses as many sources as channels.
     if nsource is None:

@@ -41,25 +41,34 @@ def EOG_detection(config, bids_path, frontal_channels='all'):
         config['artifact_detection']['EOG']['low_freq'],
         config['artifact_detection']['EOG']['high_freq']
     ]
-    crop_seconds        = config['artifact_detection']['EOG']['crop_seconds']
-    resample_frequency  = config['artifact_detection']['EOG']['resampled_frequency']
+    crop_seconds = config['component_estimation']['crop_seconds']
+    resample_frequency = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
-    # Load the raw data
+    # Load the raw and apply SOBI
     raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
-        apply_sobi=sobi,
         freq_limits=freq_limits,
-        crop_seconds=crop_seconds,
         resample_frequency=resample_frequency,
         exclude_badchannels=True,
         interpolate_bads=True,
+        set_annotations=True,
+        crop_seconds=crop_seconds,
         rereference='average'
+    )
+
+    # Apply SOBI and filters
+    raw = mne_tools.prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
+        apply_sobi=sobi,
+        freq_limits=freq_limits
     )
 
     # Select no-frontal channels used to estimate the non-EOG deviation
@@ -149,8 +158,8 @@ def muscle_detection(config, bids_path):
         config['component_estimation']['low_freq'],
         config['component_estimation']['high_freq']
     ]
-    crop_seconds        = config['artifact_detection']['muscle']['crop_seconds']
-    resample_frequency  = config['artifact_detection']['muscle']['resampled_frequency']
+    crop_seconds = config['component_estimation']['crop_seconds']
+    resample_frequency = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
@@ -252,8 +261,8 @@ def sensor_detection(config, bids_path):
         config['artifact_detection']['sensor']['low_freq'],
         config['artifact_detection']['sensor']['high_freq']
     ]
-    crop_seconds        = config['artifact_detection']['sensor']['crop_seconds']
-    resample_frequency  = config['artifact_detection']['sensor']['resampled_frequency']
+    crop_seconds = config['component_estimation']['crop_seconds']
+    resample_frequency = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
@@ -264,14 +273,22 @@ def sensor_detection(config, bids_path):
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
-        apply_sobi=sobi,
-        crop_seconds=crop_seconds,
         freq_limits=freq_limits,
         resample_frequency=resample_frequency,
         exclude_badchannels=True,
         interpolate_bads=True,
         set_annotations=True,
+        crop_seconds=crop_seconds,
         rereference='average'
+    )
+
+    # Apply SOBI and filters
+    raw = mne_tools.prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
+        apply_sobi=sobi,
+        freq_limits=freq_limits
     )
 
     # Create Epoch object of 1 second to estimate the average std discarding first the muscle artefacts
@@ -344,26 +361,34 @@ def other_detection(config, bids_path):
         config['artifact_detection']['other']['low_freq'],
         config['artifact_detection']['other']['high_freq']
     ]
-    crop_seconds        = config['artifact_detection']['other']['crop_seconds']
-    resample_frequency  = config['artifact_detection']['other']['resampled_frequency']
+    crop_seconds = config['component_estimation']['crop_seconds']
+    resample_frequency = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
-    # Load the raw data
+    # Load the raw and apply SOBI
     raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
-        apply_sobi=sobi,
-        resample_frequency=resample_frequency,
         freq_limits=freq_limits,
-        crop_seconds=crop_seconds,
+        resample_frequency=resample_frequency,
         exclude_badchannels=True,
         interpolate_bads=True,
         set_annotations=True,
+        crop_seconds=crop_seconds,
         rereference='average'
+    )
+
+    # Apply SOBI and filters
+    raw = mne_tools.prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
+        apply_sobi=sobi,
+        freq_limits=freq_limits
     )
 
     # De-mean the channels
