@@ -106,7 +106,12 @@
 			"low_freq":0.5,
 			"high_freq":2,
 			"threshold": 0.99,
-			"ratio": 3
+			"ratio": 3,
+            "epoch_definition":{
+				"length": 0.5,
+				"overlap": 0.25,
+				"padding": 0
+			}
 		},
 		"other":{
 			"low_freq":2,

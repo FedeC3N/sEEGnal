@@ -14,7 +14,7 @@ import numpy as np
 from scipy.stats import median_abs_deviation
 
 import sEEGnal.tools.bids_tools as bids
-import sEEGnal.tools.mne_tools as aimind_mne
+import sEEGnal.tools.mne_tools as mne_tools
 
 
 # Modules
@@ -43,7 +43,7 @@ def impossible_amplitude_detection(config, bids_path, badchannels):
     epoch_definition    = config['badchannel_detection']['impossible_amplitude']['epoch_definition']
 
     # Load the raw data
-    raw = aimind_mne.prepare_eeg(
+    raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
@@ -103,7 +103,7 @@ def power_spectrum_detection(config, bids_path, badchannels):
     epoch_definition    = config['badchannel_detection']['pow_spectrum']['epoch_definition']
 
     # Load the raw data
-    raw = aimind_mne.prepare_eeg(
+    raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
@@ -117,7 +117,7 @@ def power_spectrum_detection(config, bids_path, badchannels):
 
     # Compute the power spectrum
     psd             = raw.compute_psd(method='welch', fmin=freq_limits[0], fmax=freq_limits[1], average='mean')
-    band_power      = np.trapz(psd.get_data(),psd.freqs,axis=2)
+    band_power      = np.trapezoid(psd.get_data(),psd.freqs,axis=2)
     band_power_log  = np.log10(band_power)
 
     # Create the counter of bad epochs
@@ -178,7 +178,7 @@ def gel_bridge_detection(config, bids_path, badchannels):
     crop_seconds        = config['badchannel_detection']['crop_seconds']
 
     # Load the raw EEG
-    raw = aimind_mne.prepare_eeg(
+    raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
@@ -189,7 +189,7 @@ def gel_bridge_detection(config, bids_path, badchannels):
     )
 
     # Apply SOBI
-    raw = aimind_mne.prepare_eeg(
+    raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         raw=raw,
@@ -197,7 +197,7 @@ def gel_bridge_detection(config, bids_path, badchannels):
     )
 
     # Filter
-    raw = aimind_mne.prepare_eeg(
+    raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         raw=raw,
@@ -270,40 +270,58 @@ def high_deviation_detection(config, bids_path, badchannels):
         config['badchannel_detection']['high_deviation']['low_freq'],
         config['badchannel_detection']['high_deviation']['high_freq']
     ]
+    resample_frequency = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
     crop_seconds = config['badchannel_detection']['crop_seconds']
     epoch_definition = config['badchannel_detection']['high_deviation']['epoch_definition']
 
-    # Load the raw data
-    raw = aimind_mne.prepare_eeg(
+    # Load the raw EEG
+    raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
-        apply_sobi=sobi,
+        resample_frequency=resample_frequency,
+        crop_seconds=crop_seconds
+    )
+
+    # Apply SOBI
+    raw = mne_tools.prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
+        apply_sobi=sobi
+    )
+
+    # Filter
+    raw = mne_tools.prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
         freq_limits=freq_limits,
-        crop_seconds=crop_seconds,
+        notch_filter=True,
         exclude_badchannels=True,
-        epoch=epoch_definition,
+        epoch=epoch_definition
     )
 
     # Get a new copy of the data
     raw_data = raw.get_data().copy()
 
-    # Get the average of each epoch and channel
+    # For each epoch, find the channels with significant high amplitude
     hits = np.empty((raw_data.shape[0], raw_data.shape[1]))
-    for ichannel in range(len(raw.ch_names)):
+    for iepoch in range(raw_data.shape[0]):
 
-        # Remove the current channel to estimate the average value of the power spectrum in the rest of the recording
-        current_channel_std = raw_data[:, ichannel, :].std(axis=1)
-        rest_std = np.delete(raw_data, ichannel, 1)
-        rest_std = rest_std.std(axis=2).mean(axis=1)
+        # Estimate the median and the Median Absolute Deviation
+        current_epoch_std = raw_data[iepoch, :, :].std(axis=1)
+        median = np.median(current_epoch_std)
+        mad = median_abs_deviation(current_epoch_std)
 
-        # Find the epochs where the current channel is above the threshold
-        threshold = config['badchannel_detection']['high_deviation']['threshold'] * rest_std
-        hits[:, ichannel] = current_channel_std > threshold
+        # Define bad channels using Z-score
+        hits[iepoch, :] = ((current_epoch_std - median) / mad >
+                                  config['badchannel_detection']['high_deviation']['threshold'])
+
 
     # Get the number of occurrences per channel in percentage
     hits = hits.sum(axis=0) / hits.shape[0]
