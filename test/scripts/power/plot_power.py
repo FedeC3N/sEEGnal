@@ -70,13 +70,24 @@ clean_data = prepare_eeg(
     freq_limits=[2, 45],
 )
 
+# Plot the clean data
+clean_data.plot(block=False,duration=20)
+
+# Remove the bad epochs before estimating power spectrum
+clean_data = prepare_eeg(
+    config,
+    bids_path,
+    raw=clean_data,
+    epoch=epoch_definition
+)
+clean_data.drop_bad()
+
 # Estimate the power
 spectrum = clean_data.compute_psd(
     method='welch',
     fmin=2,
     fmax=45,
 )
-
-clean_data.plot(block=False,duration=20)
+spectrum = spectrum.average()
 spectrum.plot(dB=False, amplitude=True)
 plt.show(block=True)
