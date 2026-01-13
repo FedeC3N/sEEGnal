@@ -121,7 +121,12 @@
 		"EOG":{
 			"low_freq":2,
 			"high_freq":5,
-			"ratio": 10
+			"threshold": 7,
+            "epoch_definition":{
+				"length": 0.5,
+				"overlap": 0.25,
+				"padding": 0
+			}
 		}
 	}
 }

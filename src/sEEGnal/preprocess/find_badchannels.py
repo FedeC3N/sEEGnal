@@ -13,7 +13,6 @@ Created on March 26 2024
 import numpy as np
 from scipy.stats import median_abs_deviation
 
-import sEEGnal.tools.bids_tools as bids
 import sEEGnal.tools.mne_tools as mne_tools
 
 

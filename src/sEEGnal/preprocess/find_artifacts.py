@@ -11,6 +11,7 @@ Created on June 19 2023
 import mne
 import numpy as np
 from scipy.signal import find_peaks
+from scipy.stats import median_abs_deviation
 
 import sEEGnal.tools.bids_tools as bids
 import sEEGnal.tools.mne_tools as mne_tools
@@ -45,6 +46,7 @@ def EOG_detection(config, bids_path):
     resample_frequency = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
+    epoch_definition = config['artifact_detection']['EOG']['epoch_definition']
 
     # Load the raw and apply SOBI
     raw = mne_tools.prepare_eeg(
@@ -61,77 +63,66 @@ def EOG_detection(config, bids_path):
         rereference='average'
     )
 
-    # Apply SOBI and filters
+    # Save for later
+    last_sample = raw.last_samp
+
+    # Apply SOBI and filters, and epoch the data
     raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         raw=raw,
         apply_sobi=sobi,
-        freq_limits=freq_limits
+        freq_limits=freq_limits,
+        epoch=epoch_definition
     )
 
-    # Select no-frontal channels used to estimate the non-EOG deviation
+    # Divide between frontal channels and background channels
+    # Frontal
     frontal_channels = config['artifact_detection']['frontal_channels']
-    background_channels = [
-        current_channel for current_channel in raw.ch_names if current_channel not in frontal_channels
-    ]
-
-    # Select the background data
-    background_raw = raw.copy()
-    background_raw.pick(background_channels)
-
-    # Average deviation of the recording
-    background_raw_data = background_raw.get_data().copy()
-    background_average_deviation = background_raw_data.std(axis=1).mean()
-
-    # Select EOG channels
-    frontal_channels = config['artifact_detection']["frontal_channels"]
     frontal_channels = [
         current_channel for current_channel in frontal_channels if current_channel in channels_to_include
     ]
-
-    # Select the present frontal channels
     if len(frontal_channels) > 0:
-        raw.pick(frontal_channels)
-
-    # If no frontal channels, no EOG artifacts
+        frontal_raw = raw.copy()
+        frontal_raw.load_data()
+        frontal_raw.pick(frontal_channels)
     else:
-        return [], [], []
+        return [], [], []  # If no frontal channels, no EOG artifacts
 
-    # Get the data
-    channel_data = raw.get_data().copy()
+    # Background
+    background_channels = [
+        current_channel for current_channel in raw.ch_names if current_channel not in frontal_channels
+    ]
+    background_raw = raw.copy()
+    background_raw.load_data()
+    background_raw.pick(background_channels)
 
-    # Go one by one through the channels looking for EOG artifacts
-    for ichannel in range(len(raw.ch_names)):
+    # Look for extremely high amplitude epochs in the frontal channels
+    EOG_index = []
+    for iepoch in range(frontal_raw.get_data().shape[0]):
 
-        current_channel_data = channel_data[ichannel, :] - channel_data[ichannel, :].mean()
+        # Estimate the median and MAD of the background
+        current_background_std  = background_raw.get_data()[iepoch,:,:].std(axis=1)
+        median                  = np.median(current_background_std)
+        mad                     = median_abs_deviation(current_background_std)
 
-        # Consider a peak everything above 10 std
-        current_peaks = np.nonzero(
-            abs(current_channel_data) > config['artifact_detection']['EOG']['ratio'] * background_average_deviation
-        )[0]
+        # Estimate the std of frontal
+        current_frontal_std     = frontal_raw.get_data()[iepoch,:,:].std(axis=1)
 
-        # Find the peaks
-        # If it is the first channel, create the variable
-        if ichannel == 0:
-            EOG_index = current_peaks
+        # If significant, save the index
+        if any((current_frontal_std - median) / mad >
+                           config['artifact_detection']['EOG']['threshold']):
 
-        # If already calculated, append
-        else:
-
-            # If not empty, append
-            if len(current_peaks) > 0:
-                EOG_index = np.append(EOG_index, current_peaks)
+            EOG_index.extend([frontal_raw.events[iepoch][0]])
 
     # Extra outputs
-    last_sample = raw.last_samp
     sfreq = raw.info['sfreq']
 
     # If you have crop the recordings, put the indexes according to the original number of samples
     if crop_seconds:
         crop_samples = crop_seconds * sfreq
         last_sample = int(last_sample + 2 * crop_samples)
-        EOG_index = [int(current_index + crop_samples) for current_index in EOG_index]
+        EOG_index = [int(current_index - crop_samples) for current_index in EOG_index]
 
     return EOG_index, last_sample, sfreq
 
