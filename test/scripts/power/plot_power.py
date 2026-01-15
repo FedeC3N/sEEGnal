@@ -54,8 +54,6 @@ clean_data = prepare_eeg(
         channels_to_exclude=channels_to_exclude,
         freq_limits=freq_limits,
         resample_frequency=resample_frequency,
-        exclude_badchannels=True,
-        interpolate_bads=True,
         set_annotations=True,
         crop_seconds=crop_seconds,
         rereference='average'
@@ -68,6 +66,7 @@ clean_data = prepare_eeg(
     raw=clean_data,
     apply_sobi=sobi,
     freq_limits=[2, 45],
+    metadata_badchannels=True
 )
 
 # Plot the clean data

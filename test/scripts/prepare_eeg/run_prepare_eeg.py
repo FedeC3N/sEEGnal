@@ -174,7 +174,7 @@ raw = prepare_eeg(
     bids_path,
     preload=True,
     exclude_badchannels=True,
-    interpolate_bads=False
+    interpolate_badchannels=False
 )
 exclude_channels = len(raw.info['ch_names'])
 
@@ -184,7 +184,7 @@ raw = prepare_eeg(
     bids_path,
     preload=True,
     exclude_badchannels=True,
-    interpolate_bads=True
+    interpolate_badchannels=True
 )
 interpolate_channels = len(raw.info['ch_names'])
 

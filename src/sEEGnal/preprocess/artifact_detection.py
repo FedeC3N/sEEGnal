@@ -185,8 +185,8 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
         channels_to_exclude=channels_to_exclude,
         freq_limits=freq_limits,
         resample_frequency=resample_frequency,
-        exclude_badchannels=True,
-        interpolate_bads=True,
+        metadata_badchannels=True,
+        interpolate_badchannels=True,
         set_annotations=set_annotations,
         crop_seconds=crop_seconds,
         rereference='average'

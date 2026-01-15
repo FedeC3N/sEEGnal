@@ -51,6 +51,7 @@ def impossible_amplitude_detection(config, bids_path, badchannels):
         notch_filter=True,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
+        metadata_badchannels=True,
         exclude_badchannels=True,
         epoch=epoch_definition,
         rereference=False
@@ -110,6 +111,7 @@ def power_spectrum_detection(config, bids_path, badchannels):
         channels_to_exclude=channels_to_exclude,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
+        metadata_badchannels=True,
         exclude_badchannels=True,
         epoch=epoch_definition
     )
@@ -194,6 +196,7 @@ def gel_bridge_detection(config, bids_path, badchannels):
         raw=raw,
         freq_limits=freq_limits,
         notch_filter=True,
+        metadata_badchannels=True,
         exclude_badchannels=True
     )
 
@@ -294,6 +297,7 @@ def high_deviation_detection(config, bids_path, badchannels):
         preload=True,
         freq_limits=freq_limits,
         notch_filter=True,
+        metadata_badchannels=True,
         exclude_badchannels=True,
         epoch=epoch_definition
     )

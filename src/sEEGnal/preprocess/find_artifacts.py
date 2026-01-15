@@ -56,8 +56,8 @@ def EOG_detection(config, bids_path):
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
         resample_frequency=resample_frequency,
-        exclude_badchannels=True,
-        interpolate_bads=True,
+        metadata_badchannels=True,
+        interpolate_badchannels=True,
         set_annotations=True,
         crop_seconds=crop_seconds,
         rereference='average'
@@ -160,8 +160,8 @@ def muscle_detection(config, bids_path):
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
         resample_frequency=resample_frequency,
-        exclude_badchannels=True,
-        interpolate_bads=True,
+        metadata_badchannels=True,
+        interpolate_badchannels=True,
         rereference='average'
     )
 
@@ -266,8 +266,8 @@ def sensor_detection(config, bids_path):
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
         resample_frequency=resample_frequency,
-        exclude_badchannels=True,
-        interpolate_bads=True,
+        metadata_badchannels=True,
+        interpolate_badchannels=True,
         set_annotations=True,
         crop_seconds=crop_seconds,
         rereference='average'
@@ -355,8 +355,8 @@ def other_detection(config, bids_path):
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
         resample_frequency=resample_frequency,
-        exclude_badchannels=True,
-        interpolate_bads=True,
+        metadata_badchannels=True,
+        interpolate_badchannels=True,
         set_annotations=True,
         crop_seconds=crop_seconds,
         rereference='average'

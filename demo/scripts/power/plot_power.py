@@ -41,7 +41,7 @@ clean_data = prepare_eeg(
         exclude_badchannels=True,
         set_annotations=True,
         rereference=True,
-        interpolate_bads=True,
+        interpolate_badchannels=True,
         epoch=epoch_definition
         )
 

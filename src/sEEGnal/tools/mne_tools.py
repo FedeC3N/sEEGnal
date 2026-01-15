@@ -464,8 +464,9 @@ def prepare_eeg(
     notch_filter=False,
     freq_limits=False,
     crop_seconds=False,
+    metadata_badchannels=False,
     exclude_badchannels=False,
-    interpolate_bads=False,
+    interpolate_badchannels=False,
     set_annotations=False,
     rereference=False,
     epoch=False
@@ -556,8 +557,8 @@ def prepare_eeg(
     # Remove bad channels
     ##################################################################
 
-    if exclude_badchannels:
-
+    # Add bad channels to the info
+    if metadata_badchannels:
         chan = bids.read_chan(bids_path)
         badchannels = list(chan.loc[chan['status'] == 'bad']['name'])
 
@@ -565,15 +566,18 @@ def prepare_eeg(
         badchannels = list(set(badchannels) & set(raw.info['ch_names']))
         raw.info['bads'] = badchannels
 
+    # Drop the badchannels
+    if exclude_badchannels:
+
         # If all channels are badchannels, raise an Exception
         if (len(badchannels) == len(raw.info['ch_names'])):
             raise Exception("All channels are marked as bad")
 
-        # Drop or interpolate the badchannels
-        if interpolate_bads == True:
-            raw.interpolate_bads()
-        else:
-            raw = raw.pick(None, exclude='bads')
+        raw = raw.pick(None, exclude='bads')
+
+    # Interpolate the bad channels
+    if interpolate_badchannels == True:
+        raw.interpolate_bads()
 
     ##################################################################
     # Add the annotations if requested
