@@ -63,7 +63,8 @@ def EOG_detection(config, bids_path):
         rereference='average'
     )
 
-    # Save for later
+    # Extra outputs
+    sfreq = raw.info['sfreq']
     last_sample = raw.last_samp
 
     # Apply SOBI and filters, and epoch the data
@@ -85,7 +86,6 @@ def EOG_detection(config, bids_path):
     ]
     if len(frontal_channels) > 0:
         frontal_raw = raw.copy()
-        frontal_raw.load_data()
         frontal_raw.pick(frontal_channels)
     else:
         return [], [], []  # If no frontal channels, no EOG artifacts
@@ -95,29 +95,23 @@ def EOG_detection(config, bids_path):
         current_channel for current_channel in raw.ch_names if current_channel not in frontal_channels
     ]
     background_raw = raw.copy()
-    background_raw.load_data()
     background_raw.pick(background_channels)
 
-    # Look for extremely high amplitude epochs in the frontal channels
-    EOG_index = []
-    for iepoch in range(frontal_raw.get_data().shape[0]):
+    # Get the std
+    frontal_raw_std = np.std(frontal_raw.get_data(),axis=2)
+    background_raw_std = np.std(background_raw.get_data(), axis=2)
 
-        # Estimate the median and MAD of the background
-        current_background_std  = background_raw.get_data()[iepoch,:,:].std(axis=1)
-        median                  = np.median(current_background_std)
-        mad                     = median_abs_deviation(current_background_std)
+    # Get the median and MAD
+    median = np.median(background_raw_std)
+    mad = median_abs_deviation(background_raw_std,axis=None)
 
-        # Estimate the std of frontal
-        current_frontal_std     = frontal_raw.get_data()[iepoch,:,:].std(axis=1)
+    # Look for significant activity
+    hits = (frontal_raw_std - median) / mad > config[
+        'artifact_detection']['EOG']['threshold']
+    hits = np.sum(hits,axis=1) > 0
 
-        # If significant, save the index
-        if any((current_frontal_std - median) / mad >
-                           config['artifact_detection']['EOG']['threshold']):
-
-            EOG_index.extend([frontal_raw.events[iepoch][0]])
-
-    # Extra outputs
-    sfreq = raw.info['sfreq']
+    # Save the EOG index
+    EOG_index = raw.events[hits,0]
 
     # If you have crop the recordings, put the indexes according to the original number of samples
     if crop_seconds:
@@ -280,8 +274,8 @@ def sensor_detection(config, bids_path):
     )
 
     # Extra outputs
-    last_sample = raw.last_samp
     sfreq = raw.info['sfreq']
+    last_sample = raw.last_samp
 
     # Apply SOBI and filters
     raw = mne_tools.prepare_eeg(
