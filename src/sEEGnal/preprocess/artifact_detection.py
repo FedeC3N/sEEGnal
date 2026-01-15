@@ -171,6 +171,10 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
     resample_frequency = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
+    if derivatives_label == 'sobi':
+        set_annotations = True
+    else:
+        set_annotations = False
 
     # Load raw EEG
     raw = mne_tools.prepare_eeg(
@@ -183,7 +187,7 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
         resample_frequency=resample_frequency,
         exclude_badchannels=True,
         interpolate_bads=True,
-        set_annotations=True,
+        set_annotations=set_annotations,
         crop_seconds=crop_seconds,
         rereference='average'
     )

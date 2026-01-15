@@ -200,15 +200,19 @@ def muscle_detection(config, bids_path):
         sources = sobi.get_sources(raw)
         muscle_components_time_courses = sources.get_data().copy()
 
-    # Find the peaks of each channel (peak = signal > 10*std)
-    muscle_components_time_courses_std = muscle_components_time_courses.std(axis=1)
+    # Find the peaks of each component
     muscle_index = []
-    for ichannel in range(len(muscle_components_time_courses_std)):
+    for icomponent in range(muscle_components_time_courses.shape[0]):
 
-        current_channel = muscle_components_time_courses[ichannel, :]
-        current_std = muscle_components_time_courses_std[ichannel]
+        # Select the absolute current component
+        current_component = muscle_components_time_courses[icomponent, :]
+        current_component = np.abs(current_component)
+
+        # Find peaks
+        prominence = 10 * np.std(current_component)
         current_peaks, _ = find_peaks(
-            abs(current_channel), height=config['artifact_detection']['muscle']['threshold'] * current_std
+            current_component,
+            prominence=prominence
         )
 
         # If any, add to list
@@ -245,7 +249,7 @@ def sensor_detection(config, bids_path):
 
     # Parameters for loading EEG recordings
     sobi                = {
-        'desc': 'sobi',
+        'desc': 'sobi_artifacts',
         'components_to_include': [],
         'components_to_exclude': ['eog', 'ecg']
     }
