@@ -119,20 +119,12 @@ def power_spectrum_detection(config, bids_path, badchannels):
     band_power      = np.trapezoid(psd.get_data(),psd.freqs,axis=2)
     band_power_log  = np.log10(band_power)
 
-    # Create the counter of bad epochs
-    bad_epochs      = np.zeros_like(band_power_log, dtype=bool)
+    # Estimate the median and the Median Absolute Deviation
+    median = np.median(band_power_log)
+    MAD = median_abs_deviation(band_power_log, axis=None)
 
-    # For each window, find the outliers
-    for iwindow in range(band_power_log.shape[0]):
-
-        # Estimate the median and the Median Absolute Deviation
-        median  = np.median(band_power_log[iwindow,:])
-        mad     = median_abs_deviation(band_power_log[iwindow,:])
-
-        # Define bad channels using Z-score
-        bad_epochs[iwindow,:] = ((band_power_log[iwindow,:] - median) / mad >
-                               config['badchannel_detection']['pow_spectrum']['threshold'])
-
+    # Define bad channels using Z-score
+    bad_epochs = ((band_power_log - median) / MAD > config['badchannel_detection']['pow_spectrum']['threshold'])
 
     # Get the number of occurrences per channel in percentage
     hits = bad_epochs.sum(axis=0) / bad_epochs.shape[0]
@@ -306,22 +298,18 @@ def high_deviation_detection(config, bids_path, badchannels):
         epoch=epoch_definition
     )
 
-    # Get a new copy of the data
+    # Get a new copy of the data and estimate std
     raw_data = raw.get_data().copy()
+    raw_data_std = np.std(raw_data,axis=2)
 
-    # For each epoch, find the channels with significant high amplitude
-    hits = np.empty((raw_data.shape[0], raw_data.shape[1]))
-    for iepoch in range(raw_data.shape[0]):
+    # Estimate the median and the Median Absolute Deviation
+    median = np.median(raw_data_std)
+    mad = median_abs_deviation(raw_data_std,axis=None)
 
-        # Estimate the median and the Median Absolute Deviation
-        current_epoch_std = raw_data[iepoch, :, :].std(axis=1)
-        median = np.median(current_epoch_std)
-        mad = median_abs_deviation(current_epoch_std)
-
-        # Define bad channels using Z-score
-        hits[iepoch, :] = ((current_epoch_std - median) / mad >
-                                  config['badchannel_detection']['high_deviation']['threshold'])
-
+    # Define bad channels using Z-score
+    hits = ((raw_data_std - median) / mad >
+                       config['badchannel_detection']['high_deviation'][
+                           'threshold'])
 
     # Get the number of occurrences per channel in percentage
     hits = hits.sum(axis=0) / hits.shape[0]
