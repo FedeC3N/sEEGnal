@@ -20,7 +20,8 @@
 		"channels_to_exclude": [
 				"VEOGL", "VEOGU", "HEOGR", "HEOGL",
 				"M1", "M2"],
-        "verbose": ""
+        "notch_frequencies": [50, 100, 150, 200, 250],
+        "verbose": "full"
     },
 
 
@@ -34,13 +35,8 @@
 		"low_freq": 1,
 		"high_freq": 100,
 		"resampled_frequency":500,
-		"notch_frequencies": [50, 100, 150, 200, 250],
-		"unclear_threshold": 0.7,
-		"epoch_definition":{
-			"length": 4,
-			"overlap": 0,
-			"padding": 2
-		}
+        "crop_seconds": 10,
+		"unclear_threshold": 0.7
 	},
 
 
@@ -74,7 +70,7 @@
 			"epoch_definition":{
 				"length": 4,
 				"overlap": 0,
-				"padding": 2
+				"padding": 0
 			}
 		},
 		"gel_bridge": {
@@ -82,12 +78,7 @@
 			"low_freq": 8,
 			"high_freq": 45,
 			"neighbour_distance": 0.05,
-			"seq_threshold":0.5,
-			"epoch_definition":{
-				"length": 4,
-				"overlap": 0,
-				"padding": 0
-			}
+			"seq_threshold":0.5
 		},
 		"high_deviation":{
 			"threshold": 3,
@@ -97,7 +88,7 @@
 			"epoch_definition":{
 				"length": 4,
 				"overlap": 0,
-				"padding": 2
+				"padding": 0
 			}
 		}
 	},
@@ -109,50 +100,31 @@
 		"muscle":{
 			"low_freq":110,
 			"high_freq":145,
-			"crop_seconds": 10,
-			"resampled_frequency":500,
-			"threshold": 10,
-			"epoch_definition":{
-				"length": 4,
-				"overlap": 0,
-				"padding": 2
-			}
+			"threshold": 7
 		},
 		"sensor":{
 			"low_freq":0.5,
 			"high_freq":2,
-			"crop_seconds": 10,
-			"resampled_frequency":500,
-			"threshold": 0.99,
-			"ratio": 5,
-			"epoch_definition":{
-				"length": 4,
-				"overlap": 0,
-				"padding": 2
+			"threshold": 7,
+            "epoch_definition":{
+				"length": 0.5,
+				"overlap": 0.25,
+				"padding": 0
 			}
 		},
 		"other":{
 			"low_freq":2,
 			"high_freq":45,
-			"crop_seconds": 10,
-			"resampled_frequency":500,
-			"threshold": 0.0005,
-			"epoch_definition":{
-				"length": 4,
-				"overlap": 0,
-				"padding": 2
-			}
+			"threshold": 0.0005
 		},
 		"EOG":{
 			"low_freq":2,
 			"high_freq":5,
-			"crop_seconds": 10,
-			"resampled_frequency":500,
-			"ratio": 10,
-			"epoch_definition":{
-				"length": 4,
-				"overlap": 0,
-				"padding": 2
+			"threshold": 7,
+            "epoch_definition":{
+				"length": 0.5,
+				"overlap": 0.25,
+				"padding": 0
 			}
 		}
 	}

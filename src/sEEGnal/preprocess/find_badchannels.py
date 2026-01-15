@@ -111,7 +111,7 @@ def power_spectrum_detection(config, bids_path, badchannels):
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
         exclude_badchannels=True,
-        epoch=epoch_definition,
+        epoch=epoch_definition
     )
 
     # Compute the power spectrum
@@ -299,6 +299,7 @@ def high_deviation_detection(config, bids_path, badchannels):
         config,
         bids_path,
         raw=raw,
+        preload=True,
         freq_limits=freq_limits,
         notch_filter=True,
         exclude_badchannels=True,

@@ -71,6 +71,7 @@ def EOG_detection(config, bids_path):
         config,
         bids_path,
         raw=raw,
+        preload=True,
         apply_sobi=sobi,
         freq_limits=freq_limits,
         epoch=epoch_definition
@@ -261,6 +262,7 @@ def sensor_detection(config, bids_path):
     resample_frequency = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
+    epoch_definition = config['artifact_detection']['sensor']['epoch_definition']
 
     # Load the raw data
     raw = mne_tools.prepare_eeg(
@@ -277,51 +279,41 @@ def sensor_detection(config, bids_path):
         rereference='average'
     )
 
+    # Extra outputs
+    last_sample = raw.last_samp
+    sfreq = raw.info['sfreq']
+
     # Apply SOBI and filters
     raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         raw=raw,
+        preload=True,
         apply_sobi=sobi,
-        freq_limits=freq_limits
+        freq_limits=freq_limits,
+        epoch=epoch_definition
     )
 
-    # Create Epoch object of 1 second to estimate the average std discarding first the muscle artefacts
-    dummy_events = mne.make_fixed_length_events(raw, duration=0.5)
-    raw_epoched = mne.Epochs(raw, events=dummy_events, reject_by_annotation=True, baseline=None, tmin=0, tmax=0.5)
-    raw_epoched.drop_bad()
+    # Discard first the muscle artefacts
+    raw.drop_bad()
 
     # Get the clean data
-    raw_data = raw_epoched.get_data().copy()
-
-    # Estimate the std of each channel
-    raw_data_std = raw_data.std(axis=2)
-    raw_data_std_average = raw_data_std.mean(axis=0)
-
-    # Get the original data
     raw_data = raw.get_data().copy()
 
-    # Find the peaks of each channel (peak = signal > 3*sensor_threshold)
-    # Empty list to save the peaks
-    sensor_index = []
+    # Estimate the std of each epoch
+    raw_data_std = raw_data.std(axis=2)
 
-    # Windows size
-    window_size = int(np.floor(0.1 * raw.info['sfreq']))
+    # Estimate the median and MAD
+    median = np.median(raw_data_std)
+    MAD = median_abs_deviation(raw_data_std,axis=None)
 
-    # Use a sliding windows to find jumps. A jump is defined as a windows with 3*std
-    for i in range(raw_data.shape[1] - window_size + 1):
+    # Find important deviations
+    hits = (raw_data_std - median) / MAD > config['artifact_detection']['sensor']['threshold']
+    hits = np.sum(hits,axis=1) > 0
+    hits = np.where(hits)[0]
 
-        # Get the data of the current window
-        current_window = (raw_data[:, i:i + window_size])
-
-        # Check if the std of any channel is > 3*raw_std
-        if any(current_window.std(axis=1) > config['artifact_detection']['sensor']['ratio'] * raw_data_std_average):
-            sensor_index = sensor_index + np.arange(i, i + window_size).tolist()
-            sensor_index = list(set(sensor_index))
-
-    # Extra outputs
-    last_sample = raw.last_samp
-    sfreq = raw.info['sfreq']
+    # Save the peaks index
+    sensor_index = raw.events[hits,:][:,0]
 
     # If you have crop the recordings, put the indexes according to the original number of samples
     if crop_seconds:

@@ -146,7 +146,6 @@ Marks badchannels in EEG recordings based on different criteria.
 
 For EEG:
 
-- Channels with impedances above a certain threshold.
 - Channels with impossible low or high amplitudes.
 - Channels with significantly higher energy in 45-55 Hz range compared to the rest of channels.
 - Channels with gel bridge.

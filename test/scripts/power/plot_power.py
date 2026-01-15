@@ -78,6 +78,7 @@ clean_data = prepare_eeg(
     config,
     bids_path,
     raw=clean_data,
+    preload=True,
     epoch=epoch_definition
 )
 clean_data.drop_bad()
