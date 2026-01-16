@@ -557,22 +557,22 @@ def prepare_eeg(
     # Remove bad channels
     ##################################################################
 
+    chan = bids.read_chan(bids_path)
+    badchannels = list(chan.loc[chan['status'] == 'bad']['name'])
+
+    # To avoid errors, the badchannels has to be among the channels included in the recording
+    badchannels = list(set(badchannels) & set(raw.info['ch_names']))
+
+    # If all channels are badchannels, raise an Exception
+    if (len(badchannels) == len(raw.info['ch_names'])):
+        raise Exception("All channels are marked as bad")
+
     # Add bad channels to the info
     if metadata_badchannels:
-        chan = bids.read_chan(bids_path)
-        badchannels = list(chan.loc[chan['status'] == 'bad']['name'])
-
-        # To avoid errors, the badchannels has to be among the channels included in the recording
-        badchannels = list(set(badchannels) & set(raw.info['ch_names']))
         raw.info['bads'] = badchannels
 
     # Drop the badchannels
     if exclude_badchannels:
-
-        # If all channels are badchannels, raise an Exception
-        if (len(badchannels) == len(raw.info['ch_names'])):
-            raise Exception("All channels are marked as bad")
-
         raw = raw.pick(None, exclude='bads')
 
     # Interpolate the bad channels

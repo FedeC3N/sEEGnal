@@ -19,7 +19,7 @@ from sEEGnal.tools.bids_tools import create_bids_path, read_sobi
 config, files, sub, ses, task = init()
 
 # current info
-subject_index = 2
+subject_index = 10
 current_file = files[subject_index]
 current_sub = sub[subject_index]
 current_ses = ses[subject_index]
@@ -70,7 +70,8 @@ clean_data = prepare_eeg(
 )
 
 # Plot the clean data
-clean_data.plot(block=False,duration=20)
+fig = clean_data.plot(block=False,duration=20)
+fig.canvas.manager.set_window_title(current_file)
 
 # Remove the bad epochs before estimating power spectrum
 clean_data = prepare_eeg(
@@ -89,5 +90,6 @@ spectrum = clean_data.compute_psd(
     fmax=45,
 )
 spectrum = spectrum.average()
-spectrum.plot(dB=False, amplitude=True)
+fig = spectrum.plot(dB=False, amplitude=True)
+fig.canvas.manager.set_window_title(current_file)
 plt.show(block=True)
