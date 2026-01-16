@@ -17,7 +17,7 @@ import sEEGnal.tools.mne_tools as mne_tools
 
 
 # Modules
-def impossible_amplitude_detection(config, bids_path, badchannels):
+def impossible_amplitude_detection(config, bids_path):
     """
 
     Look for channels with low amplitude
@@ -78,7 +78,7 @@ def impossible_amplitude_detection(config, bids_path, badchannels):
     return impossible_amplitude_badchannels
 
 
-def power_spectrum_detection(config, bids_path, badchannels):
+def power_spectrum_detection(config, bids_path):
     """
 
     Look for badchannels based on anomalies in the power spectrum to detect badchannels
@@ -138,7 +138,7 @@ def power_spectrum_detection(config, bids_path, badchannels):
     return power_spectrum_badchannels
 
 
-def gel_bridge_detection(config, bids_path, badchannels):
+def gel_bridge_detection(config, bids_path):
     """
 
     Look for badchannels based on gel bridges. It is based on correlation and physical distance
@@ -240,7 +240,7 @@ def gel_bridge_detection(config, bids_path, badchannels):
     return gel_bridge_badchannels
 
 
-def high_deviation_detection(config, bids_path, badchannels):
+def high_deviation_detection(config, bids_path):
     """
 
     Look for badchannels based on the channel variance

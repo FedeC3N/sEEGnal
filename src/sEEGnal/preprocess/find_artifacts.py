@@ -122,7 +122,7 @@ def EOG_detection(config, bids_path):
     return EOG_index, last_sample, sfreq
 
 
-def muscle_detection(config, bids_path):
+def muscle_detection(config, bids_path, derivatives_label):
     """
 
     Detect muscle artifacts
@@ -130,7 +130,7 @@ def muscle_detection(config, bids_path):
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
     bids_path (dict): Path to the recording
-    channels_to_include (str): Channels type to work on.
+    derivatives_label (str): Select the correct SOBI
 
     :returns
     MNE annotation object with detected muscle artifacts
@@ -138,7 +138,7 @@ def muscle_detection(config, bids_path):
     """
 
     # Read the ICA information
-    sobi = bids.read_sobi(bids_path, 'sobi_artifacts')
+    sobi = bids.read_sobi(bids_path, derivatives_label)
 
     # Parameters for loading EEG recordings
     freq_limits         = [
@@ -227,7 +227,7 @@ def muscle_detection(config, bids_path):
     return muscle_index, last_sample, sfreq
 
 
-def sensor_detection(config, bids_path):
+def sensor_detection(config, bids_path,derivatives_label):
     """
 
     Detect sensor artifacts (jumps)
@@ -235,7 +235,7 @@ def sensor_detection(config, bids_path):
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
     bids_path (dict): Path to the recording
-    channels_to_include (str): Channels type to work on.
+    derivatives_label (str): Select the correct SOBI
 
     :returns
     MNE annotation object with detected sensor artifacts
@@ -244,7 +244,7 @@ def sensor_detection(config, bids_path):
 
     # Parameters for loading EEG recordings
     sobi                = {
-        'desc': 'sobi_artifacts',
+        'desc': derivatives_label,
         'components_to_include': [],
         'components_to_exclude': ['eog', 'ecg']
     }
