@@ -19,7 +19,7 @@ from sEEGnal.tools.bids_tools import create_bids_path, read_sobi
 config, files, sub, ses, task = init()
 
 # current info
-subject_index = 10
+subject_index = 0
 current_file = files[subject_index]
 current_sub = sub[subject_index]
 current_ses = ses[subject_index]

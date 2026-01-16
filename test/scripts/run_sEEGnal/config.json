@@ -36,7 +36,12 @@
 		"high_freq": 100,
 		"resampled_frequency":500,
         "crop_seconds": 10,
-		"unclear_threshold": 0.7
+		"unclear_threshold": 0.7,
+        "epoch_definition":{
+                  "length": 1,
+                  "overlap": 0,
+                  "padding": 0
+              }
 	},
 
 
@@ -63,7 +68,7 @@
 			}
 		},
 		"pow_spectrum": {
-			"threshold": 3,
+			"threshold": 7,
 			"low_freq":45,
 			"high_freq":55,
 			"percentage_threshold": 0.5,
@@ -81,7 +86,7 @@
 			"seq_threshold":0.5
 		},
 		"high_deviation":{
-			"threshold": 3,
+			"threshold": 7,
 			"low_freq":2,
 			"high_freq":45,
 			"percentage_threshold": 0.5,
@@ -100,12 +105,12 @@
 		"muscle":{
 			"low_freq":110,
 			"high_freq":145,
-			"threshold": 7
+			"threshold": 10
 		},
 		"sensor":{
 			"low_freq":0.5,
 			"high_freq":2,
-			"threshold": 7,
+			"threshold": 10,
             "epoch_definition":{
 				"length": 0.5,
 				"overlap": 0.25,
@@ -120,7 +125,7 @@
 		"EOG":{
 			"low_freq":2,
 			"high_freq":5,
-			"threshold": 7,
+			"threshold": 10,
             "epoch_definition":{
 				"length": 0.5,
 				"overlap": 0.25,

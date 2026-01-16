@@ -378,79 +378,6 @@ def build_bss(mixing, unmixing, chname, icname=None, method='bss'):
     return mnebss
 
 
-# Function to segment and MNE raw data object avoiding the artifacts.
-def get_epochs(raw, annot=None, length=4, overlap=None, padding=None, preload=False):
-    # Gets the annotations from the raw data, if required.
-    if annot is None:
-        annot = raw.annotations
-
-    # Removes the annotations extending beyond the data.
-    annot.crop(tmin=raw.times[0], tmax=raw.times[-1])
-
-    # Sanitizes the input.
-    overlap = overlap or 0
-    padding = padding or 0
-
-    # Gets the first and last valid times.
-    ftime = raw.times[0] + padding
-    ltime = raw.times[-1] - padding - overlap
-
-    # Gets the separation between epochs.
-    step = length - overlap
-
-    # Gets the beginning and ending indexes for each artifact.
-    artbeg = annot.onset
-    artend = annot.onset + annot.duration
-
-    # Merges overlapping artifacts.
-    for index in range(len(artbeg) - 1, 0, -1):
-
-        # Checks if the artifacts overlap.
-        if artend[index - 1] > artbeg[index]:
-            # Extendes the previous artifact, if required.
-            artend[index - 1] = numpy.max(artend[index - 1:index + 1])
-
-            # Removes the current artifact.
-            artbeg = numpy.delete(artbeg, index)
-            artend = numpy.delete(artend, index)
-
-    # Adds virtual artifacts at the beginning and end of the data.
-    artbeg = numpy.append(artbeg, ltime)
-    artend = numpy.insert(artend, 0, ftime)
-
-    # Lists the clean segments of data.
-    segbegs = list(artend)
-    seglens = list(artbeg - artend)
-
-    # Initializes the list of epoch onsets.
-    onsets = []
-
-    # Iterates through each clean segment.
-    for index in range(len(segbegs)):
-        # Splits the segment in as many epochs as possible.
-        nepoch = numpy.floor((seglens[index] - length) / step).astype(int) + 1
-        sides = ((seglens[index] - length) - step * (nepoch - 1)) / 2
-
-        # Creates the markers for the epochs.
-        onset = segbegs[index] + sides + step * numpy.array(range(nepoch))
-
-        # Adds the epochs to the list.
-        onsets = onsets + list(onset)
-
-    # Creates a series of events from the defined epochs.
-    events = numpy.zeros([len(onsets), 3], 'int')
-    events[:, 0] = raw.time_as_index(onsets)
-    events[:, 2] = 1
-
-    # Generates a MNE epoch structure from the data and the events.
-    epochs = mne.Epochs(
-        raw, events, tmin=-padding, tmax=length + padding, baseline=None, verbose=False, preload=preload
-    )
-
-    # Returns the epochs object.
-    return epochs
-
-
 # Function to prepare MNE raw data
 def prepare_eeg(
     config,
@@ -626,16 +553,41 @@ def prepare_eeg(
     ##################################################################
 
     if epoch:
-        if ('length' in epoch.keys()) and ('overlap' in epoch.keys()) and ('padding' in epoch.keys()):
             raw = get_epochs(
                 raw,
-                annot=raw.annotations,
-                length=epoch['length'],
-                overlap=epoch['overlap'],
-                padding=epoch['padding'],
-                preload=preload
+                preload,
+                epoch['length'],
+                epoch['overlap'],
+                epoch['padding']
             )
-        else:
-            raise ValueError("Dictionary definition must be {'length':[],'overlap':[],'padding':[]}")
+
 
     return raw
+
+
+# Function to segment and MNE raw data object avoiding the artifacts.
+def get_epochs(raw, preload, length, overlap, padding):
+
+    # Get the index of the events
+    last_samp = int(numpy.fix(raw.times[-1]*raw.info['sfreq']))
+    first_samp = int(numpy.fix(raw.times[0]*raw.info['sfreq']))
+    step = int(numpy.fix(raw.info['sfreq'] * (length - overlap)))
+
+    # Create the events list
+    onsets = numpy.arange(first_samp, last_samp, step)
+    events = numpy.zeros([len(onsets), 3], 'int')
+    events[:, 0] = onsets
+    events[:, 2] = 1
+
+    # Generates a MNE epoch structure from the data and the events.
+    epochs = mne.Epochs(
+        raw, events,
+        tmin=-padding,
+        tmax=length + padding,
+        baseline=None,
+        verbose=False,
+        preload=preload
+    )
+
+    # Returns the epochs object.
+    return epochs

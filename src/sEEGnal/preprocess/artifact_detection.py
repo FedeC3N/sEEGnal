@@ -173,6 +173,7 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
     resample_frequency = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
+    epoch_definition = config['component_estimation']['epoch_definition']
     if derivatives_label == 'sobi':
         set_annotations = True
     else:
@@ -191,22 +192,9 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
         interpolate_badchannels=True,
         set_annotations=set_annotations,
         crop_seconds=crop_seconds,
-        rereference='average'
+        rereference='average',
+        epoch=epoch_definition
     )
-
-    # Crop the artifactual part if second SOBI
-    if derivatives_label == 'sobi':
-
-        # Create epochs and discard the bads
-        epochs = mne.make_fixed_length_epochs(
-            raw,
-            duration=0.5,
-        )
-        epochs.drop_bad()
-        epochs.load_data()
-
-        # Rename for consistency
-        raw = epochs.copy()
 
 
     # Run SOBI
