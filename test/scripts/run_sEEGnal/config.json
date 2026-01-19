@@ -120,7 +120,12 @@
 		"other":{
 			"low_freq":2,
 			"high_freq":45,
-			"threshold": 0.0005
+			"threshold": 0.0005,
+            "epoch_definition":{
+                  "length": 0.5,
+                  "overlap": 0,
+                  "padding": 0
+              }
 		},
 		"EOG":{
 			"low_freq":2,

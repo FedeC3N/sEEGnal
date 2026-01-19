@@ -524,6 +524,11 @@ def prepare_eeg(
     ##################################################################
 
     if crop_seconds:
+
+        # Save the original length
+        raw.original_last_samp = raw.last_samp
+
+        # Crop
         raw.crop(tmin=crop_seconds, tmax=raw.times[-1] - crop_seconds)
 
     ##################################################################
@@ -553,6 +558,11 @@ def prepare_eeg(
     ##################################################################
 
     if epoch:
+
+            # If previously saved the atrribute, keep it
+            if hasattr(raw, 'original_last_samp'):
+                dummy = raw.original_last_samp
+
             raw = get_epochs(
                 raw,
                 preload,
@@ -560,6 +570,9 @@ def prepare_eeg(
                 epoch['overlap'],
                 epoch['padding']
             )
+
+            # Save it again
+            raw.original_last_samp = dummy
 
 
     return raw
@@ -581,7 +594,8 @@ def get_epochs(raw, preload, length, overlap, padding):
 
     # Generates a MNE epoch structure from the data and the events.
     epochs = mne.Epochs(
-        raw, events,
+        raw,
+        events,
         tmin=-padding,
         tmax=length + padding,
         baseline=None,

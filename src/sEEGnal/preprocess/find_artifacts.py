@@ -63,10 +63,6 @@ def EOG_detection(config, bids_path):
         rereference='average'
     )
 
-    # Extra outputs
-    sfreq = raw.info['sfreq']
-    last_sample = raw.last_samp
-
     # Apply SOBI and filters, and epoch the data
     raw = mne_tools.prepare_eeg(
         config,
@@ -113,11 +109,9 @@ def EOG_detection(config, bids_path):
     # Save the EOG index
     EOG_index = raw.events[hits,0]
 
-    # If you have crop the recordings, put the indexes according to the original number of samples
-    if crop_seconds:
-        crop_samples = crop_seconds * sfreq
-        last_sample = int(last_sample + 2 * crop_samples)
-        EOG_index = [int(current_index - crop_samples) for current_index in EOG_index]
+    # Extra outputs
+    last_sample = raw.original_last_samp
+    sfreq = raw.info['sfreq']
 
     return EOG_index, last_sample, sfreq
 
@@ -215,13 +209,12 @@ def muscle_detection(config, bids_path, derivatives_label):
             muscle_index = muscle_index + current_peaks.tolist()
 
     # Extra outputs
-    last_sample = raw.last_samp
+    last_sample = raw.original_last_samp
     sfreq = raw.info['sfreq']
 
     # If you have crop the recordings, put the indexes according to the original number of samples
     if crop_seconds:
         crop_samples = crop_seconds * sfreq
-        last_sample = int(last_sample + 2 * crop_samples)
         muscle_index = [int(current_index + crop_samples) for current_index in muscle_index]
 
     return muscle_index, last_sample, sfreq
@@ -273,10 +266,6 @@ def sensor_detection(config, bids_path,derivatives_label):
         rereference='average'
     )
 
-    # Extra outputs
-    sfreq = raw.info['sfreq']
-    last_sample = raw.last_samp
-
     # Apply SOBI and filters
     raw = mne_tools.prepare_eeg(
         config,
@@ -309,11 +298,9 @@ def sensor_detection(config, bids_path,derivatives_label):
     # Save the peaks index
     sensor_index = raw.events[hits,:][:,0]
 
-    # If you have crop the recordings, put the indexes according to the original number of samples
-    if crop_seconds:
-        crop_samples = crop_seconds * sfreq
-        last_sample = int(last_sample + 2 * crop_samples)
-        sensor_index = [int(current_index + crop_samples) for current_index in sensor_index]
+    # Extra outputs
+    last_sample = raw.original_last_samp
+    sfreq = raw.info['sfreq']
 
     return sensor_index, last_sample, sfreq
 
@@ -346,6 +333,8 @@ def other_detection(config, bids_path):
     resample_frequency = config['component_estimation']['resampled_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
+    epoch_definition = config['artifact_detection']['other'][
+        'epoch_definition']
 
     # Load the raw and apply SOBI
     raw = mne_tools.prepare_eeg(
@@ -367,36 +356,29 @@ def other_detection(config, bids_path):
         config,
         bids_path,
         raw=raw,
+        preload=True,
         apply_sobi=sobi,
-        freq_limits=freq_limits
+        freq_limits=freq_limits,
+        epoch=epoch_definition
     )
 
     # De-mean the channels
     raw_data = raw.get_data().copy()
+    epoch_average = np.mean(raw_data,axis=2)
+    raw_data_demean = raw_data - epoch_average[:, :, np.newaxis]
 
-    # Estimate the average standard deviation of each epoch
-    raw_data_demean_abs = np.abs(raw_data)
+    # Remove the offset
+    raw_data_demean_abs = np.abs(raw_data_demean)
 
-    # Check if the std of any channel is > 3*raw_std
-    other_index = []
-    for ichannel in range(raw_data_demean_abs.shape[0]):
-
-        current_channel = raw_data_demean_abs[ichannel, :]
-        current_peaks, _ = find_peaks(current_channel, height=config['artifact_detection']['other']['threshold'])
-
-        # If any, add to list
-        if len(current_peaks) > 0:
-            other_index = other_index + current_peaks.tolist()
+    # Find impossible peaks
+    other_index = raw_data_demean_abs > config['artifact_detection']['other']['threshold']
+    other_index = np.sum(np.sum(other_index,axis=2),axis=1)
+    other_index = np.where(other_index)[0]
+    other_index = raw.events[other_index,0]
 
     # Extra outputs
-    last_sample = raw.last_samp
+    last_sample = raw.original_last_samp
     sfreq = raw.info['sfreq']
-
-    # If you have crop the recordings, put the indexes according to the original number of samples
-    if crop_seconds:
-        crop_samples = crop_seconds * sfreq
-        last_sample = int(last_sample + 2 * crop_samples)
-        other_index = [int(current_index + crop_samples) for current_index in other_index]
 
     return other_index, last_sample, sfreq
 
