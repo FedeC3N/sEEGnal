@@ -18,7 +18,7 @@ import json
 def init():
 
     # Read the config dictionary
-    with open('./scripts/run_sEEGnal/config.json', 'r') as file:
+    with open('./init/config.json', 'r') as file:
         config = json.load(file)
 
     # Folders to find the subjects
