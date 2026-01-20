@@ -12,7 +12,7 @@ Federico Ramírez-Toraño
 # Imports
 from test.init.init import init
 import sEEGnal.preprocess.find_badchannels as fbc
-from sEEGnal.tools.mne_tools import prepare_eeg
+import plot_badchannels as pbc
 from sEEGnal.tools.bids_tools import create_bids_path
 
 
@@ -48,23 +48,5 @@ for subject_index in range(len(files)):
         print(f"    {current_criterion} bad channels: {badchannels}")
 
         # Plot
-        # Load the clean data
-        raw = prepare_eeg(
-                config,
-                bids_path,
-                preload=True,
-                channels_to_include=config['global']["channels_to_include"],
-                channels_to_exclude=config['global']["channels_to_exclude"],
-                notch_filter=True,
-                freq_limits=[1,140],
-                resample_frequency=500,
-                crop_seconds=10
-            )
-
-        # Add badchannels
-        raw.info['bads'] = badchannels
-
-        # Plot
-        raw.plot(
-            block=True,
-            scalings=dict(eeg=50e-6))
+        func = getattr(pbc, current_criterion)
+        func(config, bids_path,badchannels)

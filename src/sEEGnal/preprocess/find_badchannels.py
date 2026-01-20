@@ -91,17 +91,23 @@ def power_spectrum_detection(config, bids_path):
     """
 
     # Parameters for loading EEG  recordings
+    sobi = {
+        'desc': 'sobi-badchannels',
+        'components_to_include': ['ch_noise', 'line_noise'],
+        'components_to_exclude': []
+    }
     freq_limits         = [
         config['badchannel_detection']['pow_spectrum']['low_freq'],
         config['badchannel_detection']['pow_spectrum']['high_freq']
     ]
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
+    resample_frequency = config['component_estimation']['resampled_frequency']
     crop_seconds        = config['badchannel_detection']['crop_seconds']
     epoch_definition    = config['badchannel_detection']['pow_spectrum']['epoch_definition']
 
     # Load the raw data
-    raw = mne_tools.prepare_eeg(
+    '''raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
@@ -109,9 +115,37 @@ def power_spectrum_detection(config, bids_path):
         channels_to_exclude=channels_to_exclude,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
-        metadata_badchannels=True,
-        exclude_badchannels=True,
         epoch=epoch_definition
+    )'''
+
+    # Load the raw EEG
+    raw = mne_tools.prepare_eeg(
+        config,
+        bids_path,
+        preload=True,
+        channels_to_include=channels_to_include,
+        channels_to_exclude=channels_to_exclude,
+        resample_frequency=resample_frequency,
+        crop_seconds=crop_seconds
+    )
+
+    # Apply SOBI
+    raw = mne_tools.prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
+        apply_sobi=sobi,
+    )
+
+    # Filter
+    raw = mne_tools.prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
+        freq_limits=freq_limits,
+        notch_filter=True,
+        metadata_badchannels=True,
+        exclude_badchannels=True
     )
 
     # Compute the power spectrum
