@@ -67,13 +67,13 @@
 				"padding": 0
 			}
 		},
-		"pow_spectrum": {
-			"threshold": 3,
-			"low_freq":45,
-			"high_freq":55,
+		"component_detection": {
+			"threshold": 5,
+			"low_freq":2,
+			"high_freq":45,
 			"percentage_threshold": 0.5,
 			"epoch_definition":{
-				"length": 4,
+				"length": 2,
 				"overlap": 0,
 				"padding": 0
 			}
@@ -86,7 +86,7 @@
 			"seq_threshold":0.5
 		},
 		"high_deviation":{
-			"threshold": 7,
+			"threshold": 5,
 			"low_freq":2,
 			"high_freq":45,
 			"percentage_threshold": 0.5,

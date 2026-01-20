@@ -20,6 +20,7 @@ import mne_icalabel as iclabel
 import sEEGnal.tools.bids_tools as bids
 import sEEGnal.tools.mne_tools as mne_tools
 import sEEGnal.preprocess.find_badchannels as find_badchannels
+from demo.scripts.power.plot_power import components_to_include
 
 # Set the output levels
 mne.utils.set_log_level(verbose='ERROR')
@@ -128,9 +129,9 @@ def eeg_badchannel_detection(config, bids_path):
     badchannels_description.extend(current_badchannel_description)
 
     # Find abnormal power spectrum
-    power_spectrum_badchannels = find_badchannels.power_spectrum_detection(config, bids_path)
-    badchannels.extend(power_spectrum_badchannels)
-    current_badchannel_description = ['bad_power_spectrum' for i in range(len(power_spectrum_badchannels))]
+    components_badchannels = find_badchannels.component_detection(config, bids_path)
+    badchannels.extend(components_badchannels)
+    current_badchannel_description = ['bad_component' for i in range(len(components_badchannels))]
     badchannels_description.extend(current_badchannel_description)
 
     # Find channels with gel bridge
