@@ -51,8 +51,6 @@ def impossible_amplitude_detection(config, bids_path):
         notch_filter=True,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
-        metadata_badchannels=True,
-        exclude_badchannels=True,
         epoch=epoch_definition,
         rereference=False
     )

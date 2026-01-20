@@ -68,7 +68,7 @@
 			}
 		},
 		"pow_spectrum": {
-			"threshold": 7,
+			"threshold": 5,
 			"low_freq":45,
 			"high_freq":55,
 			"percentage_threshold": 0.5,
