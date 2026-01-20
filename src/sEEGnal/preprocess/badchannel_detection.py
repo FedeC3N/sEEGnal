@@ -20,7 +20,6 @@ import mne_icalabel as iclabel
 import sEEGnal.tools.bids_tools as bids
 import sEEGnal.tools.mne_tools as mne_tools
 import sEEGnal.preprocess.find_badchannels as find_badchannels
-from demo.scripts.power.plot_power import components_to_include
 
 # Set the output levels
 mne.utils.set_log_level(verbose='ERROR')

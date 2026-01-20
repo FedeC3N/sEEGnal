@@ -26,8 +26,8 @@
 
 
 	"visualization":{
-        "low_freq_limit": 2,
-		"high_freq_limit":45
+        "low_freq": 2,
+		"high_freq":45
 	},
 
 
@@ -101,7 +101,7 @@
 
 	"artifact_detection":{
 		"notch_frequencies": [50, 100, 150, 200, 250],
-        "frontal_channels": ["Fp1","Fpz","Fp2","AF7","AF8"],
+        "frontal_channels": ["Fp1","Fpz","Fp2"],
 		"muscle":{
 			"low_freq":110,
 			"high_freq":145,
