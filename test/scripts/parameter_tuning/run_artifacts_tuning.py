@@ -15,7 +15,7 @@ import numpy as np
 from test.init.init import init
 import plot_artifacts as par
 import sEEGnal.preprocess.artifact_detection as far
-from sEEGnal.tools.bids_tools import create_bids_path
+from sEEGnal.tools.bids_tools import create_bids_path, write_annot
 
 
 # Parameters
@@ -28,7 +28,6 @@ config, files, sub, ses, task = init()
 
 # Random order to avoid seen the same subjects over and over again
 permutated_index = np.random.permutation(len(files))
-permutated_index = [0]
 
 for subject_index in permutated_index:
 
@@ -68,9 +67,12 @@ for subject_index in permutated_index:
             func = getattr(far, current_criterion)
             annotations = func(config,bids_path)
 
+            # Save the annotations in BIDS format
+            _ = write_annot(bids_path, annotations)
+
             # Print out information
             print(f"    {current_criterion}: {annotations}")
 
             # Plot
             func = getattr(par, current_criterion)
-            func(config, bids_path,annotations)
+            func(config, bids_path)

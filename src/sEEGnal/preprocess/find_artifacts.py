@@ -46,7 +46,6 @@ def EOG_detection(config, bids_path):
     resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
-    epoch_definition = config['artifact_detection']['EOG']['epoch_definition']
 
     # Load the raw and apply SOBI
     raw = mne_tools.prepare_eeg(
@@ -70,12 +69,10 @@ def EOG_detection(config, bids_path):
         raw=raw,
         preload=True,
         apply_sobi=sobi,
-        freq_limits=freq_limits,
-        epoch=epoch_definition
+        freq_limits=freq_limits
     )
 
-    # Divide between frontal channels and background channels
-    # Frontal
+    # Select frontal channels
     frontal_channels = config['artifact_detection']['frontal_channels']
     frontal_channels = [
         current_channel for current_channel in frontal_channels if current_channel in channels_to_include
@@ -86,32 +83,21 @@ def EOG_detection(config, bids_path):
     else:
         return [], [], []  # If no frontal channels, no EOG artifacts
 
-    # Background
-    background_channels = [
-        current_channel for current_channel in raw.ch_names if current_channel not in frontal_channels
-    ]
-    background_raw = raw.copy()
-    background_raw.pick(background_channels)
-
-    # Get the std
-    frontal_raw_std = np.std(frontal_raw.get_data(),axis=2)
-    background_raw_std = np.std(background_raw.get_data(), axis=2)
-
-    # Get the median and MAD
-    median = np.median(background_raw_std)
-    mad = median_abs_deviation(background_raw_std,axis=None)
-
-    # Look for significant activity
-    hits = (frontal_raw_std - median) / mad > config[
-        'artifact_detection']['EOG']['threshold']
-    hits = np.sum(hits,axis=1) > 0
-
-    # Save the EOG index
-    EOG_index = raw.events[hits,0]
+    # Find peaks after averaging the frontal channels
+    frontal_data = np.mean(frontal_raw.get_data(),axis=0)
+    hits = (np.abs(frontal_data) >
+            config['artifact_detection']['EOG']['threshold'] * np.std(frontal_data))
+    EOG_index = np.where(hits)[0]
 
     # Extra outputs
     last_sample = raw.original_last_samp
     sfreq = raw.info['sfreq']
+
+    # If you have crop the recordings, put the indexes according to the original number of samples
+    if crop_seconds:
+        crop_samples = crop_seconds * sfreq
+        EOG_index = [int(current_index + crop_samples) for current_index in
+                        EOG_index]
 
     return EOG_index, last_sample, sfreq
 

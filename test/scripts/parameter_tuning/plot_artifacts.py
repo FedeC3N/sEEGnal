@@ -15,7 +15,7 @@ import numpy as np
 from sEEGnal.tools.mne_tools import prepare_eeg
 
 
-def EOG_detection(config, bids_path, annotations):
+def EOG_detection(config, bids_path):
 
     # Parameters for loading EEG  recordings
     sobi = {
@@ -39,8 +39,11 @@ def EOG_detection(config, bids_path, annotations):
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
+        metadata_badchannels=True,
+        interpolate_badchannels=True,
         notch_filter=True,
         resample_frequency=resample_frequency,
+        set_annotations=True,
         crop_seconds=crop_seconds
     )
 
@@ -62,40 +65,69 @@ def EOG_detection(config, bids_path, annotations):
         rereference='average'
     )
 
-    # Add annotations
-    raw.set_annotations(annotations)
-
     # Plot
     raw.plot(
         block=False,
         scalings=dict(eeg=50e-6))
 
-    # Filter
-    raw.filter(0.5,2)
-
-    # Get the frontal and background channels
-    frontal_channels = config['artifact_detection']['frontal_channels']
-    background_channels = [
-        current_channel for current_channel in raw.ch_names if
-        current_channel not in frontal_channels
+    # Parameters for loading EEG recordings
+    sobi = {
+        'desc': 'sobi',
+        'components_to_include': [],
+        'components_to_exclude': ['eog', 'ecg']
+    }
+    freq_limits = [
+        config['artifact_detection']['EOG']['low_freq'],
+        config['artifact_detection']['EOG']['high_freq']
     ]
+    crop_seconds = config['component_estimation']['crop_seconds']
+    resample_frequency = config['component_estimation']['resample_frequency']
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
+    epoch_definition = config['artifact_detection']['EOG']['epoch_definition']
 
-    # Create the average
-    frontal_raw = raw.copy().pick_channels(frontal_channels).get_data()
-    frontal_avg = np.mean(frontal_raw,axis=0,keepdims=True)
-    background_raw = raw.copy().pick_channels(background_channels).get_data()
-    background_avg = np.mean(background_raw, axis=0, keepdims=True)
-    avg_data = np.concatenate((frontal_avg, background_avg), axis=0)
-
-    # Create Raw object
-    info = mne.create_info(
-        ch_names=['frontal_avg','background_avg'],
-        sfreq=raw.info['sfreq'],
-        ch_types=['eeg','eeg']
+    # Load the raw and apply SOBI
+    raw = prepare_eeg(
+        config,
+        bids_path,
+        preload=True,
+        channels_to_include=channels_to_include,
+        channels_to_exclude=channels_to_exclude,
+        resample_frequency=resample_frequency,
+        metadata_badchannels=True,
+        interpolate_badchannels=True,
+        set_annotations=True,
+        rereference='average'
     )
 
-    # Create new Raw object
-    raw_avg = mne.io.RawArray(avg_data, info)
+    # Apply SOBI and filters
+    raw = prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
+        apply_sobi=sobi,
+        freq_limits=freq_limits
+    )
+
+    # Select frontal channels
+    frontal_channels = config['artifact_detection']['frontal_channels']
+    frontal_channels = [
+        current_channel for current_channel in frontal_channels if
+        current_channel in channels_to_include
+    ]
+    if len(frontal_channels) > 0:
+        frontal_raw = raw.copy()
+        frontal_raw.pick(frontal_channels)
+    else:
+        return [], [], []  # If no frontal channels, no EOG artifacts
+
+    raw_avg = mne.channels.combine_channels(
+        raw,
+        groups=dict(AVG=range(len(frontal_channels))),
+        method='mean'
+    )
+    raw_avg.set_annotations(raw.annotations)
+    raw_avg.crop(tmin=crop_seconds, tmax=raw_avg.times[-1] - crop_seconds)
 
     # Plot
     raw_avg.plot(

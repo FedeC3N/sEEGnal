@@ -128,9 +128,9 @@
               }
 		},
 		"EOG":{
-			"low_freq":2,
-			"high_freq":5,
-			"threshold": 10,
+			"low_freq":0.5,
+			"high_freq":2,
+			"threshold": 7,
             "epoch_definition":{
 				"length": 0.5,
 				"overlap": 0.25,
