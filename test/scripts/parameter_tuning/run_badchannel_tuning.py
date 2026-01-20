@@ -19,7 +19,7 @@ from sEEGnal.tools.bids_tools import create_bids_path
 # Parameters
 criteria = ['impossible_amplitude_detection', 'power_spectrum_detection',
             'gel_bridge_detection', 'high_deviation_detection']
-criteria = ['impossible_amplitude_detection']
+criteria = ['power_spectrum_detection']
 
 # Init the database
 config, files, sub, ses, task = init()

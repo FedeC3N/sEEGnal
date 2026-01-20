@@ -34,7 +34,7 @@
 	"component_estimation":{
 		"low_freq": 1,
 		"high_freq": 100,
-		"resampled_frequency":500,
+		"resample_frequency":500,
         "crop_seconds": 10,
 		"unclear_threshold": 0.7,
         "epoch_definition":{

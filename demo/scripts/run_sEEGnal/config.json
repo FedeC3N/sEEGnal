@@ -33,7 +33,7 @@
 	"component_estimation":{
 		"low_freq": 1,
 		"high_freq": 100,
-		"resampled_frequency":500,
+		"resample_frequency":500,
 		"notch_frequencies": [50, 100, 150, 200, 250],
 		"unclear_threshold": 0.7,
 		"epoch_definition":{
@@ -110,7 +110,7 @@
 			"low_freq":110,
 			"high_freq":145,
 			"crop_seconds": 10,
-			"resampled_frequency":500,
+			"resample_frequency":500,
 			"threshold": 10,
 			"epoch_definition":{
 				"length": 4,
@@ -122,7 +122,7 @@
 			"low_freq":0.5,
 			"high_freq":2,
 			"crop_seconds": 10,
-			"resampled_frequency":500,
+			"resample_frequency":500,
 			"threshold": 0.99,
 			"ratio": 5,
 			"epoch_definition":{
@@ -135,7 +135,7 @@
 			"low_freq":2,
 			"high_freq":45,
 			"crop_seconds": 10,
-			"resampled_frequency":500,
+			"resample_frequency":500,
 			"threshold": 0.0005,
 			"epoch_definition":{
 				"length": 4,
@@ -147,7 +147,7 @@
 			"low_freq":2,
 			"high_freq":5,
 			"crop_seconds": 10,
-			"resampled_frequency":500,
+			"resample_frequency":500,
 			"ratio": 10,
 			"epoch_definition":{
 				"length": 4,

@@ -9,14 +9,14 @@ Federico Ramírez-Toraño
 """
 
 # Imports
-from init import init
+from test.init.init import init
 from sEEGnal.tools.bids_tools import create_bids_path
 from sEEGnal.standardize.standardize import standardize
 from sEEGnal.preprocess.artifact_detection import artifact_detection
 from sEEGnal.preprocess.badchannel_detection import badchannel_detection
 
 # What step to run: standardize, badchannel, artifact
-run = [0, 0, 1]
+run = [1, 1, 0]
 
 # Init the database
 config, files, sub, ses, task = init()

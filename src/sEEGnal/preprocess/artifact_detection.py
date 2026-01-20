@@ -170,7 +170,7 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
         config['component_estimation']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
-    resample_frequency = config['component_estimation']['resampled_frequency']
+    resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
     epoch_definition = config['component_estimation']['epoch_definition']

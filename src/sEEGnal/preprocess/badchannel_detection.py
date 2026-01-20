@@ -168,7 +168,7 @@ def estimate_badchannel_component(config, bids_path):
         config['component_estimation']['high_freq']
     ]
     crop_seconds        = config['component_estimation']['crop_seconds']
-    resample_frequency  = config['component_estimation']['resampled_frequency']
+    resample_frequency  = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
@@ -180,6 +180,7 @@ def estimate_badchannel_component(config, bids_path):
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
         resample_frequency=resample_frequency,
+        notch_filter=True,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds
     )

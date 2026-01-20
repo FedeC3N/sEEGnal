@@ -39,7 +39,7 @@ freq_limits         = [
         config['component_estimation']['high_freq']
 ]
 crop_seconds = config['component_estimation']['crop_seconds']
-resample_frequency = config['component_estimation']['resampled_frequency']
+resample_frequency = config['component_estimation']['resample_frequency']
 channels_to_include = config['global']["channels_to_include"]
 channels_to_exclude = config['global']["channels_to_exclude"]
 epoch_definition = {"length": 4, "overlap": 0, "padding": 0}

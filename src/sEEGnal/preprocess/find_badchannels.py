@@ -34,6 +34,7 @@ def impossible_amplitude_detection(config, bids_path):
     # Parameters for loading EEG  recordings
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
+    resample_frequency = config['component_estimation']['resample_frequency']
     freq_limits         = [
         config['badchannel_detection']['impossible_amplitude']['low_freq'],
         config['badchannel_detection']['impossible_amplitude']['high_freq']
@@ -48,11 +49,11 @@ def impossible_amplitude_detection(config, bids_path):
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
+        resample_frequency=resample_frequency,
         notch_filter=True,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
-        epoch=epoch_definition,
-        rereference=False
+        epoch=epoch_definition
     )
 
     # De-mean the channels
@@ -93,7 +94,7 @@ def power_spectrum_detection(config, bids_path):
     # Parameters for loading EEG  recordings
     sobi = {
         'desc': 'sobi-badchannels',
-        'components_to_include': ['ch_noise', 'line_noise'],
+        'components_to_include': ['other'],
         'components_to_exclude': []
     }
     freq_limits         = [
@@ -102,21 +103,9 @@ def power_spectrum_detection(config, bids_path):
     ]
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
-    resample_frequency = config['component_estimation']['resampled_frequency']
+    resample_frequency = config['component_estimation']['resample_frequency']
     crop_seconds        = config['badchannel_detection']['crop_seconds']
     epoch_definition    = config['badchannel_detection']['pow_spectrum']['epoch_definition']
-
-    # Load the raw data
-    '''raw = mne_tools.prepare_eeg(
-        config,
-        bids_path,
-        preload=True,
-        channels_to_include=channels_to_include,
-        channels_to_exclude=channels_to_exclude,
-        freq_limits=freq_limits,
-        crop_seconds=crop_seconds,
-        epoch=epoch_definition
-    )'''
 
     # Load the raw EEG
     raw = mne_tools.prepare_eeg(
@@ -126,6 +115,7 @@ def power_spectrum_detection(config, bids_path):
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
         resample_frequency=resample_frequency,
+        notch_filter=True,
         crop_seconds=crop_seconds
     )
 
@@ -135,21 +125,12 @@ def power_spectrum_detection(config, bids_path):
         bids_path,
         raw=raw,
         apply_sobi=sobi,
-    )
-
-    # Filter
-    raw = mne_tools.prepare_eeg(
-        config,
-        bids_path,
-        raw=raw,
-        freq_limits=freq_limits,
-        notch_filter=True,
-        metadata_badchannels=True,
-        exclude_badchannels=True
+        epoch=epoch_definition
     )
 
     # Compute the power spectrum
-    psd             = raw.compute_psd(method='welch', fmin=freq_limits[0], fmax=freq_limits[1], average='mean')
+    psd             = raw.compute_psd(method='welch', fmin=freq_limits[0],
+                                      fmax=freq_limits[1], average='mean')
     band_power      = np.trapezoid(psd.get_data(),psd.freqs,axis=2)
     band_power_log  = np.log10(band_power)
 
@@ -193,11 +174,7 @@ def gel_bridge_detection(config, bids_path):
         'components_to_include': [],
         'components_to_exclude': ['eog','ecg']
     }
-    freq_limits         = [
-        config['badchannel_detection']['gel_bridge']['low_freq'],
-        config['badchannel_detection']['gel_bridge']['high_freq']
-    ]
-    resample_frequency  = config['component_estimation']['resampled_frequency']
+    resample_frequency  = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
     crop_seconds        = config['badchannel_detection']['crop_seconds']
@@ -210,6 +187,7 @@ def gel_bridge_detection(config, bids_path):
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
         resample_frequency=resample_frequency,
+        notch_filter=True,
         crop_seconds=crop_seconds
     )
 
@@ -218,18 +196,7 @@ def gel_bridge_detection(config, bids_path):
         config,
         bids_path,
         raw=raw,
-        apply_sobi=sobi,
-    )
-
-    # Filter
-    raw = mne_tools.prepare_eeg(
-        config,
-        bids_path,
-        raw=raw,
-        freq_limits=freq_limits,
-        notch_filter=True,
-        metadata_badchannels=True,
-        exclude_badchannels=True
+        apply_sobi=sobi
     )
 
     # Get the data
@@ -290,13 +257,13 @@ def high_deviation_detection(config, bids_path):
     sobi = {
         'desc': 'sobi-badchannels',
         'components_to_include': [],
-        'components_to_exclude': ['eog', 'ecg']
+        'components_to_exclude': ['eog', 'ecg','line_noise','ch_noise']
     }
     freq_limits = [
         config['badchannel_detection']['high_deviation']['low_freq'],
         config['badchannel_detection']['high_deviation']['high_freq']
     ]
-    resample_frequency = config['component_estimation']['resampled_frequency']
+    resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
     crop_seconds = config['badchannel_detection']['crop_seconds']
@@ -309,6 +276,7 @@ def high_deviation_detection(config, bids_path):
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
+        notch_filter=True,
         resample_frequency=resample_frequency,
         crop_seconds=crop_seconds
     )
@@ -328,9 +296,6 @@ def high_deviation_detection(config, bids_path):
         raw=raw,
         preload=True,
         freq_limits=freq_limits,
-        notch_filter=True,
-        metadata_badchannels=True,
-        exclude_badchannels=True,
         epoch=epoch_definition
     )
 
