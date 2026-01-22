@@ -12,6 +12,9 @@ Federico Ramírez-Toraño
 import mne
 import numpy as np
 
+import matplotlib.pyplot as plt
+from scipy.signal import find_peaks
+
 from sEEGnal.tools.mne_tools import prepare_eeg
 
 
@@ -133,3 +136,111 @@ def EOG_detection(config, bids_path):
     raw_avg.plot(
         block=True,
         scalings=dict(eeg=50e-6))
+
+
+def muscle_detection(config,bids_path):
+
+    # Plot the clean visualization
+    # Parameters for loading EEG  recordings
+    sobi = {
+        'desc': 'sobi',
+        'components_to_include': ['brain', 'other'],
+        'components_to_exclude': []
+    }
+    freq_limits = [
+        config['visualization']['low_freq'],
+        config['visualization']['high_freq']
+    ]
+    resample_frequency = config['component_estimation']['resample_frequency']
+    channels_to_include = config['global']['channels_to_include']
+    channels_to_exclude = config['global']['channels_to_exclude']
+    crop_seconds = config['component_estimation']['crop_seconds']
+
+    # Load the raw EEG
+    raw = prepare_eeg(
+        config,
+        bids_path,
+        preload=True,
+        channels_to_include=channels_to_include,
+        channels_to_exclude=channels_to_exclude,
+        metadata_badchannels=True,
+        interpolate_badchannels=True,
+        notch_filter=True,
+        resample_frequency=resample_frequency,
+        set_annotations=True,
+        crop_seconds=crop_seconds
+    )
+
+    # Apply SOBI
+    raw = prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
+        apply_sobi=sobi
+    )
+
+    # Filter
+    raw = prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
+        preload=True,
+        freq_limits=freq_limits,
+        rereference='average'
+    )
+
+    # Plot
+    raw.plot(
+        block=False,
+        scalings=dict(eeg=50e-6))
+
+
+    # Plot the recording we have used to detect peaks
+    # Parameters for loading EEG recordings
+    freq_limits = [
+        config['artifact_detection']['muscle']['low_freq'],
+        config['artifact_detection']['muscle']['high_freq']
+    ]
+    crop_seconds = config['component_estimation']['crop_seconds']
+    resample_frequency = config['component_estimation']['resample_frequency']
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
+
+    # Load the raw and apply SOBI
+    raw = prepare_eeg(
+        config,
+        bids_path,
+        preload=True,
+        channels_to_include=channels_to_include,
+        channels_to_exclude=channels_to_exclude,
+        resample_frequency=resample_frequency,
+        notch_filter=True,
+        freq_limits=freq_limits,
+        crop_seconds=crop_seconds,
+        metadata_badchannels=True,
+        exclude_badchannels=True,
+        set_annotations=True
+    )
+
+    # Estimate the std across channels
+    raw_std = np.std(raw.get_data(), axis=0)
+
+    # Find peaks based on the total height (demeaning the signal first)
+    raw_std = raw_std - np.mean(raw_std)
+    height = (config['artifact_detection']['muscle']['threshold']
+              * np.std(raw_std))
+    muscle_index, _ = find_peaks(
+        raw_std,
+        height=height
+    )
+
+    plt.figure()
+    plt.plot(
+        raw.times, raw_std, 'b-',
+        raw.times, height * np.ones(raw.times.shape), 'r--',
+        raw.times[muscle_index], raw_std[muscle_index], 'r*'
+    )
+    raw.plot(
+        block=True,
+        scalings=dict(eeg=50e-6)
+    )

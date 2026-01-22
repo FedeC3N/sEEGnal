@@ -21,7 +21,7 @@ from sEEGnal.tools.bids_tools import create_bids_path, write_annot
 # Parameters
 criteria = ['EOG_detection', 'muscle_detection',
             'sensor_detection', 'other_detection']
-criteria = ['EOG_detection']
+criteria = ['muscle_detection']
 
 # Init the database
 config, files, sub, ses, task = init()
@@ -64,8 +64,13 @@ for subject_index in permutated_index:
     else:
 
         for current_criterion in criteria:
+
+            # CAll the function
             func = getattr(far, current_criterion)
-            annotations = func(config,bids_path)
+            if current_criterion == 'muscle_detection' or current_criterion == 'sensor_detection':
+                annotations = func(config, bids_path,'sobi')
+            else:
+                annotations = func(config,bids_path)
 
             # Save the annotations in BIDS format
             _ = write_annot(bids_path, annotations)

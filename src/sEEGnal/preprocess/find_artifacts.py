@@ -117,82 +117,42 @@ def muscle_detection(config, bids_path, derivatives_label):
 
     """
 
-    # Read the ICA information
-    sobi = bids.read_sobi(bids_path, derivatives_label)
-
     # Parameters for loading EEG recordings
-    freq_limits         = [
-        config['component_estimation']['low_freq'],
-        config['component_estimation']['high_freq']
+    freq_limits = [
+        config['artifact_detection']['muscle']['low_freq'],
+        config['artifact_detection']['muscle']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
     resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
 
-    # Load raw EEG
+    # Load the raw and apply SOBI
     raw = mne_tools.prepare_eeg(
         config,
         bids_path,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
+        resample_frequency=resample_frequency,
+        notch_filter=True,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
-        resample_frequency=resample_frequency,
         metadata_badchannels=True,
-        interpolate_badchannels=True,
-        rereference='average'
+        exclude_badchannels=True
     )
 
-    # Get the muscle components time series
-    if len(sobi.labels_['muscle']) > 0:
+    # Estimate the std across channels
+    raw_std = np.std(raw.get_data(),axis=0)
 
-        # Get the sources of interest
-        sources = sobi.get_sources(raw)
-        sources.pick(sobi.labels_['muscle'])
-
-        muscle_components_time_courses = sources.get_data().copy()
-
-    # If no muscular, we use the whole matrix but without eog (it confused the muscle artifact detection)
-    elif len(sobi.labels_['eog']) > 0:
-
-        # Get the sources of interest
-        ic_labels_without_EOG = sobi.labels_.copy()
-        ic_labels_without_EOG.pop('eog')
-        ic_labels_without_EOG = [i for i in ic_labels_without_EOG.values()]
-        ic_labels_without_EOG = sum(ic_labels_without_EOG, [])
-        sources = sobi.get_sources(raw)
-        sources.pick(ic_labels_without_EOG)
-
-        # Get the data
-        muscle_components_time_courses = sources.get_data().copy()
-
-    # If not, used the whole matrix
-    else:
-
-        # Now, the "muscle components" are all the components
-        sources = sobi.get_sources(raw)
-        muscle_components_time_courses = sources.get_data().copy()
-
-    # Find the peaks of each component
-    muscle_index = []
-    for icomponent in range(muscle_components_time_courses.shape[0]):
-
-        # Select the absolute current component
-        current_component = muscle_components_time_courses[icomponent, :]
-        current_component = np.abs(current_component)
-
-        # Find peaks
-        prominence = 10 * np.std(current_component)
-        current_peaks, _ = find_peaks(
-            current_component,
-            prominence=prominence
-        )
-
-        # If any, add to list
-        if len(current_peaks) > 0:
-            muscle_index = muscle_index + current_peaks.tolist()
+    # Find peaks based on the total height (demeaning the signal first)
+    raw_std = raw_std - np.mean(raw_std)
+    height = (config['artifact_detection']['muscle']['threshold']
+              * np.std(raw_std))
+    muscle_index, _ = find_peaks(
+        raw_std,
+        height=height
+    )
 
     # Extra outputs
     last_sample = raw.original_last_samp
