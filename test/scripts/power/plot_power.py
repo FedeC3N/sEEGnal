@@ -11,7 +11,7 @@ Federico Ramírez-Toraño
 # Imports
 import matplotlib.pyplot as plt
 
-from init import init
+from test.init.init import init
 from sEEGnal.tools.mne_tools import prepare_eeg
 from sEEGnal.tools.bids_tools import create_bids_path, read_sobi
 
@@ -19,7 +19,7 @@ from sEEGnal.tools.bids_tools import create_bids_path, read_sobi
 config, files, sub, ses, task = init()
 
 # current info
-subject_index = 16
+subject_index = 0
 current_file = files[subject_index]
 current_sub = sub[subject_index]
 current_ses = ses[subject_index]
@@ -70,7 +70,7 @@ clean_data = prepare_eeg(
 )
 
 # Plot the clean data
-fig = clean_data.plot(block=False,duration=20)
+fig = clean_data.plot(block=False,duration=20,scalings=dict(eeg=50e-6))
 fig.canvas.manager.set_window_title(current_file)
 
 # Remove the bad epochs before estimating power spectrum

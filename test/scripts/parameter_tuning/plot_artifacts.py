@@ -14,6 +14,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
+from scipy.stats import median_abs_deviation
 
 from sEEGnal.tools.mne_tools import prepare_eeg
 
@@ -244,3 +245,126 @@ def muscle_detection(config,bids_path):
         block=True,
         scalings=dict(eeg=50e-6)
     )
+
+
+def sensor_detection(config,bids_path):
+    # Plot the clean visualization
+    # Parameters for loading EEG  recordings
+    sobi = {
+        'desc': 'sobi',
+        'components_to_include': ['brain', 'other'],
+        'components_to_exclude': []
+    }
+    freq_limits = [
+        config['visualization']['low_freq'],
+        config['visualization']['high_freq']
+    ]
+    resample_frequency = config['component_estimation']['resample_frequency']
+    channels_to_include = config['global']['channels_to_include']
+    channels_to_exclude = config['global']['channels_to_exclude']
+    crop_seconds = config['component_estimation']['crop_seconds']
+
+    # Load the raw EEG
+    raw = prepare_eeg(
+        config,
+        bids_path,
+        preload=True,
+        channels_to_include=channels_to_include,
+        channels_to_exclude=channels_to_exclude,
+        metadata_badchannels=True,
+        interpolate_badchannels=True,
+        notch_filter=True,
+        resample_frequency=resample_frequency,
+        set_annotations=True,
+        crop_seconds=crop_seconds
+    )
+
+    # Apply SOBI
+    raw = prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
+        apply_sobi=sobi
+    )
+
+    # Filter
+    raw = prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
+        preload=True,
+        freq_limits=freq_limits,
+        rereference='average'
+    )
+
+    # Plot
+    raw.plot(
+        block=False,
+        scalings=dict(eeg=50e-6))
+
+    # Parameters for loading EEG recordings
+    sobi = {
+        'desc': 'sobi',
+        'components_to_include': [],
+        'components_to_exclude': ['eog', 'ecg']
+    }
+    freq_limits = [
+        config['artifact_detection']['sensor']['low_freq'],
+        config['artifact_detection']['sensor']['high_freq']
+    ]
+    crop_seconds = config['component_estimation']['crop_seconds']
+    resample_frequency = config['component_estimation']['resample_frequency']
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
+
+
+    # Load the raw data
+    raw = prepare_eeg(
+        config,
+        bids_path,
+        preload=True,
+        channels_to_include=channels_to_include,
+        channels_to_exclude=channels_to_exclude,
+        notch_filter=True,
+        resample_frequency=resample_frequency,
+        metadata_badchannels=True,
+        interpolate_badchannels=True,
+        set_annotations=True,
+        crop_seconds=crop_seconds,
+        rereference='average'
+    )
+
+    # Apply SOBI and filters
+    raw = prepare_eeg(
+        config,
+        bids_path,
+        raw=raw,
+        preload=True,
+        freq_limits=freq_limits,
+        apply_sobi=sobi
+    )
+
+    raw.plot(
+        block=True,
+        scalings=dict(eeg=50e-6)
+    )
+
+    '''# Get the clean data
+    raw_data = raw.get_data()
+
+    # Get the maximum value for each channel and epoch
+    max_values = np.max(np.abs(raw_data), axis=2, keepdims=False)
+
+    # For each epoch, get the median and MAD across channels
+    median = np.median(max_values, axis=1)
+    MAD = median_abs_deviation(max_values, axis=1)
+    threshold = (median + config['artifact_detection']['sensor']['threshold'] *
+                 MAD)
+
+
+    plt.plot(raw.events[:, 0] / 500 / 0.5, max_values)
+    plt.scatter(raw.events[:, 0] / 500 / 0.5, threshold,
+                c='r',
+                marker='*')'''
+
+

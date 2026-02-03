@@ -186,6 +186,7 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
+        notch_filter=True,
         freq_limits=freq_limits,
         resample_frequency=resample_frequency,
         metadata_badchannels=True,

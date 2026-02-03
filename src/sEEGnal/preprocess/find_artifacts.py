@@ -54,6 +54,7 @@ def EOG_detection(config, bids_path):
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
+        not_filter=True,
         resample_frequency=resample_frequency,
         metadata_badchannels=True,
         interpolate_badchannels=True,
@@ -196,6 +197,7 @@ def sensor_detection(config, bids_path,derivatives_label):
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
     epoch_definition = config['artifact_detection']['sensor']['epoch_definition']
+    epoch_definition['overlap'] = 0
 
     # Load the raw data
     raw = mne_tools.prepare_eeg(
@@ -204,10 +206,10 @@ def sensor_detection(config, bids_path,derivatives_label):
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
+        notch_filter=True,
         resample_frequency=resample_frequency,
         metadata_badchannels=True,
         interpolate_badchannels=True,
-        set_annotations=True,
         crop_seconds=crop_seconds,
         rereference='average'
     )
@@ -218,31 +220,29 @@ def sensor_detection(config, bids_path,derivatives_label):
         bids_path,
         raw=raw,
         preload=True,
-        apply_sobi=sobi,
         freq_limits=freq_limits,
-        epoch=epoch_definition
+        epoch=epoch_definition,
+        apply_sobi=sobi
     )
 
-    # Discard first the muscle artefacts
-    raw.drop_bad()
-
     # Get the clean data
-    raw_data = raw.get_data().copy()
+    raw_data    = raw.get_data()
 
-    # Estimate the std of each epoch
-    raw_data_std = raw_data.std(axis=2)
+    # Get the std for each channel and epoch
+    raw_data_std = np.std(raw_data, axis=2)
+    raw_data_std = np.max(np.abs(raw_data), axis=2)
 
-    # Estimate the median and MAD
-    median = np.median(raw_data_std)
-    MAD = median_abs_deviation(raw_data_std,axis=None)
+    # For each epoch, estimate the threshold based on the std of the channels
+    # in that epoch
+    threshold = np.mean(raw_data_std,axis=1) * config['artifact_detection']['sensor']['threshold']
 
-    # Find important deviations
-    hits = (raw_data_std - median) / MAD > config['artifact_detection']['sensor']['threshold']
-    hits = np.sum(hits,axis=1) > 0
+    # Find peaks based on the threshold
+    threshold = np.repeat(threshold[:, np.newaxis], raw_data_std.shape[1], axis=1)
+    hits = np.any(raw_data_std > threshold, axis=1)
     hits = np.where(hits)[0]
 
     # Save the peaks index
-    sensor_index = raw.events[hits,:][:,0]
+    sensor_index = raw.events[hits, :][:, 0]
 
     # Extra outputs
     last_sample = raw.original_last_samp

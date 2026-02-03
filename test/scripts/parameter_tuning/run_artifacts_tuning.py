@@ -21,7 +21,7 @@ from sEEGnal.tools.bids_tools import create_bids_path, write_annot
 # Parameters
 criteria = ['EOG_detection', 'muscle_detection',
             'sensor_detection', 'other_detection']
-criteria = ['muscle_detection']
+criteria = ['sensor_detection']
 
 # Init the database
 config, files, sub, ses, task = init()

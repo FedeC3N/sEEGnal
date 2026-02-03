@@ -108,12 +108,12 @@
 			"threshold": 7
 		},
 		"sensor":{
-			"low_freq":0.5,
-			"high_freq":2,
-			"threshold": 10,
+			"low_freq":5,
+			"high_freq":10,
+			"threshold": 7,
             "epoch_definition":{
-				"length": 0.5,
-				"overlap": 0.25,
+				"length": 0.05,
+				"overlap": 0,
 				"padding": 0
 			}
 		},
