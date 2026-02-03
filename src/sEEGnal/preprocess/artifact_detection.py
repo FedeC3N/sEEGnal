@@ -115,8 +115,11 @@ def eeg_artifact_detection(config, bids_path):
     # Sensor (jumps)
     sensor_annotations = sensor_detection(config, bids_path,derivatives_label)
 
+    # Impossible amplitude
+    other_annotations = other_detection(config, bids_path)
+
     # Combine the annotations
-    annotations = muscle_annotations.__add__(sensor_annotations)
+    annotations = muscle_annotations.__add__(sensor_annotations).__add__(other_annotations)
 
     # Save the annotations in BIDS format
     _ = bids.write_annot(bids_path, annotations)
@@ -140,7 +143,7 @@ def eeg_artifact_detection(config, bids_path):
     # Select the frontal channels
     EOG_annotations = EOG_detection(config, bids_path)
 
-    # Sensor (jumps)
+    # Impossible amplitude
     other_annotations = other_detection(config, bids_path)
 
     # Merge all the annotations into a MNE Annotation object
