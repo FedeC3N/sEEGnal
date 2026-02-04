@@ -26,7 +26,8 @@ current_task                    = '4EC'
 bids_path = create_bids_path(config, current_sub, current_ses, current_task)
 
 # Parameters to load the data
-epoch_definition ={ "length": 4 , "overlap": 0 , "padding": 2 }
+epoch_definition ={ "length": 4 , "overlap": 0 , "padding": 2,
+                    'reject_by_annotation': 1 }
 config = {'component_estimation':{}}
 config['component_estimation']['notch_frequencies'] = [50, 100, 150, 200, 250]
 
@@ -42,7 +43,7 @@ clean_data = prepare_eeg(
         set_annotations=True,
         rereference=True,
         interpolate_badchannels=True,
-        epoch=epoch_definition
+        epoch_definition=epoch_definition
         )
 
 # Remove artefactual components

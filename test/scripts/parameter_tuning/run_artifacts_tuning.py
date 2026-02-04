@@ -15,7 +15,7 @@ import numpy as np
 from test.init.init import init
 import plot_artifacts as par
 import sEEGnal.preprocess.artifact_detection as far
-from sEEGnal.tools.bids_tools import create_bids_path, write_annot
+from sEEGnal.tools.bids_tools import create_bids_path, write_annotations
 
 
 # Parameters
@@ -73,7 +73,7 @@ for subject_index in permutated_index:
                 annotations = func(config,bids_path)
 
             # Save the annotations in BIDS format
-            _ = write_annot(bids_path, annotations)
+            _ = write_annotations(bids_path, annotations)
 
             # Print out information
             print(f"    {current_criterion}: {annotations}")

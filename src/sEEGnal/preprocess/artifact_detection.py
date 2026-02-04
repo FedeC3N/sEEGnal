@@ -110,19 +110,19 @@ def eeg_artifact_detection(config, bids_path):
     muscle_annotations = muscle_detection(config, bids_path,derivatives_label)
 
     # Save the muscle annotations for better jump detection
-    _ = bids.write_annot(bids_path, muscle_annotations)
+    _ = bids.write_annotations(bids_path, muscle_annotations)
 
     # Sensor (jumps)
     sensor_annotations = sensor_detection(config, bids_path,derivatives_label)
 
     # Impossible amplitude
-    other_annotations = other_detection(config, bids_path)
+    other_annotations = other_detection(config, bids_path,derivatives_label)
 
     # Combine the annotations
     annotations = muscle_annotations.__add__(sensor_annotations).__add__(other_annotations)
 
     # Save the annotations in BIDS format
-    _ = bids.write_annot(bids_path, annotations)
+    _ = bids.write_annotations(bids_path, annotations)
 
     # Estimate the SOBI components to detect artifacts
     derivatives_label = 'sobi'
@@ -134,7 +134,7 @@ def eeg_artifact_detection(config, bids_path):
     muscle_annotations = muscle_detection(config, bids_path,derivatives_label)
 
     # Save the muscle annotations for better jump detection
-    _ = bids.write_annot(bids_path, muscle_annotations)
+    _ = bids.write_annotations(bids_path, muscle_annotations)
 
     # Sensor (jumps)
     sensor_annotations = sensor_detection(config, bids_path,derivatives_label)
@@ -144,13 +144,13 @@ def eeg_artifact_detection(config, bids_path):
     EOG_annotations = EOG_detection(config, bids_path)
 
     # Impossible amplitude
-    other_annotations = other_detection(config, bids_path)
+    other_annotations = other_detection(config, bids_path,derivatives_label)
 
     # Merge all the annotations into a MNE Annotation object
     annotations = other_annotations.__add__(EOG_annotations).__add__(muscle_annotations).__add__(sensor_annotations)
 
     # Save the annotations in BIDS format
-    _ = bids.write_annot(bids_path, annotations)
+    _ = bids.write_annotations(bids_path, annotations)
 
     return annotations
 
@@ -197,7 +197,7 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
         set_annotations=set_annotations,
         crop_seconds=crop_seconds,
         rereference='average',
-        epoch=epoch_definition
+        epoch_definition=epoch_definition
     )
 
 
@@ -335,7 +335,7 @@ def sensor_detection(config, bids_path,     derivatives_label):
     return sensor_annotations
 
 
-def other_detection(config, bids_path):
+def other_detection(config, bids_path,derivatives_label):
     """
 
     Detect sensor artifacts (jumps)
@@ -351,7 +351,8 @@ def other_detection(config, bids_path):
     """
 
     # Look the position of muscular artifacts
-    other_index, last_sample, sfreq = find_artifacts.other_detection(config, bids_path)
+    other_index, last_sample, sfreq = find_artifacts.other_detection(config,
+                                                                     bids_path,derivatives_label)
 
     # Create as Annotations
     if len(other_index) > 0:

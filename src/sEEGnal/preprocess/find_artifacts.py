@@ -54,7 +54,7 @@ def EOG_detection(config, bids_path):
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
-        not_filter=True,
+        notch_filter=True,
         resample_frequency=resample_frequency,
         metadata_badchannels=True,
         interpolate_badchannels=True,
@@ -210,6 +210,7 @@ def sensor_detection(config, bids_path,derivatives_label):
         resample_frequency=resample_frequency,
         metadata_badchannels=True,
         interpolate_badchannels=True,
+        set_annotations=True,
         crop_seconds=crop_seconds,
         rereference='average'
     )
@@ -221,7 +222,7 @@ def sensor_detection(config, bids_path,derivatives_label):
         raw=raw,
         preload=True,
         freq_limits=freq_limits,
-        epoch=epoch_definition,
+        epoch_definition=epoch_definition,
         apply_sobi=sobi
     )
 
@@ -251,7 +252,7 @@ def sensor_detection(config, bids_path,derivatives_label):
     return sensor_index, last_sample, sfreq
 
 
-def other_detection(config, bids_path):
+def other_detection(config, bids_path,derivatives_label):
     """
 
     Look for signal with impossible values
@@ -267,7 +268,7 @@ def other_detection(config, bids_path):
 
     # Parameters for loading EEG recordings
     sobi                = {
-        'desc': 'sobi',
+        'desc': derivatives_label,
         'components_to_include': [],
         'components_to_exclude': ['eog', 'ecg']
     }
@@ -305,7 +306,7 @@ def other_detection(config, bids_path):
         preload=True,
         apply_sobi=sobi,
         freq_limits=freq_limits,
-        epoch=epoch_definition
+        epoch_definition=epoch_definition
     )
 
     # De-mean the channels

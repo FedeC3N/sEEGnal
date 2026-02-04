@@ -49,22 +49,22 @@ def init_derivatives(bids_path):
     return created_files
 
 
-def write_annot(bids_path, annot=None):
+def write_annotations(bids_path, annotations=None):
 
     # Initializes the list of created files.
     created_files = []
 
     # If no annotation, creates an empty one.
-    if annot is None:
-        annot = mne.Annotations([], [], [])
+    if annotations is None:
+        annotations = mne.Annotations([], [], [])
 
     # Initializes the annotations.
     tsv_data = pandas.DataFrame(columns=['onset', 'duration', 'label'])
 
     # Adds the annotations to the data frame.
-    tsv_data['onset'] = annot.onset
-    tsv_data['duration'] = annot.duration
-    tsv_data['label'] = annot.description
+    tsv_data['onset'] = annotations.onset
+    tsv_data['duration'] = annotations.duration
+    tsv_data['label'] = annotations.description
 
     # Creates the JSON dictionary.
     json_data = {
@@ -97,31 +97,36 @@ def write_annot(bids_path, annot=None):
     return created_files
 
 
-def read_annot(bids_path):
+def read_annotations(bids_path):
 
     # Builds the path to the file.
     tsv_file = build_derivative(bids_path, 'desc-artifacts_annotations.tsv')
 
     # Loads the derivative data pieces.
-    tsv_data = read_tsv(tsv_file, ismatrix=False)
+    if tsv_file.exists():
+        tsv_data = read_tsv(tsv_file, ismatrix=False)
 
-    # Builds the MNE annotation object.
-    annot = mne.Annotations(tsv_data['onset'], tsv_data['duration'], tsv_data['label'])
+        # Builds the MNE annotation object.
+        annotations = mne.Annotations(tsv_data['onset'], tsv_data['duration'],
+                                tsv_data['label'])
+
+    else:
+        annotations = mne.Annotations([], [], [])
 
     # Returns the annotations object.
-    return annot
+    return annotations
 
 
-def read_chan(bids_path):
+def read_channels(bids_path):
 
     # Builds the path to the file.
     tsv_file = build_derivative(bids_path, 'channels.tsv')
 
     # Loads the derivative data pieces.
-    chan = read_tsv(tsv_file, ismatrix=False)
+    channels = read_tsv(tsv_file, ismatrix=False)
 
     # Returns the channels table object.
-    return chan
+    return channels
 
 
 def update_badchans(bids_path, badchannels=None, badchannels_description=None):

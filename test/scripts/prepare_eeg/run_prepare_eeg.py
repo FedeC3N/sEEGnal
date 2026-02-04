@@ -12,7 +12,7 @@ Federico Ramírez-Toraño
 import numpy as np
 
 from init import init
-from sEEGnal.tools.bids_tools import create_bids_path, read_chan, read_annot
+from sEEGnal.tools.bids_tools import create_bids_path, read_channels, read_annotations
 from sEEGnal.tools.mne_tools import prepare_eeg
 
 

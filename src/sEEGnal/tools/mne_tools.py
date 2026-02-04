@@ -396,7 +396,7 @@ def prepare_eeg(
     interpolate_badchannels=False,
     set_annotations=False,
     rereference=False,
-    epoch=False
+    epoch_definition=False
 ):
 
     ##################################################################
@@ -484,7 +484,7 @@ def prepare_eeg(
     # Remove bad channels
     ##################################################################
 
-    chan = bids.read_chan(bids_path)
+    chan = bids.read_channels(bids_path)
     badchannels = list(chan.loc[chan['status'] == 'bad']['name'])
 
     # To avoid errors, the badchannels has to be among the channels included in the recording
@@ -513,7 +513,7 @@ def prepare_eeg(
     if set_annotations:
 
         # Reads the annotations.
-        annotations = bids.read_annot(bids_path)
+        annotations = bids.read_annotations(bids_path)
 
         # Adds the annotations to the MNE object.
         if len(annotations):
@@ -557,7 +557,7 @@ def prepare_eeg(
     # Epoch the data
     ##################################################################
 
-    if epoch:
+    if epoch_definition:
 
             # If previously saved the atrribute, keep it
             if hasattr(raw, 'original_last_samp'):
@@ -566,9 +566,7 @@ def prepare_eeg(
             raw = get_epochs(
                 raw,
                 preload,
-                epoch['length'],
-                epoch['overlap'],
-                epoch['padding']
+                epoch_definition
             )
 
             # Save it again
@@ -579,7 +577,16 @@ def prepare_eeg(
 
 
 # Function to segment and MNE raw data object avoiding the artifacts.
-def get_epochs(raw, preload, length, overlap, padding):
+def get_epochs(raw, preload, epoch_definition):
+
+    # Get the parameters for epochs
+    length = epoch_definition['length']
+    overlap = epoch_definition['overlap']
+    padding = epoch_definition['padding']
+    if 'reject_by_annotation' in epoch_definition:
+        reject_by_annotation = bool(epoch_definition['reject_by_annotation'])
+    else:
+        reject_by_annotation = False
 
     # Get the index of the events
     last_samp = int(numpy.fix(raw.times[-1]*raw.info['sfreq']))
@@ -596,11 +603,12 @@ def get_epochs(raw, preload, length, overlap, padding):
     epochs = mne.Epochs(
         raw,
         events,
+        preload=preload,
         tmin=-padding,
         tmax=length + padding,
         baseline=None,
-        verbose=False,
-        preload=preload
+        reject_by_annotation=reject_by_annotation,
+        verbose=False
     )
 
     # Returns the epochs object.

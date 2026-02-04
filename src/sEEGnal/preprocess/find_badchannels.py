@@ -53,7 +53,7 @@ def impossible_amplitude_detection(config, bids_path):
         notch_filter=True,
         freq_limits=freq_limits,
         crop_seconds=crop_seconds,
-        epoch=epoch_definition
+        epoch_definition=epoch_definition
     )
 
     # De-mean the channels
@@ -126,7 +126,7 @@ def component_detection(config, bids_path):
         raw=raw,
         apply_sobi=sobi,
         freq_limits=freq_limits,
-        epoch=epoch_definition
+        epoch_definition=epoch_definition
     )
 
     # Estimate the median and the Median Absolute Deviation
@@ -294,7 +294,7 @@ def high_deviation_detection(config, bids_path):
         raw=raw,
         preload=True,
         freq_limits=freq_limits,
-        epoch=epoch_definition
+        epoch_definition=epoch_definition
     )
 
     # Get a new copy of the data and estimate std
