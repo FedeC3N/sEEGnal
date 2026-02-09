@@ -9,6 +9,8 @@ Federico Ramírez-Toraño
 """
 
 # Imports
+import numpy as np
+
 from test.init.init import init
 from sEEGnal.tools.bids_tools import create_bids_path
 from sEEGnal.standardize.standardize import standardize
@@ -25,7 +27,10 @@ config, files, sub, ses, task = init()
 errors = []
 
 # Go through each subject
-for current_index in range(len(files)):
+index = np.random.permutation(len(files))
+index = range(len(files))
+index = [-1]
+for current_index in index:
 
     # current info
     current_file = files[current_index]
