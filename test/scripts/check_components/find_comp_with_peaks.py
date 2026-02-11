@@ -55,7 +55,7 @@ for subject_index in index:
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
         notch_filter=True,
-        freq_limits=freq_limits,
+        freq_limits=[6,45],
         resample_frequency=resample_frequency,
         metadata_badchannels=True,
         interpolate_badchannels=True,
@@ -68,61 +68,51 @@ for subject_index in index:
     # Read the ICA information
     sobi = read_sobi(bids_path, 'sobi')
     ICs_time_series = sobi.get_sources(raw)
-    ICs_time_series.pick(sobi.labels_['other'])
+    ICs_time_series = ICs_time_series.pick(sobi.labels_['other'])
 
     # Estimate the power
     spectrum = ICs_time_series.compute_psd(
         method='welch',
-        fmin=2,
+        fmin=6,
         fmax=45,
         picks='all'
     )
     freqs = spectrum.freqs
     spectrum = spectrum.average().get_data(picks='all')
 
-    # Create the figures to plot
     import matplotlib.pyplot as plt
-
-    fig, axes = plt.subplots(3, 1,
-                             figsize=(16, 8),
-                             constrained_layout=True)
-
-
-    peaks_diff = []
     for ispectrum in range(spectrum.shape[0]):
 
-        current_spectrum = spectrum[ispectrum,:]
-        current_peaks, _ = find_peaks(current_spectrum,prominence=0.0001)
-        current_ax = axes[0]
-        current_ax.plot(freqs, current_spectrum)
-        current_ax.plot(freqs[current_peaks], current_spectrum[current_peaks],
-                      '*r')
+        current_spectrum = spectrum[ispectrum, :]
+        current_peaks, _ = find_peaks(
+            current_spectrum,
+            prominence=0.00001)
 
-        if len(current_peaks) > 2:
-            dummy = np.std(np.diff(current_peaks))
-            peaks_diff.append(dummy)
-        else:
-            peaks_diff.append(np.nan)
-
-    current_ax = axes[1]
-    current_ax.plot(peaks_diff, '*')
+        if len(current_peaks) > 3:
 
 
-    bads = [i for i in range(len(peaks_diff)) if peaks_diff[i] < 0.05]
-    if len(bads) > 0:
-        for ibad in bads:
+            # Check
+            current_peaks = np.array(current_peaks)
+            k = np.arange(len(current_peaks))
+            d_hat, p0_hat = np.polyfit(k, current_peaks, 1)
+            residuals = current_peaks - (p0_hat + k * d_hat)
+            spacing_score = np.std(residuals)
+            tol = 1
+            is_periodic = np.all(np.abs(residuals) < tol)
 
-            current_spectrum = spectrum[ibad, :]
+            if is_periodic:
+                fig, axes = plt.subplots(2, 1,
+                                         figsize=(16, 8),
+                                         constrained_layout=True)
+                axes[0].plot(freqs, current_spectrum,'-*')
+                axes[0].plot(freqs[current_peaks], current_spectrum[current_peaks],
+                         '*r')
 
-            current_peaks, _ = find_peaks(current_spectrum,prominence=0.0001)
+                fitted_line = p0_hat + d_hat * k
+                axes[1].plot(k, current_peaks, 'o', label='Picos detectados',
+                         markersize=8)
+                axes[1].plot(k, fitted_line, '-',
+                         label=f'Ajuste lineal: d_hat={d_hat:.2f}')
+                plt.show(block=True)
 
-            current_ax = axes[2]
-            current_ax.plot(freqs, current_spectrum)
-            current_ax.plot(freqs[current_peaks], current_spectrum[current_peaks],'*r')
 
-        peaks_diff = np.asarray(peaks_diff)
-        bads = np.array(bads)
-        current_ax = axes[1]
-        current_ax.plot(bads,peaks_diff[bads],'r*')
-
-    plt.show(block=True)

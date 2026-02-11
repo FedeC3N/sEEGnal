@@ -21,7 +21,6 @@ config, files, sub, ses, task = init()
 # Random order to avoid seen the same subjects over and over again
 index = range(len(files))
 index = np.random.permutation(len(files))
-index = [-1]
 for subject_index in index:
 
     current_file = files[subject_index]
