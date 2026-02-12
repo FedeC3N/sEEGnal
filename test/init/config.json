@@ -144,5 +144,17 @@
                 "reject_by_annotation": 1
 			}
 		}
-	}
+	},
+
+    "forward": {
+        "use_template": 1,
+        "template": {
+            "subject": "fsaverage",
+            "trans": "fsaverage",
+            "bem": "fsaverage-5120-5120-5120-bem-sol.fif",
+            "mri": "aseg.mgz",
+            "pos": 8
+        }
+    }
+
 }
