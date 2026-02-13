@@ -36,11 +36,11 @@ def impossible_amplitude_detection(config, bids_path):
     channels_to_exclude = config['global']['channels_to_exclude']
     resample_frequency = config['component_estimation']['resample_frequency']
     freq_limits         = [
-        config['badchannel_detection']['impossible_amplitude']['low_freq'],
-        config['badchannel_detection']['impossible_amplitude']['high_freq']
+        config['preprocess']['badchannel_detection']['impossible_amplitude']['low_freq'],
+        config['preprocess']['badchannel_detection']['impossible_amplitude']['high_freq']
     ]
-    crop_seconds        = config['badchannel_detection']['crop_seconds']
-    epoch_definition    = config['badchannel_detection']['impossible_amplitude']['epoch_definition']
+    crop_seconds        = config['preprocess']['badchannel_detection']['crop_seconds']
+    epoch_definition    = config['preprocess']['badchannel_detection']['impossible_amplitude']['epoch_definition']
 
     # Load the raw data
     raw = mne_tools.prepare_eeg(
@@ -63,15 +63,15 @@ def impossible_amplitude_detection(config, bids_path):
     raw_data_std = raw_data.std(axis=2)
 
     # Use the low and high threshold to define impossible amplitudes
-    hits_low = raw_data_std < config['badchannel_detection']['impossible_amplitude']['low_threshold']
-    hits_high = raw_data_std > config['badchannel_detection']['impossible_amplitude']['high_threshold']
+    hits_low = raw_data_std < config['preprocess']['badchannel_detection']['impossible_amplitude']['low_threshold']
+    hits_high = raw_data_std > config['preprocess']['badchannel_detection']['impossible_amplitude']['high_threshold']
 
     # Get the number of occurrences per channel in percentage
     hits = hits_low | hits_high
     hits = hits.sum(axis=0) / raw_data_std.shape[0]
 
     # Define as badchannel if many epochs are bads
-    hits = np.flatnonzero(hits > config['badchannel_detection']['impossible_amplitude']['percentage_threshold'])
+    hits = np.flatnonzero(hits > config['preprocess']['badchannel_detection']['impossible_amplitude']['percentage_threshold'])
     impossible_amplitude_badchannels = [raw.ch_names[hit] for hit in hits]
 
     return impossible_amplitude_badchannels
@@ -98,14 +98,14 @@ def component_detection(config, bids_path):
         'components_to_exclude': []
     }
     freq_limits         = [
-        config['badchannel_detection']['component_detection']['low_freq'],
-        config['badchannel_detection']['component_detection']['high_freq']
+        config['preprocess']['badchannel_detection']['component_detection']['low_freq'],
+        config['preprocess']['badchannel_detection']['component_detection']['high_freq']
     ]
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
     resample_frequency = config['component_estimation']['resample_frequency']
-    crop_seconds        = config['badchannel_detection']['crop_seconds']
-    epoch_definition    = config['badchannel_detection']['component_detection']['epoch_definition']
+    crop_seconds        = config['preprocess']['badchannel_detection']['crop_seconds']
+    epoch_definition    = config['preprocess']['badchannel_detection']['component_detection']['epoch_definition']
 
     # Load the raw EEG
     raw = mne_tools.prepare_eeg(
@@ -137,13 +137,13 @@ def component_detection(config, bids_path):
     MAD = median_abs_deviation(raw_data_std, axis=None)
 
     # Define bad channels using Z-score
-    bad_epochs = ((raw_data_std - median) / MAD > config['badchannel_detection']['component_detection']['threshold'])
+    bad_epochs = ((raw_data_std - median) / MAD > config['preprocess']['badchannel_detection']['component_detection']['threshold'])
 
     # Get the number of occurrences per channel in percentage
     hits = bad_epochs.sum(axis=0) / bad_epochs.shape[0]
 
     # Define as badchannel if many epochs are bads
-    hits = np.flatnonzero(hits > config['badchannel_detection']['component_detection']['percentage_threshold'])
+    hits = np.flatnonzero(hits > config['preprocess']['badchannel_detection']['component_detection']['percentage_threshold'])
     component_badchannels = [raw.ch_names[hit] for hit in hits]
 
     return component_badchannels
@@ -175,7 +175,7 @@ def gel_bridge_detection(config, bids_path):
     resample_frequency  = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
-    crop_seconds        = config['badchannel_detection']['crop_seconds']
+    crop_seconds        = config['preprocess']['badchannel_detection']['crop_seconds']
 
     # Load the raw EEG
     raw = mne_tools.prepare_eeg(
@@ -205,7 +205,7 @@ def gel_bridge_detection(config, bids_path):
 
     # Find highly correlated channels
     correlation_coefficients = np.triu(correlation_coefficients, k=1)
-    correlation_coefficients_mask = correlation_coefficients > config['badchannel_detection']['gel_bridge']['threshold']
+    correlation_coefficients_mask = correlation_coefficients > config['preprocess']['badchannel_detection']['gel_bridge']['threshold']
 
     # Find indexes of channels with sequences indicating gel-bridge.
     row_ind, col_ind = np.where(correlation_coefficients_mask)
@@ -229,7 +229,7 @@ def gel_bridge_detection(config, bids_path):
             distance = np.linalg.norm(ch_pos1 - ch_pos2)
 
             # If the channels are close enough, they are gel-bridged
-            if distance < config['badchannel_detection']['gel_bridge']['neighbour_distance']:
+            if distance < config['preprocess']['badchannel_detection']['gel_bridge']['neighbour_distance']:
 
                 gel_bridge_badchannels.append(montage.ch_names[row_ind[ichannel]])
                 gel_bridge_badchannels.append(montage.ch_names[col_ind[ichannel]])
@@ -258,14 +258,14 @@ def high_deviation_detection(config, bids_path):
         'components_to_exclude': []
     }
     freq_limits = [
-        config['badchannel_detection']['high_deviation']['low_freq'],
-        config['badchannel_detection']['high_deviation']['high_freq']
+        config['preprocess']['badchannel_detection']['high_deviation']['low_freq'],
+        config['preprocess']['badchannel_detection']['high_deviation']['high_freq']
     ]
     resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
-    crop_seconds = config['badchannel_detection']['crop_seconds']
-    epoch_definition = config['badchannel_detection']['high_deviation']['epoch_definition']
+    crop_seconds = config['preprocess']['badchannel_detection']['crop_seconds']
+    epoch_definition = config['preprocess']['badchannel_detection']['high_deviation']['epoch_definition']
 
     # Load the raw EEG
     raw = mne_tools.prepare_eeg(
@@ -307,14 +307,14 @@ def high_deviation_detection(config, bids_path):
 
     # Define bad channels using Z-score
     hits = ((raw_data_std - median) / mad >
-                       config['badchannel_detection']['high_deviation'][
+                       config['preprocess']['badchannel_detection']['high_deviation'][
                            'threshold'])
 
     # Get the number of occurrences per channel in percentage
     hits = hits.sum(axis=0) / hits.shape[0]
 
     # Define as badchannel if many epochs are bads
-    hits = np.flatnonzero(hits > config['badchannel_detection']['high_deviation']['percentage_threshold'])
+    hits = np.flatnonzero(hits > config['preprocess']['badchannel_detection']['high_deviation']['percentage_threshold'])
     high_deviation_badchannels = [raw.ch_names[hit] for hit in hits]
 
     return high_deviation_badchannels

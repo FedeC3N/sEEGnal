@@ -64,13 +64,13 @@ def component_detection(config,bids_path,badchannels):
         'components_to_exclude': []
     }
     freq_limits = [
-        config['badchannel_detection']['component_detection']['low_freq'],
-        config['badchannel_detection']['component_detection']['high_freq']
+        config['preprocess']['badchannel_detection']['component_detection']['low_freq'],
+        config['preprocess']['badchannel_detection']['component_detection']['high_freq']
     ]
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
     resample_frequency = config['component_estimation']['resample_frequency']
-    crop_seconds = config['badchannel_detection']['crop_seconds']
+    crop_seconds = config['preprocess']['badchannel_detection']['crop_seconds']
 
     # Load the raw EEG
     raw = prepare_eeg(
@@ -138,13 +138,13 @@ def high_deviation_detection(config, bids_path, badchannels):
         'components_to_exclude': []
     }
     freq_limits = [
-        config['badchannel_detection']['high_deviation']['low_freq'],
-        config['badchannel_detection']['high_deviation']['high_freq']
+        config['preprocess']['badchannel_detection']['high_deviation']['low_freq'],
+        config['preprocess']['badchannel_detection']['high_deviation']['high_freq']
     ]
     resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
-    crop_seconds = config['badchannel_detection']['crop_seconds']
+    crop_seconds = config['preprocess']['badchannel_detection']['crop_seconds']
 
     # Load the raw EEG
     raw = prepare_eeg(
@@ -194,13 +194,13 @@ def all(config, bids_path, badchannels):
         'components_to_exclude': []
     }
     freq_limits = [
-        config['badchannel_detection']['high_deviation']['low_freq'],
-        config['badchannel_detection']['high_deviation']['high_freq']
+        config['preprocess']['badchannel_detection']['high_deviation']['low_freq'],
+        config['preprocess']['badchannel_detection']['high_deviation']['high_freq']
     ]
     resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
-    crop_seconds = config['badchannel_detection']['crop_seconds']
+    crop_seconds = config['preprocess']['badchannel_detection']['crop_seconds']
 
     # Load the raw EEG
     raw = prepare_eeg(

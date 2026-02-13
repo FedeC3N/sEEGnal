@@ -39,8 +39,8 @@ def EOG_detection(config, bids_path):
         'components_to_exclude': ['eog','ecg']
     }
     freq_limits         = [
-        config['artifact_detection']['EOG']['low_freq'],
-        config['artifact_detection']['EOG']['high_freq']
+        config['preprocess']['artifact_detection']['EOG']['low_freq'],
+        config['preprocess']['artifact_detection']['EOG']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
     resample_frequency = config['component_estimation']['resample_frequency']
@@ -74,7 +74,7 @@ def EOG_detection(config, bids_path):
     )
 
     # Select frontal channels
-    frontal_channels = config['artifact_detection']['frontal_channels']
+    frontal_channels = config['preprocess']['artifact_detection']['frontal_channels']
     frontal_channels = [
         current_channel for current_channel in frontal_channels if current_channel in channels_to_include
     ]
@@ -87,7 +87,7 @@ def EOG_detection(config, bids_path):
     # Find peaks after averaging the frontal channels
     frontal_data = np.mean(frontal_raw.get_data(),axis=0)
     hits = (np.abs(frontal_data) >
-            config['artifact_detection']['EOG']['threshold'] * np.std(frontal_data))
+            config['preprocess']['artifact_detection']['EOG']['threshold'] * np.std(frontal_data))
     EOG_index = np.where(hits)[0]
 
     # Extra outputs
@@ -120,8 +120,8 @@ def muscle_detection(config, bids_path, derivatives_label):
 
     # Parameters for loading EEG recordings
     freq_limits = [
-        config['artifact_detection']['muscle']['low_freq'],
-        config['artifact_detection']['muscle']['high_freq']
+        config['preprocess']['artifact_detection']['muscle']['low_freq'],
+        config['preprocess']['artifact_detection']['muscle']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
     resample_frequency = config['component_estimation']['resample_frequency']
@@ -148,7 +148,7 @@ def muscle_detection(config, bids_path, derivatives_label):
 
     # Find peaks based on the total height (demeaning the signal first)
     raw_std = raw_std - np.mean(raw_std)
-    height = (config['artifact_detection']['muscle']['threshold']
+    height = (config['preprocess']['artifact_detection']['muscle']['threshold']
               * np.std(raw_std))
     muscle_index, _ = find_peaks(
         raw_std,
@@ -189,14 +189,14 @@ def sensor_detection(config, bids_path,derivatives_label):
         'components_to_exclude': ['eog', 'ecg']
     }
     freq_limits         = [
-        config['artifact_detection']['sensor']['low_freq'],
-        config['artifact_detection']['sensor']['high_freq']
+        config['preprocess']['artifact_detection']['sensor']['low_freq'],
+        config['preprocess']['artifact_detection']['sensor']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
     resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
-    epoch_definition = config['artifact_detection']['sensor']['epoch_definition']
+    epoch_definition = config['preprocess']['artifact_detection']['sensor']['epoch_definition']
     epoch_definition['overlap'] = 0
 
     # Load the raw data
@@ -235,7 +235,7 @@ def sensor_detection(config, bids_path,derivatives_label):
 
     # For each epoch, estimate the threshold based on the std of the channels
     # in that epoch
-    threshold = np.mean(raw_data_std,axis=1) * config['artifact_detection']['sensor']['threshold']
+    threshold = np.mean(raw_data_std,axis=1) * config['preprocess']['artifact_detection']['sensor']['threshold']
 
     # Find peaks based on the threshold
     threshold = np.repeat(threshold[:, np.newaxis], raw_data_std.shape[1], axis=1)
@@ -273,14 +273,14 @@ def other_detection(config, bids_path,derivatives_label):
         'components_to_exclude': ['eog', 'ecg']
     }
     freq_limits         = [
-        config['artifact_detection']['other']['low_freq'],
-        config['artifact_detection']['other']['high_freq']
+        config['preprocess']['artifact_detection']['other']['low_freq'],
+        config['preprocess']['artifact_detection']['other']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
     resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
-    epoch_definition = config['artifact_detection']['other'][
+    epoch_definition = config['preprocess']['artifact_detection']['other'][
         'epoch_definition']
 
     # Load the raw and apply SOBI
@@ -318,7 +318,7 @@ def other_detection(config, bids_path,derivatives_label):
     raw_data_demean_abs = np.abs(raw_data_demean)
 
     # Find impossible peaks
-    other_index = raw_data_demean_abs > config['artifact_detection']['other']['threshold']
+    other_index = raw_data_demean_abs > config['preprocess']['artifact_detection']['other']['threshold']
     other_index = np.sum(np.sum(other_index,axis=2),axis=1)
     other_index = np.where(other_index)[0]
     other_index = raw.events[other_index,0]
