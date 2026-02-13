@@ -26,34 +26,37 @@ mne.utils.set_log_level(verbose='ERROR')
 
 
 # Modules
-def badchannel_detection(config, bids_path):
+def badchannel_detection(config, BIDS):
     """
 
     Checks if it is a EEG file and call the correspondent function for badchannel detection.
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (BIDSpath): Metadata to process
+    BIDS (BIDSpath): Metadata to process
 
     :returns
     A dict with the result of the process
 
     """
 
+    # Add the subsystem flag
+    config['subsystem'] = 'preprocess'
+
     # For EEG
-    if bids_path.datatype == 'eeg':
+    if BIDS.datatype == 'eeg':
 
         try:
 
             # Detect badchannels in the current recording
-            badchannels = eeg_badchannel_detection(config, bids_path)
+            badchannels = eeg_badchannel_detection(config, BIDS)
 
             # Save the results
             now = dt.now(timezone.utc)
             formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
             results = {
                 'result': 'ok',
-                'bids_basename': bids_path.basename,
+                'bids_basename': BIDS.basename,
                 "date": formatted_now,
                 'badchannels': badchannels
             }
@@ -65,7 +68,7 @@ def badchannel_detection(config, bids_path):
             formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
             results = {
                 'result': 'error',
-                'bids_basename': bids_path.basename,
+                'bids_basename': BIDS.basename,
                 "date": formatted_now,
                 "details": f"Exception: {str(e)}, {traceback.format_exc()}"
             }
@@ -77,7 +80,7 @@ def badchannel_detection(config, bids_path):
         formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
         results = {
             'result': 'error',
-            'file': bids_path.basename,
+            'file': BIDS.basename,
             'details': 'Not accepted type of file to process',
             'date': formatted_now
         }
@@ -85,7 +88,7 @@ def badchannel_detection(config, bids_path):
     return results
 
 
-def eeg_badchannel_detection(config, bids_path):
+def eeg_badchannel_detection(config, BIDS):
     """
 
     Call the badchannel detection processes one by one for each type of recording.
@@ -102,25 +105,22 @@ def eeg_badchannel_detection(config, bids_path):
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (BIDSpath): Metadata of the file to process
+    BIDS (BIDSpath): Metadata of the file to process
 
     :returns
     A list with the badchannels.
 
     """
 
-    # Initialzies the derivatives.
-    bids.init_derivatives(bids_path)
-
     # Estimate Independent Components
-    estimate_badchannel_component(config, bids_path)
+    estimate_badchannel_component(config, BIDS)
 
     # Create an empty list to append badchannels
     badchannels = []
     badchannels_description = []
 
     # Find channels with biologically impossible amplitude
-    impossible_amplitude_badchannels = find_badchannels.impossible_amplitude_detection(config, bids_path)
+    impossible_amplitude_badchannels = find_badchannels.impossible_amplitude_detection(config, BIDS)
     badchannels.extend(impossible_amplitude_badchannels)
     current_badchannel_description = [
         'bad_impossible_amplitude_badchannels' for i in range(len(impossible_amplitude_badchannels))
@@ -128,29 +128,29 @@ def eeg_badchannel_detection(config, bids_path):
     badchannels_description.extend(current_badchannel_description)
 
     # Find abnormal power spectrum
-    components_badchannels = find_badchannels.component_detection(config, bids_path)
+    components_badchannels = find_badchannels.component_detection(config, BIDS)
     badchannels.extend(components_badchannels)
     current_badchannel_description = ['bad_component' for i in range(len(components_badchannels))]
     badchannels_description.extend(current_badchannel_description)
 
     # Find channels with gel bridge
-    gel_bridge_badchannels = find_badchannels.gel_bridge_detection(config, bids_path)
+    gel_bridge_badchannels = find_badchannels.gel_bridge_detection(config, BIDS)
     badchannels.extend(gel_bridge_badchannels)
     current_badchannel_description = ['bad_gel_bridge' for i in range(len(gel_bridge_badchannels))]
     badchannels_description.extend(current_badchannel_description)
 
     # Find channels with high variance
-    high_deviation_badchannels = find_badchannels.high_deviation_detection(config, bids_path)
+    high_deviation_badchannels = find_badchannels.high_deviation_detection(config, BIDS)
     badchannels.extend(high_deviation_badchannels)
     current_badchannel_description = ['bad_high_deviation' for i in range(len(high_deviation_badchannels))]
     badchannels_description.extend(current_badchannel_description)
 
     # Save the results
-    bids.update_badchans(bids_path, badchannels, badchannels_description)
+    bids.update_badchans(config,BIDS, badchannels, badchannels_description)
     return badchannels
 
 
-def estimate_badchannel_component(config, bids_path):
+def estimate_badchannel_component(config, BIDS):
     """
 
     Estimate ICA using SOBI algorithm. Then label each component.
@@ -158,7 +158,7 @@ def estimate_badchannel_component(config, bids_path):
 
     :arg
         config (dict): Configuration parameters (paths, parameters, etc)
-        bids_path (dict): Path to the recording
+        BIDS (dict): Path to the recording
 
     """
 
@@ -175,7 +175,7 @@ def estimate_badchannel_component(config, bids_path):
     # Load raw EEG
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -209,4 +209,4 @@ def estimate_badchannel_component(config, bids_path):
     sobi.labels_['other'] = dummy.copy()
 
     # Writes the SOBI data into the derivatives folder.
-    _ = bids.write_sobi(bids_path, sobi, 'sobi-badchannels')
+    _ = bids.write_sobi(config,BIDS, sobi, 'sobi-badchannels')

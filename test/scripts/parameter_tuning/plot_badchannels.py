@@ -12,12 +12,12 @@ Federico Ramírez-Toraño
 from sEEGnal.tools.mne_tools import prepare_eeg
 
 
-def impossible_amplitude_detection(config,bids_path,badchannels):
+def impossible_amplitude_detection(config,BIDS,badchannels):
 
     # Load the data
     raw = prepare_eeg(
             config,
-            bids_path,
+            BIDS,
             preload=True,
             channels_to_include=config['global']["channels_to_include"],
             channels_to_exclude=config['global']["channels_to_exclude"],
@@ -37,12 +37,12 @@ def impossible_amplitude_detection(config,bids_path,badchannels):
 
 
 
-def component_detection(config,bids_path,badchannels):
+def component_detection(config,BIDS,badchannels):
 
     # Load the data
     raw = prepare_eeg(
             config,
-            bids_path,
+            BIDS,
             preload=True,
             channels_to_include=config['global']["channels_to_include"],
             channels_to_exclude=config['global']["channels_to_exclude"],
@@ -64,18 +64,18 @@ def component_detection(config,bids_path,badchannels):
         'components_to_exclude': []
     }
     freq_limits = [
-        config['badchannel_detection']['component_detection']['low_freq'],
-        config['badchannel_detection']['component_detection']['high_freq']
+        config['preprocess']['badchannel_detection']['component_detection']['low_freq'],
+        config['preprocess']['badchannel_detection']['component_detection']['high_freq']
     ]
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
     resample_frequency = config['component_estimation']['resample_frequency']
-    crop_seconds = config['badchannel_detection']['crop_seconds']
+    crop_seconds = config['preprocess']['badchannel_detection']['crop_seconds']
 
     # Load the raw EEG
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -87,7 +87,7 @@ def component_detection(config,bids_path,badchannels):
     # Apply SOBI
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi,
         freq_limits=freq_limits
@@ -103,12 +103,12 @@ def component_detection(config,bids_path,badchannels):
 
 
 
-def gel_bridge_detection(config, bids_path, badchannels):
+def gel_bridge_detection(config, BIDS, badchannels):
 
     # Load the data
     raw = prepare_eeg(
             config,
-            bids_path,
+            BIDS,
             preload=True,
             channels_to_include=config['global']["channels_to_include"],
             channels_to_exclude=config['global']["channels_to_exclude"],
@@ -130,7 +130,7 @@ def gel_bridge_detection(config, bids_path, badchannels):
 
 
 
-def high_deviation_detection(config, bids_path, badchannels):
+def high_deviation_detection(config, BIDS, badchannels):
     # Parameters for loading EEG  recordings
     sobi = {
         'desc': 'sobi-badchannels',
@@ -138,18 +138,18 @@ def high_deviation_detection(config, bids_path, badchannels):
         'components_to_exclude': []
     }
     freq_limits = [
-        config['badchannel_detection']['high_deviation']['low_freq'],
-        config['badchannel_detection']['high_deviation']['high_freq']
+        config['preprocess']['badchannel_detection']['high_deviation']['low_freq'],
+        config['preprocess']['badchannel_detection']['high_deviation']['high_freq']
     ]
     resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
-    crop_seconds = config['badchannel_detection']['crop_seconds']
+    crop_seconds = config['preprocess']['badchannel_detection']['crop_seconds']
 
     # Load the raw EEG
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -161,7 +161,7 @@ def high_deviation_detection(config, bids_path, badchannels):
     # Apply SOBI
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi
     )
@@ -169,7 +169,7 @@ def high_deviation_detection(config, bids_path, badchannels):
     # Filter
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         freq_limits=freq_limits,
@@ -185,7 +185,7 @@ def high_deviation_detection(config, bids_path, badchannels):
 
 
 
-def all(config, bids_path, badchannels):
+def all(config, BIDS, badchannels):
 
     # Parameters for loading EEG  recordings
     sobi = {
@@ -194,18 +194,18 @@ def all(config, bids_path, badchannels):
         'components_to_exclude': []
     }
     freq_limits = [
-        config['badchannel_detection']['high_deviation']['low_freq'],
-        config['badchannel_detection']['high_deviation']['high_freq']
+        config['preprocess']['badchannel_detection']['high_deviation']['low_freq'],
+        config['preprocess']['badchannel_detection']['high_deviation']['high_freq']
     ]
     resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
-    crop_seconds = config['badchannel_detection']['crop_seconds']
+    crop_seconds = config['preprocess']['badchannel_detection']['crop_seconds']
 
     # Load the raw EEG
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -217,7 +217,7 @@ def all(config, bids_path, badchannels):
     # Apply SOBI
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi
     )
@@ -225,7 +225,7 @@ def all(config, bids_path, badchannels):
     # Filter
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         freq_limits=freq_limits,

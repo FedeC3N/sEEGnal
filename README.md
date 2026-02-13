@@ -127,11 +127,11 @@ For more information regarding BIDS, consult [BIDS official website](https://bid
 ```
 from sEEGnal.standardize.standardize import standardize
 
-results = standardize(config,current_file,bids_path)
+results = standardize(config,current_file,BIDS)
 ```
 config (dict): Configuration parameters (paths, parameters, etc).  
 current_file (str): Name of the file to process.  
-bids_path (BIDSpath): Associated bids_path.  
+BIDS (BIDSpath): Associated BIDS.  
 
 
 ##### Outputs
@@ -155,10 +155,10 @@ For EEG:
 ```
 from sEEGnal.preprocess.badchannel_detection import badchannel_detection
 
-results = badchannel_detection(config,bids_path)
+results = badchannel_detection(config,BIDS)
 ```
 config (dict): Configuration parameters (paths, parameters, etc).  
-bids_path (BIDSpath): Associated bids_path.
+BIDS (BIDSpath): Associated BIDS.
 
 
 ##### Outputs
@@ -185,10 +185,10 @@ Then looks for EOG arrtifacts, muscle artifacts, sensor artifacts, and "other" a
 ```
 from sEEGnal.preprocess.artifact_detection import artifact_detection
 
-results = artifact_detection(config, bids_path)
+results = artifact_detection(config, BIDS)
 ```
 config (dict): Configuration parameters (paths, parameters, etc).  
-bids_path (BIDSpath): Associated bids_path.
+BIDS (BIDSpath): Associated BIDS.
 
 
 ##### Outputs

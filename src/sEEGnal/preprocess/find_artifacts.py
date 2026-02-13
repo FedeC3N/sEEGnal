@@ -18,7 +18,7 @@ import sEEGnal.tools.mne_tools as mne_tools
 
 
 # Modules
-def EOG_detection(config, bids_path):
+def EOG_detection(config, BIDS):
     """
 
     Detect EOG artifacts
@@ -39,8 +39,8 @@ def EOG_detection(config, bids_path):
         'components_to_exclude': ['eog','ecg']
     }
     freq_limits         = [
-        config['artifact_detection']['EOG']['low_freq'],
-        config['artifact_detection']['EOG']['high_freq']
+        config['preprocess']['artifact_detection']['EOG']['low_freq'],
+        config['preprocess']['artifact_detection']['EOG']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
     resample_frequency = config['component_estimation']['resample_frequency']
@@ -50,7 +50,7 @@ def EOG_detection(config, bids_path):
     # Load the raw and apply SOBI
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -66,7 +66,7 @@ def EOG_detection(config, bids_path):
     # Apply SOBI and filters, and epoch the data
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         apply_sobi=sobi,
@@ -74,7 +74,7 @@ def EOG_detection(config, bids_path):
     )
 
     # Select frontal channels
-    frontal_channels = config['artifact_detection']['frontal_channels']
+    frontal_channels = config['preprocess']['artifact_detection']['frontal_channels']
     frontal_channels = [
         current_channel for current_channel in frontal_channels if current_channel in channels_to_include
     ]
@@ -87,7 +87,7 @@ def EOG_detection(config, bids_path):
     # Find peaks after averaging the frontal channels
     frontal_data = np.mean(frontal_raw.get_data(),axis=0)
     hits = (np.abs(frontal_data) >
-            config['artifact_detection']['EOG']['threshold'] * np.std(frontal_data))
+            config['preprocess']['artifact_detection']['EOG']['threshold'] * np.std(frontal_data))
     EOG_index = np.where(hits)[0]
 
     # Extra outputs
@@ -103,14 +103,14 @@ def EOG_detection(config, bids_path):
     return EOG_index, last_sample, sfreq
 
 
-def muscle_detection(config, bids_path, derivatives_label):
+def muscle_detection(config, BIDS, derivatives_label):
     """
 
     Detect muscle artifacts
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
     derivatives_label (str): Select the correct SOBI
 
     :returns
@@ -120,8 +120,8 @@ def muscle_detection(config, bids_path, derivatives_label):
 
     # Parameters for loading EEG recordings
     freq_limits = [
-        config['artifact_detection']['muscle']['low_freq'],
-        config['artifact_detection']['muscle']['high_freq']
+        config['preprocess']['artifact_detection']['muscle']['low_freq'],
+        config['preprocess']['artifact_detection']['muscle']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
     resample_frequency = config['component_estimation']['resample_frequency']
@@ -131,7 +131,7 @@ def muscle_detection(config, bids_path, derivatives_label):
     # Load the raw and apply SOBI
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -148,7 +148,7 @@ def muscle_detection(config, bids_path, derivatives_label):
 
     # Find peaks based on the total height (demeaning the signal first)
     raw_std = raw_std - np.mean(raw_std)
-    height = (config['artifact_detection']['muscle']['threshold']
+    height = (config['preprocess']['artifact_detection']['muscle']['threshold']
               * np.std(raw_std))
     muscle_index, _ = find_peaks(
         raw_std,
@@ -167,14 +167,14 @@ def muscle_detection(config, bids_path, derivatives_label):
     return muscle_index, last_sample, sfreq
 
 
-def sensor_detection(config, bids_path,derivatives_label):
+def sensor_detection(config, BIDS,derivatives_label):
     """
 
     Detect sensor artifacts (jumps)
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
     derivatives_label (str): Select the correct SOBI
 
     :returns
@@ -189,20 +189,20 @@ def sensor_detection(config, bids_path,derivatives_label):
         'components_to_exclude': ['eog', 'ecg']
     }
     freq_limits         = [
-        config['artifact_detection']['sensor']['low_freq'],
-        config['artifact_detection']['sensor']['high_freq']
+        config['preprocess']['artifact_detection']['sensor']['low_freq'],
+        config['preprocess']['artifact_detection']['sensor']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
     resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
-    epoch_definition = config['artifact_detection']['sensor']['epoch_definition']
+    epoch_definition = config['preprocess']['artifact_detection']['sensor']['epoch_definition']
     epoch_definition['overlap'] = 0
 
     # Load the raw data
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -218,7 +218,7 @@ def sensor_detection(config, bids_path,derivatives_label):
     # Apply SOBI and filters
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         freq_limits=freq_limits,
@@ -235,7 +235,7 @@ def sensor_detection(config, bids_path,derivatives_label):
 
     # For each epoch, estimate the threshold based on the std of the channels
     # in that epoch
-    threshold = np.mean(raw_data_std,axis=1) * config['artifact_detection']['sensor']['threshold']
+    threshold = np.mean(raw_data_std,axis=1) * config['preprocess']['artifact_detection']['sensor']['threshold']
 
     # Find peaks based on the threshold
     threshold = np.repeat(threshold[:, np.newaxis], raw_data_std.shape[1], axis=1)
@@ -252,14 +252,14 @@ def sensor_detection(config, bids_path,derivatives_label):
     return sensor_index, last_sample, sfreq
 
 
-def other_detection(config, bids_path,derivatives_label):
+def other_detection(config, BIDS,derivatives_label):
     """
 
     Look for signal with impossible values
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
 
     :returns
     List of badchannels
@@ -273,20 +273,20 @@ def other_detection(config, bids_path,derivatives_label):
         'components_to_exclude': ['eog', 'ecg']
     }
     freq_limits         = [
-        config['artifact_detection']['other']['low_freq'],
-        config['artifact_detection']['other']['high_freq']
+        config['preprocess']['artifact_detection']['other']['low_freq'],
+        config['preprocess']['artifact_detection']['other']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
     resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
-    epoch_definition = config['artifact_detection']['other'][
+    epoch_definition = config['preprocess']['artifact_detection']['other'][
         'epoch_definition']
 
     # Load the raw and apply SOBI
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -301,7 +301,7 @@ def other_detection(config, bids_path,derivatives_label):
     # Apply SOBI and filters
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         apply_sobi=sobi,
@@ -318,7 +318,7 @@ def other_detection(config, bids_path,derivatives_label):
     raw_data_demean_abs = np.abs(raw_data_demean)
 
     # Find impossible peaks
-    other_index = raw_data_demean_abs > config['artifact_detection']['other']['threshold']
+    other_index = raw_data_demean_abs > config['preprocess']['artifact_detection']['other']['threshold']
     other_index = np.sum(np.sum(other_index,axis=2),axis=1)
     other_index = np.where(other_index)[0]
     other_index = raw.events[other_index,0]

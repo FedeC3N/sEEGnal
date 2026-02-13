@@ -15,7 +15,7 @@ import numpy as np
 from test.init.init import init
 import plot_artifacts as par
 import sEEGnal.preprocess.artifact_detection as far
-from sEEGnal.tools.bids_tools import create_bids_path, write_annotations
+from sEEGnal.tools.bids_tools import build_BIDS, write_annotations
 
 
 # Parameters
@@ -40,7 +40,7 @@ for subject_index in permutated_index:
     print(f"{subject_index} - {current_file}")
 
     # Create the subjects following AI-Mind protocol
-    bids_path = create_bids_path(config, current_sub, current_ses, current_task)
+    BIDS = build_BIDS(config, current_sub, current_ses, current_task)
 
     if criteria == ['all']:
 
@@ -51,7 +51,7 @@ for subject_index in permutated_index:
         for current_criterion in dummy_criteria:
 
             func = getattr(far, current_criterion)
-            current_badchannels = func(config,bids_path)
+            current_badchannels = func(config,BIDS)
             badchannels.extend(current_badchannels)
 
             # Print out information
@@ -59,7 +59,7 @@ for subject_index in permutated_index:
 
         # Plot
         func = getattr(par, 'all')
-        func(config, bids_path,badchannels)
+        func(config, BIDS,badchannels)
 
     else:
 
@@ -68,16 +68,16 @@ for subject_index in permutated_index:
             # CAll the function
             func = getattr(far, current_criterion)
             if current_criterion == 'muscle_detection' or current_criterion == 'sensor_detection':
-                annotations = func(config, bids_path,'sobi')
+                annotations = func(config, BIDS,'sobi')
             else:
-                annotations = func(config,bids_path)
+                annotations = func(config,BIDS)
 
             # Save the annotations in BIDS format
-            _ = write_annotations(bids_path, annotations)
+            _ = write_annotations(config,BIDS, annotations)
 
             # Print out information
             print(f"    {current_criterion}: {annotations}")
 
             # Plot
             func = getattr(par, current_criterion)
-            func(config, bids_path)
+            func(config, BIDS)

@@ -381,7 +381,7 @@ def build_bss(mixing, unmixing, chname, icname=None, method='bss'):
 # Function to prepare MNE raw data
 def prepare_eeg(
     config,
-    bids_path,
+    BIDS,
     raw=False,
     preload=False,
     channels_to_include=['all'],
@@ -405,7 +405,7 @@ def prepare_eeg(
 
     if not raw:
         # Read the file
-        raw = read_source_files(str(bids_path.fpath),preload=preload)
+        raw = read_source_files(str(BIDS.fpath),preload=preload)
 
     # Set montage
     raw.set_montage('standard_1005', on_missing='ignore')
@@ -422,7 +422,7 @@ def prepare_eeg(
 
         # Load the SOBI
         # Read the ICA information
-        sobi = bids.read_sobi(bids_path, apply_sobi['desc'])
+        sobi = bids.read_sobi(config,BIDS, apply_sobi['desc'])
 
         # IClabel recommend to filter between 1 and 100
         raw.filter(1, 100)
@@ -484,18 +484,19 @@ def prepare_eeg(
     # Remove bad channels
     ##################################################################
 
-    chan = bids.read_channels(bids_path)
-    badchannels = list(chan.loc[chan['status'] == 'bad']['name'])
-
-    # To avoid errors, the badchannels has to be among the channels included in the recording
-    badchannels = list(set(badchannels) & set(raw.info['ch_names']))
-
-    # If all channels are badchannels, raise an Exception
-    if (len(badchannels) == len(raw.info['ch_names'])):
-        raise Exception("All channels are marked as bad")
-
     # Add bad channels to the info
     if metadata_badchannels:
+
+        chan = bids.read_badchannels(config,BIDS)
+        badchannels = list(chan.loc[chan['status'] == 'bad']['name'])
+
+        # To avoid errors, the badchannels has to be among the channels included in the recording
+        badchannels = list(set(badchannels) & set(raw.info['ch_names']))
+
+        # If all channels are badchannels, raise an Exception
+        if (len(badchannels) == len(raw.info['ch_names'])):
+            raise Exception("All channels are marked as bad")
+
         raw.info['bads'] = badchannels
 
     # Drop the badchannels
@@ -513,7 +514,7 @@ def prepare_eeg(
     if set_annotations:
 
         # Reads the annotations.
-        annotations = bids.read_annotations(bids_path)
+        annotations = bids.read_annotations(config,BIDS)
 
         # Adds the annotations to the MNE object.
         if len(annotations):

@@ -19,7 +19,7 @@ from scipy.stats import median_abs_deviation
 from sEEGnal.tools.mne_tools import prepare_eeg
 
 
-def EOG_detection(config, bids_path):
+def EOG_detection(config, BIDS):
 
     # Parameters for loading EEG  recordings
     sobi = {
@@ -39,7 +39,7 @@ def EOG_detection(config, bids_path):
     # Load the raw EEG
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -54,7 +54,7 @@ def EOG_detection(config, bids_path):
     # Apply SOBI
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi
     )
@@ -62,7 +62,7 @@ def EOG_detection(config, bids_path):
     # Filter
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         freq_limits=freq_limits,
@@ -81,19 +81,19 @@ def EOG_detection(config, bids_path):
         'components_to_exclude': ['eog', 'ecg']
     }
     freq_limits = [
-        config['artifact_detection']['EOG']['low_freq'],
-        config['artifact_detection']['EOG']['high_freq']
+        config['preprocess']['artifact_detection']['EOG']['low_freq'],
+        config['preprocess']['artifact_detection']['EOG']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
     resample_frequency = config['component_estimation']['resample_frequency']
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
-    epoch_definition = config['artifact_detection']['EOG']['epoch_definition']
+    epoch_definition = config['preprocess']['artifact_detection']['EOG']['epoch_definition']
 
     # Load the raw and apply SOBI
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -107,14 +107,14 @@ def EOG_detection(config, bids_path):
     # Apply SOBI and filters
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi,
         freq_limits=freq_limits
     )
 
     # Select frontal channels
-    frontal_channels = config['artifact_detection']['frontal_channels']
+    frontal_channels = config['preprocess']['artifact_detection']['frontal_channels']
     frontal_channels = [
         current_channel for current_channel in frontal_channels if
         current_channel in channels_to_include
@@ -139,7 +139,7 @@ def EOG_detection(config, bids_path):
         scalings=dict(eeg=50e-6))
 
 
-def muscle_detection(config,bids_path):
+def muscle_detection(config,BIDS):
 
     # Plot the clean visualization
     # Parameters for loading EEG  recordings
@@ -160,7 +160,7 @@ def muscle_detection(config,bids_path):
     # Load the raw EEG
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -175,7 +175,7 @@ def muscle_detection(config,bids_path):
     # Apply SOBI
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi
     )
@@ -183,7 +183,7 @@ def muscle_detection(config,bids_path):
     # Filter
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         freq_limits=freq_limits,
@@ -199,8 +199,8 @@ def muscle_detection(config,bids_path):
     # Plot the recording we have used to detect peaks
     # Parameters for loading EEG recordings
     freq_limits = [
-        config['artifact_detection']['muscle']['low_freq'],
-        config['artifact_detection']['muscle']['high_freq']
+        config['preprocess']['artifact_detection']['muscle']['low_freq'],
+        config['preprocess']['artifact_detection']['muscle']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
     resample_frequency = config['component_estimation']['resample_frequency']
@@ -210,7 +210,7 @@ def muscle_detection(config,bids_path):
     # Load the raw and apply SOBI
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -228,7 +228,7 @@ def muscle_detection(config,bids_path):
 
     # Find peaks based on the total height (demeaning the signal first)
     raw_std = raw_std - np.mean(raw_std)
-    height = (config['artifact_detection']['muscle']['threshold']
+    height = (config['preprocess']['artifact_detection']['muscle']['threshold']
               * np.std(raw_std))
     muscle_index, _ = find_peaks(
         raw_std,
@@ -247,7 +247,7 @@ def muscle_detection(config,bids_path):
     )
 
 
-def sensor_detection(config,bids_path):
+def sensor_detection(config,BIDS):
     # Plot the clean visualization
     # Parameters for loading EEG  recordings
     sobi = {
@@ -267,7 +267,7 @@ def sensor_detection(config,bids_path):
     # Load the raw EEG
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -282,7 +282,7 @@ def sensor_detection(config,bids_path):
     # Apply SOBI
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi
     )
@@ -290,7 +290,7 @@ def sensor_detection(config,bids_path):
     # Filter
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         freq_limits=freq_limits,
@@ -309,8 +309,8 @@ def sensor_detection(config,bids_path):
         'components_to_exclude': ['eog', 'ecg']
     }
     freq_limits = [
-        config['artifact_detection']['sensor']['low_freq'],
-        config['artifact_detection']['sensor']['high_freq']
+        config['preprocess']['artifact_detection']['sensor']['low_freq'],
+        config['preprocess']['artifact_detection']['sensor']['high_freq']
     ]
     crop_seconds = config['component_estimation']['crop_seconds']
     resample_frequency = config['component_estimation']['resample_frequency']
@@ -321,7 +321,7 @@ def sensor_detection(config,bids_path):
     # Load the raw data
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -337,7 +337,7 @@ def sensor_detection(config,bids_path):
     # Apply SOBI and filters
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         freq_limits=freq_limits,
@@ -358,7 +358,7 @@ def sensor_detection(config,bids_path):
     # For each epoch, get the median and MAD across channels
     median = np.median(max_values, axis=1)
     MAD = median_abs_deviation(max_values, axis=1)
-    threshold = (median + config['artifact_detection']['sensor']['threshold'] *
+    threshold = (median + config['preprocess']['artifact_detection']['sensor']['threshold'] *
                  MAD)
 
 
