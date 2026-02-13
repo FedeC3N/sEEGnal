@@ -109,9 +109,6 @@ def eeg_badchannel_detection(config, bids_path):
 
     """
 
-    # Initialzies the derivatives.
-    bids.init_derivatives(bids_path)
-
     # Estimate Independent Components
     estimate_badchannel_component(config, bids_path)
 

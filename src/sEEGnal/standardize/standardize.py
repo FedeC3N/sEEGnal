@@ -104,12 +104,18 @@ def standardize_eeg_file(config, current_file, bids_path):
     mnedata.drop_channels(channels_to_exclude, on_missing='ignore')
 
     # Adds some project-specific information.
-    mnedata.info['line_freq'] = 50
+    mnedata.info['line_freq'] = config['global']['line_freq']
     mnedata.info['subject_info'] = dict()
     mnedata.info['subject_info']['his_id'] = bids_path.subject
 
     # Writes the data into the BIDS path.
-    mne_bids.write_raw_bids(mnedata, bids_path, allow_preload=True, format='BrainVision', overwrite=True)
+    mne_bids.write_raw_bids(
+        mnedata,
+        bids_path,
+        allow_preload=True,
+        format=config['preprocess']['standardization']['format'],
+        overwrite=bool(config['preprocess']['standardization']['overwrite'])
+    )
 
     # Reads the channels information.
     ch_tsv = bids_path.copy().update(suffix='channels', extension='.tsv')

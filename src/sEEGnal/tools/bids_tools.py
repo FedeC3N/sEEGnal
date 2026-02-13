@@ -5,6 +5,7 @@ Created on Thu Jun  9 14:15:56 2022
 @author: Ricardo
 """
 
+from functools import wraps
 import pandas
 import json
 import os
@@ -17,38 +18,42 @@ import sEEGnal.tools.mne_tools as mnetools
 import sEEGnal.tools.tools as tools
 
 
-# Function to initialize the derivarives.
-def init_derivatives(bids_path):
 
-    # Initializes the list of created files.
-    created_files = []
+def init_derivatives(func):
+    """
 
-    # Creates the paths to the raw and derivative datas.
-    raw_chan = build_raw(bids_path, 'channels.tsv')
-    der_chan = build_derivative(bids_path, 'channels.tsv')
-    der_path = os.path.dirname(der_chan)
+    Check if the BIDS structure exists and if not, create it.
 
-    # Creates the derivatives folder, if required.
-    if not os.path.isdir(der_path):
-        os.makedirs(der_path)
+    """
 
-    # Copies the channels file to the derivatives folder.
-    tsv_data = read_tsv(raw_chan)
-    write_tsv(tsv_data, der_chan)
+    @wraps(func)
+    def wrapper(*args, **kwargs):
 
-    # Appends the created file to the list.
-    created_files.append(der_chan)
-    '''
-    # Creates a dummy annotation.
-    der_annot = write_annot ( bids_path )
+        # Find the BIDSpath
+        for arg in args:
+            if isinstance(arg, mne_bids.BIDSPath):
+                bids_path = arg
+                break
 
-    # Appends the created file to the list.
-    created_files.append ( der_annot )
-    '''
+        # Check if the derivatives exists
+        # Creates the paths to the raw and derivative datas.
+        raw_chan = build_raw(bids_path, 'channels.tsv')
+        der_chan = build_derivative(bids_path, 'channels.tsv')
+        der_path = os.path.dirname(der_chan)
 
-    return created_files
+        # Creates the derivatives folder, if required.
+        if not os.path.isdir(der_path):
+            os.makedirs(der_path)
+
+        # Continue with the call
+        created_files = func(*args, **kwargs)  # ← Se pasan tal cual
+
+        return created_files
+
+    return wrapper
 
 
+@init_derivatives
 def write_annotations(bids_path, annotations=None):
 
     # Initializes the list of created files.
@@ -129,6 +134,7 @@ def read_channels(bids_path):
     return channels
 
 
+@init_derivatives
 def update_badchans(bids_path, badchannels=None, badchannels_description=None):
 
     # Builds the path to the file.
@@ -158,6 +164,7 @@ def update_badchans(bids_path, badchannels=None, badchannels_description=None):
     mne_bids.tsv_handler._to_tsv(tsv_data, tsv_file)
 
 
+@init_derivatives
 def write_sobi(bids_path, sobi, desc='sobi'):
 
     # Initializes the list of created files.
