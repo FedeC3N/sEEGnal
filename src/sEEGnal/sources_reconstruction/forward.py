@@ -12,15 +12,22 @@ Federico Ramírez-Toraño
 import mne
 
 from sEEGnal.tools.mne_tools import prepare_eeg
+from sEEGnal.tools.bids_tools import write_forward_model
 
 
-def make_forward_model(config,bids_path):
+def make_forward_model(config, BIDS):
+
+    # Add the subsystem info
+    config['subsystem'] = 'source_reconstruction'
 
     # Estimate the parameters of the forward model
     if config['source_reconstruction']['forward']['use_template']:
-        forward_model = template_forward_model(config,bids_path)
+        forward_model = template_forward_model(config, BIDS)
     else:
         forward_model = []
+
+    # Save the forward solution
+    write_forward_model(config, BIDS, forward_model)
 
     return forward_model
 

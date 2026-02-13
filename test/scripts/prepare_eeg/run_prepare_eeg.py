@@ -12,7 +12,7 @@ Federico Ramírez-Toraño
 import numpy as np
 
 from init import init
-from sEEGnal.tools.bids_tools import build_BIDS, read_badchannels, read_annotations
+from sEEGnal.tools.bids_tools import build_BIDS_object, read_badchannels, read_annotations
 from sEEGnal.tools.mne_tools import prepare_eeg
 
 
@@ -26,7 +26,7 @@ current_ses = ses[0]
 current_task = task[0]
 
 # Create the subjects following AI-Mind protocol
-BIDS = build_BIDS(config, current_sub, current_ses, current_task)
+BIDS = build_BIDS_object(config, current_sub, current_ses, current_task)
 
 ##################################################################
 # Check include / exclude channels

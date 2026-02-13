@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 from test.init.init import init
 from sEEGnal.tools.mne_tools import prepare_eeg
-from sEEGnal.tools.bids_tools import build_BIDS, read_sobi
+from sEEGnal.tools.bids_tools import build_BIDS_object, read_sobi
 
 # Init the database
 config, files, sub, ses, task = init()
@@ -31,7 +31,7 @@ for subject_index in permutated_index:
     current_task = task[subject_index]
 
     # Create the subjects following AI-Mind protocol
-    BIDS = build_BIDS(config, current_sub, current_ses, current_task)
+    BIDS = build_BIDS_object(config, current_sub, current_ses, current_task)
 
     # Parameters to load the data
     sobi                = {

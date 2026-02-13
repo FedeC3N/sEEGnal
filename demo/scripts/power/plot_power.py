@@ -13,7 +13,7 @@ import os
 import matplotlib.pyplot as plt
 
 from sEEGnal.tools.mne_tools import prepare_eeg
-from sEEGnal.tools.bids_tools import build_BIDS, read_sobi
+from sEEGnal.tools.bids_tools import build_BIDS_object, read_sobi
 
 # Select a subjet
 config = {'path':{}}
@@ -23,7 +23,7 @@ current_ses                     = '0'
 current_task                    = '4EC'
 
 # Get the BIDS path
-BIDS = build_BIDS(config, current_sub, current_ses, current_task)
+BIDS = build_BIDS_object(config, current_sub, current_ses, current_task)
 
 # Parameters to load the data
 epoch_definition ={ "length": 4 , "overlap": 0 , "padding": 2,

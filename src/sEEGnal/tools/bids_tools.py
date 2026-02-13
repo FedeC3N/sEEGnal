@@ -41,7 +41,7 @@ def init_derivatives(func):
 
         # Check if the derivatives exists
         # Creates the paths to the raw and derivative datas.
-        derivatives_file_path = build_derivative(BIDS, config['subsystem'], 'channels.tsv')
+        derivatives_file_path = build_derivatives_path(BIDS, config['subsystem'], 'channels.tsv')
         derivatives_folder_path = os.path.dirname(derivatives_file_path)
 
         # Creates the derivatives folder, if required.
@@ -50,7 +50,7 @@ def init_derivatives(func):
             os.makedirs(derivatives_folder_path)
 
             # Add a dummy file
-            bids_file_path = build_bids(BIDS, 'channels.tsv')
+            bids_file_path = build_standardize_path(BIDS, 'channels.tsv')
             shutil.copy(bids_file_path, derivatives_file_path)
 
         # Continue with the call
@@ -93,8 +93,8 @@ def write_annotations(config,BIDS, annotations=None):
     }
 
     # Builds the path to the files.
-    tsv_file = build_derivative(BIDS, 'preprocess','desc-artifacts_annotations.tsv')
-    json_file = build_derivative(BIDS, 'preprocess','desc-artifacts_annotations.json')
+    tsv_file = build_derivatives_path(BIDS, 'preprocess', 'desc-artifacts_annotations.tsv')
+    json_file = build_derivatives_path(BIDS, 'preprocess', 'desc-artifacts_annotations.json')
 
     # Writes the data.
     tsv.write_tsv(tsv_data, tsv_file)
@@ -113,7 +113,7 @@ def write_annotations(config,BIDS, annotations=None):
 def read_annotations(config,BIDS):
 
     # Builds the path to the file.
-    tsv_file = build_derivative(BIDS, 'preprocess', 'desc-artifacts_annotations.tsv')
+    tsv_file = build_derivatives_path(BIDS, 'preprocess', 'desc-artifacts_annotations.tsv')
 
     # Loads the derivative data pieces.
     if tsv_file.exists():
@@ -133,7 +133,7 @@ def read_annotations(config,BIDS):
 def read_badchannels(config,BIDS):
 
     # Builds the path to the file.
-    tsv_file = build_derivative(BIDS, 'preprocess','channels.tsv')
+    tsv_file = build_derivatives_path(BIDS, 'preprocess', 'channels.tsv')
 
     # Loads the derivative data pieces.
     channels = tsv.read_tsv(tsv_file, ismatrix=False)
@@ -143,10 +143,10 @@ def read_badchannels(config,BIDS):
 
 
 @init_derivatives
-def update_badchans(config,BIDS, badchannels=None, badchannels_description=None):
+def write_badchannels(config, BIDS, badchannels=None, badchannels_description=None):
 
     # Builds the path to the file.
-    tsv_file = build_derivative(BIDS, 'preprocess','channels.tsv')
+    tsv_file = build_derivatives_path(BIDS, 'preprocess', 'channels.tsv')
 
     # Reads the contents of the raw file.
     tsv_data = mne_bids.tsv_handler._from_tsv(tsv_file)
@@ -194,8 +194,8 @@ def write_sobi(config,BIDS, sobi, desc='sobi'):
     }
 
     # Builds the path to the files.
-    tsv_file = build_derivative(BIDS,'preprocess', 'desc-' + desc + '_mixing.tsv')
-    json_file = build_derivative(BIDS,'preprocess', 'desc-' + desc + '_mixing.json')
+    tsv_file = build_derivatives_path(BIDS, 'preprocess', 'desc-' + desc + '_mixing.tsv')
+    json_file = build_derivatives_path(BIDS, 'preprocess', 'desc-' + desc + '_mixing.json')
 
     # Writes the data.
     tsv.write_tsv(tsv_data, tsv_file)
@@ -224,8 +224,8 @@ def write_sobi(config,BIDS, sobi, desc='sobi'):
     }
 
     # Builds the path to the files.
-    tsv_file = build_derivative(BIDS, 'preprocess','desc-' + desc + '_unmixing.tsv')
-    json_file = build_derivative(BIDS, 'preprocess','desc-' + desc + '_unmixing.json')
+    tsv_file = build_derivatives_path(BIDS, 'preprocess', 'desc-' + desc + '_unmixing.tsv')
+    json_file = build_derivatives_path(BIDS, 'preprocess', 'desc-' + desc + '_unmixing.json')
 
     # Writes the data.
     tsv.write_tsv(tsv_data, tsv_file)
@@ -285,8 +285,8 @@ def write_sobi(config,BIDS, sobi, desc='sobi'):
         }
 
         # Builds the path to the files.
-        tsv_file = build_derivative(BIDS, 'preprocess','desc-' + desc + '_annotations.tsv')
-        json_file = build_derivative(BIDS, 'preprocess','desc-' + desc + '_annotations.json')
+        tsv_file = build_derivatives_path(BIDS, 'preprocess', 'desc-' + desc + '_annotations.tsv')
+        json_file = build_derivatives_path(BIDS, 'preprocess', 'desc-' + desc + '_annotations.json')
 
         # Writes the data.
         tsv.write_tsv(tsv_data, tsv_file)
@@ -313,8 +313,8 @@ def write_sobi(config,BIDS, sobi, desc='sobi'):
             }
 
             # Builds the path to the files.
-            tsv_file = build_derivative(BIDS, 'preprocess','desc-' + desc + '_prediction_scores.tsv')
-            json_file = build_derivative(BIDS, 'preprocess', 'desc-' + desc + '_prediction_scores.json')
+            tsv_file = build_derivatives_path(BIDS, 'preprocess', 'desc-' + desc + '_prediction_scores.tsv')
+            json_file = build_derivatives_path(BIDS, 'preprocess', 'desc-' + desc + '_prediction_scores.json')
 
             # Writes the data.
             tsv.write_tsv(tsv_data, tsv_file)
@@ -334,9 +334,9 @@ def write_sobi(config,BIDS, sobi, desc='sobi'):
 def read_sobi(config,BIDS, desc='sobi'):
 
     # Loads the derivative data pieces.
-    mix_path = build_derivative(BIDS,'preprocess','desc-' + desc + '_mixing.tsv')
+    mix_path = build_derivatives_path(BIDS, 'preprocess', 'desc-' + desc + '_mixing.tsv')
     mix = tsv.read_tsv(mix_path, ismatrix=True)
-    unmix_path = build_derivative(BIDS,'preprocess','desc-' + desc + '_unmixing.tsv')
+    unmix_path = build_derivatives_path(BIDS, 'preprocess', 'desc-' + desc + '_unmixing.tsv')
     unmix = tsv.read_tsv(unmix_path, ismatrix=True)
 
     # Extracts the mixing and unmixing matrices and metadata.
@@ -367,8 +367,8 @@ def read_sobi(config,BIDS, desc='sobi'):
     mneica = mnetools.build_bss(matrix_mix, matrix_unmix, chname_mix, icname=icname_mix)
 
     # Loads the annotations, if available.
-    tsv_file = build_derivative(BIDS, 'preprocess','desc-' + desc + '_annotations.tsv')
-    json_file = build_derivative(BIDS,'preprocess','desc-' + desc + '_annotations.json')
+    tsv_file = build_derivatives_path(BIDS, 'preprocess', 'desc-' + desc + '_annotations.tsv')
+    json_file = build_derivatives_path(BIDS, 'preprocess', 'desc-' + desc + '_annotations.json')
     if os.path.isfile(tsv_file):
 
         # Loads the annotations.
@@ -404,7 +404,7 @@ def read_sobi(config,BIDS, desc='sobi'):
             mneica.labels_[label] = hits
 
         # Loads the label scores, if available.
-        tsv_file = build_derivative(BIDS,'preprocess',  'desc-' + desc + '_prediction_scores.tsv')
+        tsv_file = build_derivatives_path(BIDS, 'preprocess', 'desc-' + desc + '_prediction_scores.tsv')
         if os.path.isfile(tsv_file):
 
             score = tsv.read_tsv(tsv_file, ismatrix=True)
@@ -429,7 +429,19 @@ def read_sobi(config,BIDS, desc='sobi'):
     return mneica
 
 
-def build_bids(BIDS, fname_tail):
+@init_derivatives
+def write_forward_model(config,BIDS,forward_model):
+
+    # Get the output path
+    forward_path = build_derivatives_path(BIDS, config['subsystem'], 'desc-forward_model')
+
+    # Save
+    forward_model.save(forward_path)
+
+    return forward_model
+
+
+def build_standardize_path(BIDS, fname_tail):
 
     from mne_bids.config import ALLOWED_PATH_ENTITIES_SHORT
 
@@ -452,7 +464,7 @@ def build_bids(BIDS, fname_tail):
     return path_bids
 
 
-def build_derivative(BIDS, process, fname_tail):
+def build_derivatives_path(BIDS, process, fname_tail):
 
     from mne_bids.config import ALLOWED_PATH_ENTITIES_SHORT
 
@@ -477,7 +489,7 @@ def build_derivative(BIDS, process, fname_tail):
     return path_der
 
 
-def build_BIDS(config, current_sub, current_ses, current_task):
+def build_BIDS_object(config, current_sub, current_ses, current_task):
 
     # Remove the unallowed characters
     current_sub = current_sub.replace('-', '')

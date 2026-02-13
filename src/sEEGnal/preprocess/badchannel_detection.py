@@ -146,7 +146,7 @@ def eeg_badchannel_detection(config, BIDS):
     badchannels_description.extend(current_badchannel_description)
 
     # Save the results
-    bids.update_badchans(config,BIDS, badchannels, badchannels_description)
+    bids.write_badchannels(config, BIDS, badchannels, badchannels_description)
     return badchannels
 
 

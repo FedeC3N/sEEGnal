@@ -25,6 +25,9 @@ def estimate_inverse_solution(config,bids_path,
 
     """
 
+    # Add the subsystem info
+    config['subsystem'] = 'source_reconstruction'
+
     # Build the function name
     func = f"estimate_{config['source_reconstruction']['inverse']['method']}"
     to_estimate = getattr(sys.modules[__name__], func)

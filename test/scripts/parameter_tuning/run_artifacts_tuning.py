@@ -15,7 +15,7 @@ import numpy as np
 from test.init.init import init
 import plot_artifacts as par
 import sEEGnal.preprocess.artifact_detection as far
-from sEEGnal.tools.bids_tools import build_BIDS, write_annotations
+from sEEGnal.tools.bids_tools import build_BIDS_object, write_annotations
 
 
 # Parameters
@@ -40,7 +40,7 @@ for subject_index in permutated_index:
     print(f"{subject_index} - {current_file}")
 
     # Create the subjects following AI-Mind protocol
-    BIDS = build_BIDS(config, current_sub, current_ses, current_task)
+    BIDS = build_BIDS_object(config, current_sub, current_ses, current_task)
 
     if criteria == ['all']:
 

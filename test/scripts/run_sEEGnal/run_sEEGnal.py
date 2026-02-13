@@ -10,7 +10,7 @@ Federico Ramírez-Toraño
 
 # Imports
 from test.init.init import init
-from sEEGnal.tools.bids_tools import build_BIDS
+from sEEGnal.tools.bids_tools import build_BIDS_object
 from sEEGnal.standardize.standardize import standardize
 from sEEGnal.preprocess.artifact_detection import artifact_detection
 from sEEGnal.preprocess.badchannel_detection import badchannel_detection
@@ -34,7 +34,7 @@ for current_index in range(len(files)):
     current_task = task[current_index]
 
     # Create the subjects following AI-Mind protocol
-    BIDS = build_BIDS(config, current_sub, current_ses, current_task)
+    BIDS = build_BIDS_object(config, current_sub, current_ses, current_task)
 
     print('Working with sub ' + current_sub + ' ses ' + current_ses + ' task ' + current_task)
 

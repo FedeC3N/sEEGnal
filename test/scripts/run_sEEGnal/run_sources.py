@@ -10,11 +10,13 @@ Federico Ramírez-Toraño
 
 # Imports
 from test.init.init import init
-from sEEGnal.tools.mne_tools import prepare_eeg
-from sEEGnal.tools.bids_tools import create_bids_path
+from sEEGnal.tools.bids_tools import build_BIDS_object
 from sEEGnal.sources_reconstruction.forward import make_forward_model
 from sEEGnal.sources_reconstruction.covariance import estimate_covariance
 from sEEGnal.sources_reconstruction.inverse import estimate_inverse_solution
+
+# What step to run: forward, covariance, inverse
+run = [1, 1, 1]
 
 # Init the database
 config, files, sub, ses, task = init()
@@ -23,7 +25,7 @@ config, files, sub, ses, task = init()
 errors = []
 
 # Go through each subject
-index = [10]
+index = [0]
 for current_index in index:
 
     # current info
@@ -34,19 +36,25 @@ for current_index in index:
     print(current_file)
 
     # Create the subjects following AI-Mind protocol
-    bids_path = create_bids_path(config, current_sub, current_ses, current_task)
+    BIDS = build_BIDS_object(config, current_sub, current_ses, current_task)
 
-    # Get the forward model
-    forward_model = make_forward_model(config,bids_path)
+    # Run the selected processes
+    if run[0]:
+        print('   Forward Model', end='. ')
+        results = make_forward_model(config, BIDS)
+        print(' Result ' + results['result'])
 
-    # Compute the covariance matrix
-    data_cov = estimate_covariance(config,bids_path)
+    if run[1]:
+        print('   Covariance Matrix', end='. ')
+        results = estimate_covariance(config, BIDS)
+        print(' Result ' + results['result'])
 
-    # Estimate inverse solution
-    filters = estimate_inverse_solution(config,bids_path,
-                                        forward_model=forward_model,
-                                        data_cov=data_cov)
+    if run[2]:
+        print('   Inverse Solution', end='. ')
+        results = estimate_inverse_solution(config, BIDS,forward_model=forward_model,data_cov=data_cov)
+        print(' Result ' + results['result'])
 
+"""
     # Let's plot sources
     import mne
     # Load the clean EEG
@@ -68,7 +76,7 @@ for current_index in index:
     # Load the clean data
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -82,7 +90,7 @@ for current_index in index:
 
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi,
         freq_limits=[2, 45],
@@ -113,4 +121,4 @@ for current_index in index:
     plt.semilogy(freqs, psd)
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('PSD')
-    plt.show()
+    plt.show()"""

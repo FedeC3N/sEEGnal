@@ -16,6 +16,8 @@ from sEEGnal.tools.mne_tools import prepare_eeg
 
 def estimate_covariance(config,bids_path):
 
+    # Add the subsystem info
+    config['subsystem'] = 'source_reconstruction'
 
     # Load the clean EEG
     sobi = {
