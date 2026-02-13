@@ -17,12 +17,10 @@ from sEEGnal.tools.mne_tools import prepare_eeg
 def make_forward_model(config,bids_path):
 
     # Estimate the parameters of the forward model
-    if config['forward']['use_template']:
+    if config['source_reconstruction']['forward']['use_template']:
         forward_model = template_forward_model(config,bids_path)
     else:
         forward_model = []
-
-
 
     return forward_model
 
@@ -75,15 +73,15 @@ def template_forward_model(config, bids_path):
 
     # Get the FreeSurfer fsaverage information
     fs_dir = mne.datasets.fetch_fsaverage(verbose=False)
-    subject = config['forward']['template']['subject']
-    trans = config['forward']['template']['trans']
-    bem = fs_dir / "bem" / config['forward']['template']['bem']
+    subject = config['source_reconstruction']['forward']['template']['subject']
+    trans = config['source_reconstruction']['forward']['template']['trans']
+    bem = fs_dir / "bem" / config['source_reconstruction']['forward']['template']['bem']
 
     # Define our sources
     src = mne.setup_volume_source_space(
         subject=subject,
-        pos=config['forward']['template']['pos'],
-        mri=config['forward']['template']['mri'],
+        pos=config['source_reconstruction']['forward']['template']['pos'],
+        mri=config['source_reconstruction']['forward']['template']['mri'],
         bem=None,
         add_interpolator=True
     )
@@ -99,4 +97,5 @@ def template_forward_model(config, bids_path):
         mindist=5.0
     )
 
+    # Save the forward model
     return forward_model

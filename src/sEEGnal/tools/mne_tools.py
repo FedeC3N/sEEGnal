@@ -537,7 +537,7 @@ def prepare_eeg(
 
     # Average
     if rereference == 'average':
-        raw.set_eeg_reference(ref_channels='average')
+        raw.set_eeg_reference('average', projection=True)
 
     # Median
     if rereference == 'median':

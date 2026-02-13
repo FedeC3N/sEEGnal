@@ -146,15 +146,39 @@
 		}
 	},
 
-    "forward": {
-        "use_template": 1,
-        "template": {
+
+
+    "source_reconstruction": {
+
+        "epoch_definition":{
+                  "length": 8,
+                  "overlap": 0,
+                  "padding": 0,
+                  "reject_by_annotation": 1
+              },
+
+        "forward": {
+          "use_template": 1,
+          "template": {
             "subject": "fsaverage",
             "trans": "fsaverage",
             "bem": "fsaverage-5120-5120-5120-bem-sol.fif",
             "mri": "aseg.mgz",
             "pos": 8
-        }
-    }
+          }
+        },
 
+        "covariance": {
+          "method": "oas",
+          "rank": "info"
+        },
+
+        "inverse": {
+          "method": "LCMV",
+          "reg": 0.05,
+          "pick_ori": "max-power",
+          "weight_norm": "nai"
+        }
+
+    }
 }

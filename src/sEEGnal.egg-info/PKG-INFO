@@ -1,7 +1,7 @@
 Metadata-Version: 2.4
 Name: sEEGnal
-Version: 1.1.0
-Summary: EEG signal pre-processing tools
+Version: 1.4.0
+Summary: EEG pre-processing and analysis tools
 Requires-Python: >=3.12
 Description-Content-Type: text/markdown
 Requires-Dist: certifi==2025.10.5
@@ -39,6 +39,7 @@ Requires-Dist: pyreadline3==3.5.4
 Requires-Dist: python-dateutil==2.9.0.post0
 Requires-Dist: pytz==2025.2
 Requires-Dist: requests==2.32.5
+Requires-Dist: scikit-learn==1.8.0
 Requires-Dist: scipy==1.16.2
 Requires-Dist: setuptools==80.9.0
 Requires-Dist: six==1.17.0
@@ -195,7 +196,6 @@ Marks badchannels in EEG recordings based on different criteria.
 
 For EEG:
 
-- Channels with impedances above a certain threshold.
 - Channels with impossible low or high amplitudes.
 - Channels with significantly higher energy in 45-55 Hz range compared to the rest of channels.
 - Channels with gel bridge.
