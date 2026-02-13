@@ -18,7 +18,7 @@ import sEEGnal.tools.mne_tools as mne_tools
 
 
 # Modules
-def EOG_detection(config, bids_path):
+def EOG_detection(config, BIDS):
     """
 
     Detect EOG artifacts
@@ -50,7 +50,7 @@ def EOG_detection(config, bids_path):
     # Load the raw and apply SOBI
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -66,7 +66,7 @@ def EOG_detection(config, bids_path):
     # Apply SOBI and filters, and epoch the data
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         apply_sobi=sobi,
@@ -103,14 +103,14 @@ def EOG_detection(config, bids_path):
     return EOG_index, last_sample, sfreq
 
 
-def muscle_detection(config, bids_path, derivatives_label):
+def muscle_detection(config, BIDS, derivatives_label):
     """
 
     Detect muscle artifacts
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
     derivatives_label (str): Select the correct SOBI
 
     :returns
@@ -131,7 +131,7 @@ def muscle_detection(config, bids_path, derivatives_label):
     # Load the raw and apply SOBI
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -167,14 +167,14 @@ def muscle_detection(config, bids_path, derivatives_label):
     return muscle_index, last_sample, sfreq
 
 
-def sensor_detection(config, bids_path,derivatives_label):
+def sensor_detection(config, BIDS,derivatives_label):
     """
 
     Detect sensor artifacts (jumps)
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
     derivatives_label (str): Select the correct SOBI
 
     :returns
@@ -202,7 +202,7 @@ def sensor_detection(config, bids_path,derivatives_label):
     # Load the raw data
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -218,7 +218,7 @@ def sensor_detection(config, bids_path,derivatives_label):
     # Apply SOBI and filters
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         freq_limits=freq_limits,
@@ -252,14 +252,14 @@ def sensor_detection(config, bids_path,derivatives_label):
     return sensor_index, last_sample, sfreq
 
 
-def other_detection(config, bids_path,derivatives_label):
+def other_detection(config, BIDS,derivatives_label):
     """
 
     Look for signal with impossible values
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
 
     :returns
     List of badchannels
@@ -286,7 +286,7 @@ def other_detection(config, bids_path,derivatives_label):
     # Load the raw and apply SOBI
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -301,7 +301,7 @@ def other_detection(config, bids_path,derivatives_label):
     # Apply SOBI and filters
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         apply_sobi=sobi,

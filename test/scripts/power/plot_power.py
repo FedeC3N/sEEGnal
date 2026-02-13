@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 from test.init.init import init
 from sEEGnal.tools.mne_tools import prepare_eeg
-from sEEGnal.tools.bids_tools import create_bids_path, read_sobi
+from sEEGnal.tools.bids_tools import build_BIDS, read_sobi
 
 # Init the database
 config, files, sub, ses, task = init()
@@ -31,7 +31,7 @@ for subject_index in permutated_index:
     current_task = task[subject_index]
 
     # Create the subjects following AI-Mind protocol
-    bids_path = create_bids_path(config, current_sub, current_ses, current_task)
+    BIDS = build_BIDS(config, current_sub, current_ses, current_task)
 
     # Parameters to load the data
     sobi                = {
@@ -53,7 +53,7 @@ for subject_index in permutated_index:
     # Load the clean data
     clean_data = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -68,7 +68,7 @@ for subject_index in permutated_index:
     # Apply SOBI
     clean_data = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=clean_data,
         apply_sobi=sobi,
         freq_limits=[2, 45],
@@ -82,7 +82,7 @@ for subject_index in permutated_index:
     # Remove the bad epochs before estimating power spectrum
     clean_data = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=clean_data,
         preload=True,
         epoch_definition=epoch_definition

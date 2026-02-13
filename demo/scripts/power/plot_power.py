@@ -13,7 +13,7 @@ import os
 import matplotlib.pyplot as plt
 
 from sEEGnal.tools.mne_tools import prepare_eeg
-from sEEGnal.tools.bids_tools import create_bids_path, read_sobi
+from sEEGnal.tools.bids_tools import build_BIDS, read_sobi
 
 # Select a subjet
 config = {'path':{}}
@@ -23,7 +23,7 @@ current_ses                     = '0'
 current_task                    = '4EC'
 
 # Get the BIDS path
-bids_path = create_bids_path(config, current_sub, current_ses, current_task)
+BIDS = build_BIDS(config, current_sub, current_ses, current_task)
 
 # Parameters to load the data
 epoch_definition ={ "length": 4 , "overlap": 0 , "padding": 2,
@@ -34,7 +34,7 @@ config['component_estimation']['notch_frequencies'] = [50, 100, 150, 200, 250]
 # Load the clean data
 clean_data = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         freq_limits=[2,45],
         crop_seconds=[10],
@@ -48,7 +48,7 @@ clean_data = prepare_eeg(
 
 # Remove artefactual components
 # Load the component label
-sobi = read_sobi(bids_path,'sobi')
+sobi = read_sobi(config,BIDS,'sobi')
 
 # Select the components of interest
 components_to_include = []

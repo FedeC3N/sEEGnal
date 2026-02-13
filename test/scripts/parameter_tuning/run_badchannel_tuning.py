@@ -15,7 +15,7 @@ import numpy as np
 from test.init.init import init
 import plot_badchannels as pbc
 import sEEGnal.preprocess.find_badchannels as fbc
-from sEEGnal.tools.bids_tools import create_bids_path
+from sEEGnal.tools.bids_tools import build_BIDS
 
 
 # Parameters
@@ -41,7 +41,7 @@ for subject_index in permutated_index:
     print(f"{subject_index} - {current_file}")
 
     # Create the subjects following AI-Mind protocol
-    bids_path = create_bids_path(config, current_sub, current_ses, current_task)
+    BIDS = build_BIDS(config, current_sub, current_ses, current_task)
 
     if criteria == ['all']:
 
@@ -52,7 +52,7 @@ for subject_index in permutated_index:
         for current_criterion in dummy_criteria:
 
             func = getattr(fbc, current_criterion)
-            current_badchannels = func(config,bids_path)
+            current_badchannels = func(config,BIDS)
             badchannels.extend(current_badchannels)
 
             # Print out information
@@ -60,17 +60,17 @@ for subject_index in permutated_index:
 
         # Plot
         func = getattr(pbc, 'all')
-        func(config, bids_path,badchannels)
+        func(config, BIDS,badchannels)
 
     else:
 
         for current_criterion in criteria:
             func = getattr(fbc, current_criterion)
-            badchannels = func(config,bids_path)
+            badchannels = func(config,BIDS)
 
             # Print out information
             print(f"    {current_criterion} bad channels: {badchannels}")
 
             # Plot
             func = getattr(pbc, current_criterion)
-            func(config, bids_path,badchannels)
+            func(config, BIDS,badchannels)

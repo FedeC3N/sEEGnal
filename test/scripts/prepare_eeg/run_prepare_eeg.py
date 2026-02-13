@@ -12,7 +12,7 @@ Federico Ramírez-Toraño
 import numpy as np
 
 from init import init
-from sEEGnal.tools.bids_tools import create_bids_path, read_channels, read_annotations
+from sEEGnal.tools.bids_tools import build_BIDS, read_badchannels, read_annotations
 from sEEGnal.tools.mne_tools import prepare_eeg
 
 
@@ -26,7 +26,7 @@ current_ses = ses[0]
 current_task = task[0]
 
 # Create the subjects following AI-Mind protocol
-bids_path = create_bids_path(config, current_sub, current_ses, current_task)
+BIDS = build_BIDS(config, current_sub, current_ses, current_task)
 
 ##################################################################
 # Check include / exclude channels
@@ -37,14 +37,14 @@ print('Check include / exclude channels')
 # Exclusion
 raw = prepare_eeg(
     config,
-    bids_path
+    BIDS
 )
 channels_all = raw.ch_names
 
 channels_to_exclude = ['Fp1']
 raw = prepare_eeg(
     config,
-    bids_path,
+    BIDS,
     channels_to_exclude=channels_to_exclude
 )
 channels_with_exclusion = raw.ch_names
@@ -59,7 +59,7 @@ else:
 channels_to_include = ['Fp1']
 raw = prepare_eeg(
     config,
-    bids_path,
+    BIDS,
     channels_to_include=channels_to_include
 )
 channels_with_inclusion = raw.ch_names
@@ -91,7 +91,7 @@ channels_to_exclude = config['global']["channels_to_exclude"]
 
 raw = prepare_eeg(
     config,
-    bids_path,
+    BIDS,
     preload=True,
     channels_to_include=channels_to_include,
     channels_to_exclude=channels_to_exclude,
@@ -110,7 +110,7 @@ print('Check resample frequency')
 # Get the original frequency
 raw = prepare_eeg(
     config,
-    bids_path,
+    BIDS,
     preload=True
 )
 original_fs = raw.info['sfreq']
@@ -118,7 +118,7 @@ original_fs = raw.info['sfreq']
 # Downsample
 raw = prepare_eeg(
     config,
-    bids_path,
+    BIDS,
     preload=True,
     resample_frequency=250
 )
@@ -142,7 +142,7 @@ print('Check filters')
 freq_limits = [2,45]
 raw = prepare_eeg(
     config,
-    bids_path,
+    BIDS,
     preload=True,
     freq_limits=freq_limits,
     notch_filter=True
@@ -164,14 +164,14 @@ print()
 print('Check exclude bad channels')
 
 # Get the original number of channels and bad channels
-channels_data = read_chan(bids_path)
+channels_data = read_chan(BIDS)
 all_channels = len(list(channels_data['name']))
 badchannels = len((list(channels_data.loc[channels_data['status'] == 'bad']['name'])))
 
 # Exclude bad channels
 raw = prepare_eeg(
     config,
-    bids_path,
+    BIDS,
     preload=True,
     exclude_badchannels=True,
     interpolate_badchannels=False
@@ -181,7 +181,7 @@ exclude_channels = len(raw.info['ch_names'])
 # Interpolate bad channels
 raw = prepare_eeg(
     config,
-    bids_path,
+    BIDS,
     preload=True,
     exclude_badchannels=True,
     interpolate_badchannels=True
@@ -202,7 +202,7 @@ else:
 print('Check artefacts loading')
 
 # Get the original number of artefacts, types, duration, and onset
-annotations_read = read_annot(bids_path)
+annotations_read = read_annot(BIDS)
 num_of_artefacts = len(annotations_read)
 
 # Load the EEG recording with the annotations
@@ -213,7 +213,7 @@ sobi = {
 }
 raw = prepare_eeg(
     config,
-    bids_path,
+    BIDS,
     apply_sobi=sobi,
     notch_filter=True,
     freq_limits=[2,45],
@@ -242,7 +242,7 @@ sobi = {
 }
 raw_crop = prepare_eeg(
     config,
-    bids_path,
+    BIDS,
     apply_sobi=sobi,
     notch_filter=True,
     freq_limits=[2,45],

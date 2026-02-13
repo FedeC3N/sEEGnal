@@ -6,16 +6,18 @@ Created on Thu Jun  9 14:15:56 2022
 """
 
 from functools import wraps
+import shutil
+import inspect
 import pandas
 import json
 import os
-import sys
 
 import mne
 import mne_bids
 
 import sEEGnal.tools.mne_tools as mnetools
 import sEEGnal.tools.tools as tools
+import sEEGnal.tools.tsv_tools as tsv
 
 
 
@@ -29,24 +31,30 @@ def init_derivatives(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
 
-        # Find the BIDSpath
-        for arg in args:
-            if isinstance(arg, mne_bids.BIDSPath):
-                bids_path = arg
-                break
+        # Get the parameteres
+        sig = inspect.signature(func)
+        bound = sig.bind(*args, **kwargs)
+        bound.apply_defaults()
+
+        config = bound.arguments.get('config')
+        BIDS = bound.arguments.get('BIDS')
 
         # Check if the derivatives exists
         # Creates the paths to the raw and derivative datas.
-        raw_chan = build_raw(bids_path, 'channels.tsv')
-        der_chan = build_derivative(bids_path, 'channels.tsv')
-        der_path = os.path.dirname(der_chan)
+        derivatives_file_path = build_derivative(BIDS, config['subsystem'], 'channels.tsv')
+        derivatives_folder_path = os.path.dirname(derivatives_file_path)
 
         # Creates the derivatives folder, if required.
-        if not os.path.isdir(der_path):
-            os.makedirs(der_path)
+        if not os.path.isdir(derivatives_folder_path):
+
+            os.makedirs(derivatives_folder_path)
+
+            # Add a dummy file
+            bids_file_path = build_bids(BIDS, 'channels.tsv')
+            shutil.copy(bids_file_path, derivatives_file_path)
 
         # Continue with the call
-        created_files = func(*args, **kwargs)  # ← Se pasan tal cual
+        created_files = func(*args, **kwargs)
 
         return created_files
 
@@ -54,7 +62,7 @@ def init_derivatives(func):
 
 
 @init_derivatives
-def write_annotations(bids_path, annotations=None):
+def write_annotations(config,BIDS, annotations=None):
 
     # Initializes the list of created files.
     created_files = []
@@ -85,11 +93,11 @@ def write_annotations(bids_path, annotations=None):
     }
 
     # Builds the path to the files.
-    tsv_file = build_derivative(bids_path, 'desc-artifacts_annotations.tsv')
-    json_file = build_derivative(bids_path, 'desc-artifacts_annotations.json')
+    tsv_file = build_derivative(BIDS, 'preprocess','desc-artifacts_annotations.tsv')
+    json_file = build_derivative(BIDS, 'preprocess','desc-artifacts_annotations.json')
 
     # Writes the data.
-    write_tsv(tsv_data, tsv_file)
+    tsv.write_tsv(tsv_data, tsv_file)
 
     # Writes the JSON dictionary.
     with open(json_file, 'w') as fp:
@@ -102,14 +110,14 @@ def write_annotations(bids_path, annotations=None):
     return created_files
 
 
-def read_annotations(bids_path):
+def read_annotations(config,BIDS):
 
     # Builds the path to the file.
-    tsv_file = build_derivative(bids_path, 'desc-artifacts_annotations.tsv')
+    tsv_file = build_derivative(BIDS, 'preprocess', 'desc-artifacts_annotations.tsv')
 
     # Loads the derivative data pieces.
     if tsv_file.exists():
-        tsv_data = read_tsv(tsv_file, ismatrix=False)
+        tsv_data = tsv.read_tsv(tsv_file, ismatrix=False)
 
         # Builds the MNE annotation object.
         annotations = mne.Annotations(tsv_data['onset'], tsv_data['duration'],
@@ -122,23 +130,23 @@ def read_annotations(bids_path):
     return annotations
 
 
-def read_channels(bids_path):
+def read_badchannels(config,BIDS):
 
     # Builds the path to the file.
-    tsv_file = build_derivative(bids_path, 'channels.tsv')
+    tsv_file = build_derivative(BIDS, 'preprocess','channels.tsv')
 
     # Loads the derivative data pieces.
-    channels = read_tsv(tsv_file, ismatrix=False)
+    channels = tsv.read_tsv(tsv_file, ismatrix=False)
 
     # Returns the channels table object.
     return channels
 
 
 @init_derivatives
-def update_badchans(bids_path, badchannels=None, badchannels_description=None):
+def update_badchans(config,BIDS, badchannels=None, badchannels_description=None):
 
     # Builds the path to the file.
-    tsv_file = build_derivative(bids_path, 'channels.tsv')
+    tsv_file = build_derivative(BIDS, 'preprocess','channels.tsv')
 
     # Reads the contents of the raw file.
     tsv_data = mne_bids.tsv_handler._from_tsv(tsv_file)
@@ -165,7 +173,7 @@ def update_badchans(bids_path, badchannels=None, badchannels_description=None):
 
 
 @init_derivatives
-def write_sobi(bids_path, sobi, desc='sobi'):
+def write_sobi(config,BIDS, sobi, desc='sobi'):
 
     # Initializes the list of created files.
     created_files = []
@@ -186,11 +194,11 @@ def write_sobi(bids_path, sobi, desc='sobi'):
     }
 
     # Builds the path to the files.
-    tsv_file = build_derivative(bids_path, 'desc-' + desc + '_mixing.tsv')
-    json_file = build_derivative(bids_path, 'desc-' + desc + '_mixing.json')
+    tsv_file = build_derivative(BIDS,'preprocess', 'desc-' + desc + '_mixing.tsv')
+    json_file = build_derivative(BIDS,'preprocess', 'desc-' + desc + '_mixing.json')
 
     # Writes the data.
-    write_tsv(tsv_data, tsv_file)
+    tsv.write_tsv(tsv_data, tsv_file)
 
     # Writes the JSON dictionary.
     with open(json_file, 'w') as fp:
@@ -216,11 +224,11 @@ def write_sobi(bids_path, sobi, desc='sobi'):
     }
 
     # Builds the path to the files.
-    tsv_file = build_derivative(bids_path, 'desc-' + desc + '_unmixing.tsv')
-    json_file = build_derivative(bids_path, 'desc-' + desc + '_unmixing.json')
+    tsv_file = build_derivative(BIDS, 'preprocess','desc-' + desc + '_unmixing.tsv')
+    json_file = build_derivative(BIDS, 'preprocess','desc-' + desc + '_unmixing.json')
 
     # Writes the data.
-    write_tsv(tsv_data, tsv_file)
+    tsv.write_tsv(tsv_data, tsv_file)
 
     # Writes the JSON dictionary.
     with open(json_file, 'w') as fp:
@@ -277,11 +285,11 @@ def write_sobi(bids_path, sobi, desc='sobi'):
         }
 
         # Builds the path to the files.
-        tsv_file = build_derivative(bids_path, 'desc-' + desc + '_annotations.tsv')
-        json_file = build_derivative(bids_path, 'desc-' + desc + '_annotations.json')
+        tsv_file = build_derivative(BIDS, 'preprocess','desc-' + desc + '_annotations.tsv')
+        json_file = build_derivative(BIDS, 'preprocess','desc-' + desc + '_annotations.json')
 
         # Writes the data.
-        write_tsv(tsv_data, tsv_file)
+        tsv.write_tsv(tsv_data, tsv_file)
 
         # Writes the JSON dictionary.
         with open(json_file, 'w') as fp:
@@ -305,11 +313,11 @@ def write_sobi(bids_path, sobi, desc='sobi'):
             }
 
             # Builds the path to the files.
-            tsv_file = build_derivative(bids_path, 'desc-' + desc + '_prediction_scores.tsv')
-            json_file = build_derivative(bids_path, 'desc-' + desc + '_prediction_scores.json')
+            tsv_file = build_derivative(BIDS, 'preprocess','desc-' + desc + '_prediction_scores.tsv')
+            json_file = build_derivative(BIDS, 'preprocess', 'desc-' + desc + '_prediction_scores.json')
 
             # Writes the data.
-            write_tsv(tsv_data, tsv_file)
+            tsv.write_tsv(tsv_data, tsv_file)
 
             # Writes the JSON dictionary.
             with open(json_file, 'w') as fp:
@@ -322,11 +330,14 @@ def write_sobi(bids_path, sobi, desc='sobi'):
     return created_files
 
 
-def read_sobi(bids_path, desc='sobi'):
+@init_derivatives
+def read_sobi(config,BIDS, desc='sobi'):
 
     # Loads the derivative data pieces.
-    mix = read_tsv(build_derivative(bids_path, 'desc-' + desc + '_mixing.tsv'), ismatrix=True)
-    unmix = read_tsv(build_derivative(bids_path, 'desc-' + desc + '_unmixing.tsv'), ismatrix=True)
+    mix_path = build_derivative(BIDS,'preprocess','desc-' + desc + '_mixing.tsv')
+    mix = tsv.read_tsv(mix_path, ismatrix=True)
+    unmix_path = build_derivative(BIDS,'preprocess','desc-' + desc + '_unmixing.tsv')
+    unmix = tsv.read_tsv(unmix_path, ismatrix=True)
 
     # Extracts the mixing and unmixing matrices and metadata.
     chname_mix = list(mix['rows'])
@@ -356,12 +367,12 @@ def read_sobi(bids_path, desc='sobi'):
     mneica = mnetools.build_bss(matrix_mix, matrix_unmix, chname_mix, icname=icname_mix)
 
     # Loads the annotations, if available.
-    tsv_file = build_derivative(bids_path, 'desc-' + desc + '_annotations.tsv')
-    json_file = build_derivative(bids_path, 'desc-' + desc + '_annotations.json')
+    tsv_file = build_derivative(BIDS, 'preprocess','desc-' + desc + '_annotations.tsv')
+    json_file = build_derivative(BIDS,'preprocess','desc-' + desc + '_annotations.json')
     if os.path.isfile(tsv_file):
 
         # Loads the annotations.
-        tsv_data = read_tsv(tsv_file)
+        tsv_data = tsv.read_tsv(tsv_file)
         annot = tsv_data
 
         # Loads the JSON information.
@@ -393,10 +404,10 @@ def read_sobi(bids_path, desc='sobi'):
             mneica.labels_[label] = hits
 
         # Loads the label scores, if available.
-        tsv_file = build_derivative(bids_path, 'desc-' + desc + '_prediction_scores.tsv')
+        tsv_file = build_derivative(BIDS,'preprocess',  'desc-' + desc + '_prediction_scores.tsv')
         if os.path.isfile(tsv_file):
 
-            score = read_tsv(tsv_file, ismatrix=True)
+            score = tsv.read_tsv(tsv_file, ismatrix=True)
 
             # Extracts the score matrix and metadata.
             icname_score = list(score['rows'])
@@ -418,139 +429,62 @@ def read_sobi(bids_path, desc='sobi'):
     return mneica
 
 
-# Helper function to write TSV data.
-def write_tsv(table, filename):
-
-    # If the input is a dictionary, converts it into a Pandas data frame.
-    if isinstance(table, dict):
-        table = pandas.DataFrame(table['matrix'], index=table['rows'], columns=table['columns'])
-
-        # Marks the data as a matrix.
-        ismatrix = True
-
-    else:
-        ismatrix = False
-
-    # Checks that the input is a Pandas data frame.
-    assert isinstance(table, pandas.DataFrame), 'Invalid input data.'
-
-    # Writes the data as a TSV file.
-    table.to_csv(filename, sep='\t', na_rep='n/a', index=ismatrix, index_label='output_name', encoding='utf-8-sig')
-
-
-# Helper function to read TSV data.
-def read_tsv(filename, ismatrix=False):
-
-    # If the TSV contains a matrix the first column is the row label.
-    if ismatrix:
-        index_col = 0
-    else:
-        index_col = None
-
-    # Reads the table as a DataFrame object.
-    table = pandas.read_table(filename, delimiter='\t', index_col=index_col, comment=None, encoding='utf-8-sig')
-
-    # If the TSV contains a matrix rewrites the output.
-    if ismatrix:
-        table = {'rows': table.index, 'columns': table.columns, 'matrix': table.values}
-
-    # Returns the read table.
-    return table
-
-
-# Function to create BIDS path object
-def build_bids(config, session_id, eegmetadata, base_root):
-    mne.utils.set_log_level(verbose='ERROR')
-
-    participant_id = session_id[0:5]
-    participant_id = participant_id.replace('-', '')
-    session_id = session_id.replace('-', '')
-
-    eeg_task_id = eegmetadata['eeg_task_id'].replace('-', '')
-    if eegmetadata['eeg_type_id'] == 'cnt':
-        datatype = 'eeg'
-        suffix = 'eeg'
-        extension = '.vhdr'
-    else:
-        datatype = 'meg'
-        suffix = 'meg'
-        extension = '.fif'
-    #destination_root = os.path.join(config["data_root"], config['dw_folder'], config['dw_standardized_folder'])
-    #destination_root = os.path.join(config["data_root"], config['dw_folder'], config['dw_standardized_folder'],
-    #                                'eeg')  # Both m/eeg files are in eeg folder
-
-    # Builds the BIDS path from the metadata.
-    bids_path = mne_bids.BIDSPath(
-        subject=participant_id,
-        session=session_id,
-        task=eeg_task_id,
-        datatype=datatype,
-        root=base_root,
-        suffix=suffix,
-        extension=extension
-    )
-
-    return bids_path
-
-
-# Helper function to build the path to a piece of data.
-def build_raw(bids_path, tail):
+def build_bids(BIDS, fname_tail):
 
     from mne_bids.config import ALLOWED_PATH_ENTITIES_SHORT
 
     # Gets the base filename structure.
     basename = []
 
-    for key, val in bids_path.entities.items():
+    for key, val in BIDS.entities.items():
         if val is not None and key != 'datatype':
             long_to_short_entity = {val: key for key, val in ALLOWED_PATH_ENTITIES_SHORT.items()}
             key = long_to_short_entity[key]
             basename.append(f'{key}-{val}')
 
     # Builds the file name for the piece of data.
-    file_raw = '_'.join(basename + [tail])
+    file_bids = '_'.join(basename + [fname_tail])
 
     # Builds the complete path to the piece of data.
-    path_raw = bids_path.directory.joinpath(file_raw)
+    path_rel = BIDS.directory.relative_to(BIDS.root)
+    path_bids = os.path.join(BIDS.root,path_rel,file_bids)
 
-    # Returns the path to the piece of data.
-    return path_raw
+    return path_bids
 
 
-# Helper function to build the path to a derivative piece of data.
-def build_derivative(bids_path, tail):
+def build_derivative(BIDS, process, fname_tail):
 
     from mne_bids.config import ALLOWED_PATH_ENTITIES_SHORT
 
     # Gets the base filename structure.
     basename = []
 
-    for key, val in bids_path.entities.items():
+    for key, val in BIDS.entities.items():
         if val is not None and key != 'datatype':
             long_to_short_entity = {val: key for key, val in ALLOWED_PATH_ENTITIES_SHORT.items()}
             key = long_to_short_entity[key]
             basename.append(f'{key}-{val}')
 
     # Builds the file name for the piece of data.
-    file_der = '_'.join(basename + [tail])
+    file_der = '_'.join(basename + [fname_tail])
 
     # Builds the complete path to the piece of data.
-    path_rel = bids_path.directory.relative_to(bids_path.root)
-    path_etl = bids_path.root.joinpath(os.path.join('derivatives', 'sEEGnal', 'clean'))
+    path_rel = BIDS.directory.relative_to(BIDS.root)
+    path_etl = BIDS.root.joinpath(os.path.join('derivatives', 'sEEGnal',process))
     path_der = path_etl.joinpath(path_rel).joinpath(file_der)
 
     # Returns the path to the piece of data.
     return path_der
 
 
-def create_bids_path(config, current_sub, current_ses, current_task):
+def build_BIDS(config, current_sub, current_ses, current_task):
 
     # Remove the unallowed characters
     current_sub = current_sub.replace('-', '')
     current_task = current_task.replace('-', '')
 
     # Builds the BIDS path from the metadata.
-    bids_path = mne_bids.BIDSPath(
+    BIDS = mne_bids.BIDSPath(
         subject=current_sub,
         session=current_ses,
         task=current_task,
@@ -560,4 +494,4 @@ def create_bids_path(config, current_sub, current_ses, current_task):
         extension='.vhdr'
     )
 
-    return bids_path
+    return BIDS

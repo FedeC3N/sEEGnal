@@ -19,7 +19,7 @@ from scipy.stats import median_abs_deviation
 from sEEGnal.tools.mne_tools import prepare_eeg
 
 
-def EOG_detection(config, bids_path):
+def EOG_detection(config, BIDS):
 
     # Parameters for loading EEG  recordings
     sobi = {
@@ -39,7 +39,7 @@ def EOG_detection(config, bids_path):
     # Load the raw EEG
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -54,7 +54,7 @@ def EOG_detection(config, bids_path):
     # Apply SOBI
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi
     )
@@ -62,7 +62,7 @@ def EOG_detection(config, bids_path):
     # Filter
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         freq_limits=freq_limits,
@@ -93,7 +93,7 @@ def EOG_detection(config, bids_path):
     # Load the raw and apply SOBI
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -107,7 +107,7 @@ def EOG_detection(config, bids_path):
     # Apply SOBI and filters
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi,
         freq_limits=freq_limits
@@ -139,7 +139,7 @@ def EOG_detection(config, bids_path):
         scalings=dict(eeg=50e-6))
 
 
-def muscle_detection(config,bids_path):
+def muscle_detection(config,BIDS):
 
     # Plot the clean visualization
     # Parameters for loading EEG  recordings
@@ -160,7 +160,7 @@ def muscle_detection(config,bids_path):
     # Load the raw EEG
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -175,7 +175,7 @@ def muscle_detection(config,bids_path):
     # Apply SOBI
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi
     )
@@ -183,7 +183,7 @@ def muscle_detection(config,bids_path):
     # Filter
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         freq_limits=freq_limits,
@@ -210,7 +210,7 @@ def muscle_detection(config,bids_path):
     # Load the raw and apply SOBI
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -247,7 +247,7 @@ def muscle_detection(config,bids_path):
     )
 
 
-def sensor_detection(config,bids_path):
+def sensor_detection(config,BIDS):
     # Plot the clean visualization
     # Parameters for loading EEG  recordings
     sobi = {
@@ -267,7 +267,7 @@ def sensor_detection(config,bids_path):
     # Load the raw EEG
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -282,7 +282,7 @@ def sensor_detection(config,bids_path):
     # Apply SOBI
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi
     )
@@ -290,7 +290,7 @@ def sensor_detection(config,bids_path):
     # Filter
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         freq_limits=freq_limits,
@@ -321,7 +321,7 @@ def sensor_detection(config,bids_path):
     # Load the raw data
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -337,7 +337,7 @@ def sensor_detection(config,bids_path):
     # Apply SOBI and filters
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         freq_limits=freq_limits,

@@ -24,7 +24,7 @@ mne.utils.set_log_level(verbose='ERROR')
 
 
 # Modules
-def standardize(config, current_file, bids_path):
+def standardize(config, current_file, BIDS):
     """
 
     Checks the type of file to standardize
@@ -32,20 +32,23 @@ def standardize(config, current_file, bids_path):
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
     current_file (str): Name of the file to process
-    bids_path (BIDSpath): Associated bids_path
+    BIDS (BIDSpath): Associated BIDS
 
     :returns
     A dict with the result of the process
 
     """
 
+    # Add the subsystem flag
+    config['subsystem'] = 'preprocess'
+
     # For EEG
-    if bids_path.datatype == 'eeg':
+    if BIDS.datatype == 'eeg':
 
         try:
 
             # Standardize
-            bids_basename = standardize_eeg_file(config, current_file, bids_path)
+            bids_basename = standardize_eeg_file(config, current_file, BIDS)
 
             # Save the results
             now = dt.now(timezone.utc)
@@ -79,14 +82,14 @@ def standardize(config, current_file, bids_path):
     return results
 
 
-def standardize_eeg_file(config, current_file, bids_path):
+def standardize_eeg_file(config, current_file, BIDS):
     """
 
     Standardize the EEG recordings to BIDS format.
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (BIDSpath): Metadata of the bids_path to process
+    BIDS (BIDSpath): Metadata of the BIDS to process
 
     :returns
     A string with the BIDS path of the recording processed.
@@ -106,19 +109,19 @@ def standardize_eeg_file(config, current_file, bids_path):
     # Adds some project-specific information.
     mnedata.info['line_freq'] = config['global']['line_freq']
     mnedata.info['subject_info'] = dict()
-    mnedata.info['subject_info']['his_id'] = bids_path.subject
+    mnedata.info['subject_info']['his_id'] = BIDS.subject
 
     # Writes the data into the BIDS path.
     mne_bids.write_raw_bids(
         mnedata,
-        bids_path,
+        BIDS,
         allow_preload=True,
         format=config['preprocess']['standardization']['format'],
         overwrite=bool(config['preprocess']['standardization']['overwrite'])
     )
 
     # Reads the channels information.
-    ch_tsv = bids_path.copy().update(suffix='channels', extension='.tsv')
+    ch_tsv = BIDS.copy().update(suffix='channels', extension='.tsv')
     ch_data = mne_bids.tsv_handler._from_tsv(ch_tsv)
 
     # Sets the anti-alias filter to 26% of the sampling rate.
@@ -136,4 +139,4 @@ def standardize_eeg_file(config, current_file, bids_path):
     # Writes the updated channel information.
     mne_bids.tsv_handler._to_tsv(ch_data, ch_tsv)
 
-    return bids_path.basename
+    return BIDS.basename

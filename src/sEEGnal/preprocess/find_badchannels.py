@@ -17,14 +17,14 @@ import sEEGnal.tools.mne_tools as mne_tools
 
 
 # Modules
-def impossible_amplitude_detection(config, bids_path):
+def impossible_amplitude_detection(config, BIDS):
     """
 
     Look for channels with low amplitude
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
 
     :returns
     List of badchannels
@@ -45,7 +45,7 @@ def impossible_amplitude_detection(config, bids_path):
     # Load the raw data
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -77,14 +77,14 @@ def impossible_amplitude_detection(config, bids_path):
     return impossible_amplitude_badchannels
 
 
-def component_detection(config, bids_path):
+def component_detection(config, BIDS):
     """
 
     Look for badchannels based on anomalies in the noisy components
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
 
     :returns
     List of badchannels
@@ -110,7 +110,7 @@ def component_detection(config, bids_path):
     # Load the raw EEG
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -122,7 +122,7 @@ def component_detection(config, bids_path):
     # Apply SOBI
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi,
         freq_limits=freq_limits,
@@ -149,14 +149,14 @@ def component_detection(config, bids_path):
     return component_badchannels
 
 
-def gel_bridge_detection(config, bids_path):
+def gel_bridge_detection(config, BIDS):
     """
 
     Look for badchannels based on gel bridges. It is based on correlation and physical distance
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
 
     :returns
     List of badchannels
@@ -180,7 +180,7 @@ def gel_bridge_detection(config, bids_path):
     # Load the raw EEG
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -192,7 +192,7 @@ def gel_bridge_detection(config, bids_path):
     # Apply SOBI
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi
     )
@@ -237,14 +237,14 @@ def gel_bridge_detection(config, bids_path):
     return gel_bridge_badchannels
 
 
-def high_deviation_detection(config, bids_path):
+def high_deviation_detection(config, BIDS):
     """
 
     Look for badchannels based on the channel variance
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
 
     :returns
     List of badchannels
@@ -270,7 +270,7 @@ def high_deviation_detection(config, bids_path):
     # Load the raw EEG
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -282,7 +282,7 @@ def high_deviation_detection(config, bids_path):
     # Apply SOBI
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi
     )
@@ -290,7 +290,7 @@ def high_deviation_detection(config, bids_path):
     # Filter
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         preload=True,
         freq_limits=freq_limits,

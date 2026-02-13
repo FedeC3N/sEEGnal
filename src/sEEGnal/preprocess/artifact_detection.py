@@ -28,34 +28,37 @@ mne.utils.set_log_level(verbose='ERROR')
 
 
 # Modules
-def artifact_detection(config, bids_path):
+def artifact_detection(config, BIDS):
     """
 
     Checks if it is a EEG file and call the correspondent function for artifact detection.
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (BIDSpath): Metadata to process
+    BIDS (BIDSpath): Metadata to process
 
     :returns
     A dict with the result of the process
 
     """
 
+    # Add the subsystem flag
+    config['subsystem'] = 'preprocess'
+
     # For EEG
-    if bids_path.datatype == 'eeg':
+    if BIDS.datatype == 'eeg':
 
         try:
 
             # Detect badchannels in the current recording
-            annotations = eeg_artifact_detection(config, bids_path)
+            annotations = eeg_artifact_detection(config, BIDS)
 
             # Save the results
             now = dt.now(timezone.utc)
             formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
             results = {
                 'result': 'ok',
-                'bids_basename': bids_path.basename,
+                'bids_basename': BIDS.basename,
                 "date": formatted_now,
                 'annotations': annotations
             }
@@ -67,7 +70,7 @@ def artifact_detection(config, bids_path):
             formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
             results = {
                 'result': 'error',
-                'bids_basename': bids_path.basename,
+                'bids_basename': BIDS.basename,
                 "date": formatted_now,
                 "details": f"Exception: {str(e)}, {traceback.format_exc()}"
             }
@@ -79,7 +82,7 @@ def artifact_detection(config, bids_path):
         formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
         results = {
             'result': 'error',
-            'file': bids_path.basename,
+            'file': BIDS.basename,
             'details': 'Not accepted type of file to process',
             'date': formatted_now
         }
@@ -87,14 +90,14 @@ def artifact_detection(config, bids_path):
     return results
 
 
-def eeg_artifact_detection(config, bids_path):
+def eeg_artifact_detection(config, BIDS):
     """
 
     Call the artifact detection proceesses one by one for each type of recording.
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (BIDSpath): Metadata to process
+    BIDS (BIDSpath): Metadata to process
 
     :returns
     The annotations.
@@ -103,59 +106,59 @@ def eeg_artifact_detection(config, bids_path):
 
     # Estimate the SOBI components to detect artifacts
     derivatives_label = 'sobi_artifacts'
-    estimate_artifact_components(config, bids_path, derivatives_label)
+    estimate_artifact_components(config, BIDS, derivatives_label)
 
     # Muscle and sensor artifact detection.
     # Muscle
-    muscle_annotations = muscle_detection(config, bids_path,derivatives_label)
+    muscle_annotations = muscle_detection(config, BIDS,derivatives_label)
 
     # Save the muscle annotations for better jump detection
-    _ = bids.write_annotations(bids_path, muscle_annotations)
+    _ = bids.write_annotations(config,BIDS, muscle_annotations)
 
     # Sensor (jumps)
-    sensor_annotations = sensor_detection(config, bids_path,derivatives_label)
+    sensor_annotations = sensor_detection(config, BIDS,derivatives_label)
 
     # Impossible amplitude
-    other_annotations = other_detection(config, bids_path,derivatives_label)
+    other_annotations = other_detection(config, BIDS,derivatives_label)
 
     # Combine the annotations
     annotations = muscle_annotations.__add__(sensor_annotations).__add__(other_annotations)
 
     # Save the annotations in BIDS format
-    _ = bids.write_annotations(bids_path, annotations)
+    _ = bids.write_annotations(config,BIDS, annotations)
 
     # Estimate the SOBI components to detect artifacts
     derivatives_label = 'sobi'
-    estimate_artifact_components(config, bids_path, derivatives_label)
+    estimate_artifact_components(config, BIDS, derivatives_label)
 
     # I have to find again all the artifacts
     # For EEG
     # Muscle
-    muscle_annotations = muscle_detection(config, bids_path,derivatives_label)
+    muscle_annotations = muscle_detection(config, BIDS,derivatives_label)
 
     # Save the muscle annotations for better jump detection
-    _ = bids.write_annotations(bids_path, muscle_annotations)
+    _ = bids.write_annotations(config,BIDS, muscle_annotations)
 
     # Sensor (jumps)
-    sensor_annotations = sensor_detection(config, bids_path,derivatives_label)
+    sensor_annotations = sensor_detection(config, BIDS,derivatives_label)
 
     # EOG
     # Select the frontal channels
-    EOG_annotations = EOG_detection(config, bids_path)
+    EOG_annotations = EOG_detection(config, BIDS)
 
     # Impossible amplitude
-    other_annotations = other_detection(config, bids_path,derivatives_label)
+    other_annotations = other_detection(config, BIDS,derivatives_label)
 
     # Merge all the annotations into a MNE Annotation object
     annotations = other_annotations.__add__(EOG_annotations).__add__(muscle_annotations).__add__(sensor_annotations)
 
     # Save the annotations in BIDS format
-    _ = bids.write_annotations(bids_path, annotations)
+    _ = bids.write_annotations(config,BIDS, annotations)
 
     return annotations
 
 
-def estimate_artifact_components(config, bids_path, derivatives_label):
+def estimate_artifact_components(config, BIDS, derivatives_label):
     """
 
     Estimate ICA using SOBI algorithm after excluding badchannels. Then label each component.
@@ -163,7 +166,7 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
 
     :arg
         config (dict): Configuration parameters (paths, parameters, etc)
-        bids_path (dict): Path to the recording
+        BIDS (dict): Path to the recording
 
     """
 
@@ -185,7 +188,7 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
     # Load raw EEG
     raw = mne_tools.prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -225,17 +228,17 @@ def estimate_artifact_components(config, bids_path, derivatives_label):
     sobi.labels_['other'] = dummy.copy()
 
     # Writes the SOBI data into the derivatives folder.
-    _ = bids.write_sobi(bids_path, sobi, derivatives_label)
+    _ = bids.write_sobi(config,BIDS, sobi, derivatives_label)
 
 
-def EOG_detection(config, bids_path):
+def EOG_detection(config, BIDS):
     """
 
     Detect EOG artifacts
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
     channels_to_include (str): Channels type to work on.
 
     :returns
@@ -244,7 +247,7 @@ def EOG_detection(config, bids_path):
     """
 
     # Find EOG aritfacts index
-    EOG_index, last_sample, sfreq = find_artifacts.EOG_detection(config, bids_path)
+    EOG_index, last_sample, sfreq = find_artifacts.EOG_detection(config, BIDS)
 
     # If any artifact
     if len(EOG_index) > 0:
@@ -260,14 +263,14 @@ def EOG_detection(config, bids_path):
     return EOG_annotations
 
 
-def muscle_detection(config, bids_path, derivatives_label):
+def muscle_detection(config, BIDS, derivatives_label):
     """
 
     Detect muscle artifacts
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
     derivatives_label (str): Select the correct SOBI
 
     :returns
@@ -278,7 +281,7 @@ def muscle_detection(config, bids_path, derivatives_label):
     # Look the position of muscular artifacts
     muscle_index, last_sample, sfreq = find_artifacts.muscle_detection(
         config,
-        bids_path,
+        BIDS,
         derivatives_label)
 
     # If any index
@@ -298,14 +301,14 @@ def muscle_detection(config, bids_path, derivatives_label):
     return muscle_annotations
 
 
-def sensor_detection(config, bids_path,     derivatives_label):
+def sensor_detection(config, BIDS,     derivatives_label):
     """
 
     Detect sensor artifacts (jumps)
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
     derivatives_label (str): Select the correct SOBI
 
     :returns
@@ -316,7 +319,7 @@ def sensor_detection(config, bids_path,     derivatives_label):
     # Look the position of muscular artifacts
     sensor_index, last_sample, sfreq = find_artifacts.sensor_detection(
         config,
-        bids_path,
+        BIDS,
         derivatives_label)
 
     # Create as Annotations
@@ -335,14 +338,14 @@ def sensor_detection(config, bids_path,     derivatives_label):
     return sensor_annotations
 
 
-def other_detection(config, bids_path,derivatives_label):
+def other_detection(config, BIDS,derivatives_label):
     """
 
     Detect sensor artifacts (jumps)
 
     :arg
     config (dict): Configuration parameters (paths, parameters, etc)
-    bids_path (dict): Path to the recording
+    BIDS (dict): Path to the recording
     channels_to_include (str): Channels type to work on.
 
     :returns
@@ -352,7 +355,7 @@ def other_detection(config, bids_path,derivatives_label):
 
     # Look the position of muscular artifacts
     other_index, last_sample, sfreq = find_artifacts.other_detection(config,
-                                                                     bids_path,derivatives_label)
+                                                                     BIDS,derivatives_label)
 
     # Create as Annotations
     if len(other_index) > 0:
