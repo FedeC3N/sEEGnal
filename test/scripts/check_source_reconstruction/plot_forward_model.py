@@ -22,9 +22,9 @@ config, _, _, _, _ = init()
 
 # Get the FreeSurfer fsaverage information
 fs_dir = mne.datasets.fetch_fsaverage(verbose=False)
-subject = config['forward']['template']['subject']
-trans = config['forward']['template']['trans']
-bem = fs_dir / "bem" / config['forward']['template']['bem']
+subject = config['source_reconstruction']['forward']['template']['subject']
+trans = config['source_reconstruction']['forward']['template']['trans']
+bem = fs_dir / "bem" / config['source_reconstruction']['forward']['template']['bem']
 
 # fsaverage T1 MRI
 mri_file = os.path.join(fs_dir, 'mri', 'T1.mgz')
@@ -36,8 +36,8 @@ mri_data = mri.get_fdata()
 # Define our sources
 src = mne.setup_volume_source_space(
     subject=subject,
-    pos=config['forward']['template']['pos'],
-    mri=config['forward']['template']['mri'],
+    pos=config['source_reconstruction']['forward']['template']['pos'],
+    mri=config['source_reconstruction']['forward']['template']['mri'],
     bem=None,
     add_interpolator=True
 )

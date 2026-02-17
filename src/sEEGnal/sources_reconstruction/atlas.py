@@ -1,4 +1,6 @@
-import importlib.resources
+import os
+from importlib.resources import files
+
 import json
 
 import numpy
@@ -6,40 +8,36 @@ import pandas
 
 import nibabel, nibabel.affines
 
-# Sets the sources data folder.
-metabase = (
-    importlib.resources.files('aimind.meeg').
-    joinpath('sources').
-    joinpath('data'))
-
 
 def label_aal(src):
-    # Defines the base folder for the atlas data.
-    base = metabase.joinpath('atlas')
+
+    # Defines the folder for the atlas data.
+    atlas_path = files("sEEGnal.data") / 'atlas' / 'ROI_MNI_V4.nii'
+    labels_path = files("sEEGnal.data") / 'atlas' / 'ROI_MNI_V4.txt'
 
     # Loads the AAL atlas.
-    atlas_mri = nibabel.load(base.joinpath('ROI_MNI_V4.nii'))
-    atlas_lab = pandas.read_table(str(base.joinpath('ROI_MNI_V4.txt')), header=None)
+    atlas_mri = nibabel.load(atlas_path)
+    atlas_labels = pandas.read_table(labels_path, header=None)
 
     # Removes the non-cortical areas.
-    atlas_lab = atlas_lab[:90]
+    atlas_labels = atlas_labels[:90]
 
     # Initializes the raw 3D array for the relabeled atlas matrix.
     atlas_raw = numpy.zeros(atlas_mri.shape)
 
     # Relabels the atlas areas as 1 to N.
-    for i in range(len(atlas_lab)):
+    for i in range(len(atlas_labels)):
         # Looks for the voxels with the current label.
-        hits = atlas_mri.get_fdata() == atlas_lab[2][i]
+        hits = atlas_mri.get_fdata() == atlas_labels[2][i]
 
         # Re-labels the voxels.
         atlas_raw[hits] = i + 1
 
     # Initializes the list of area centroids.
-    centroids = numpy.zeros([len(atlas_lab) + 1, 3])
+    centroids = numpy.zeros([len(atlas_labels) + 1, 3])
 
     # Gets the centroid for each area.
-    for i in range(len(atlas_lab)):
+    for i in range(len(atlas_labels)):
         # Looks for all the voxels in the current area.
         voxels = numpy.where(atlas_raw == i + 1)
         centroid = numpy.mean(voxels, axis=1)
@@ -82,8 +80,8 @@ def label_aal(src):
 
     # Creates the atlas dictionary.
     atlas = {
-        'label': ['None'] + list(atlas_lab[1]),
-        'nick': ['None'] + list(atlas_lab[0]),
+        'label': ['None'] + list(atlas_labels[1]),
+        'nick': ['None'] + list(atlas_labels[0]),
         'rr': centroids,
         'src_area': src_area.astype(int),
         'src_space': src_space.astype(int)}

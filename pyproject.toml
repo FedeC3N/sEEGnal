@@ -61,6 +61,9 @@ dependencies = [
     "urllib3==2.5.0"
 ]
 
+# Find the data included
+[tool.setuptools.package-data]
+"sEEGnal" = ["data/*"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

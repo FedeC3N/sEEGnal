@@ -468,15 +468,19 @@ def write_inverse_solution(config,BIDS,inverse_solution):
     return inverse_solution
 
 
-def read_forward_model(config,BIDS):
+def read_inverse_solution(config,BIDS):
 
-    # Get the forward model path
-    forward_path = build_derivatives_path(BIDS, config['subsystem'], 'desc-fwd.h5')
+    # Get the inverse solution path
+    inverse_solution_path = build_derivatives_path(
+        BIDS,
+        config['subsystem'],
+        f"desc-{config['source_reconstruction']['inverse']['method']}.h5"
+    )
 
     # Read
-    forward_model = mne.read_forward_solution(forward_path)
+    inverse_solution = mne.beamformer.read_beamformer(inverse_solution_path)
 
-    return forward_model
+    return inverse_solution
 
 
 def build_standardize_path(BIDS, fname_tail):
