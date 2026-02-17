@@ -25,7 +25,9 @@ config, files, sub, ses, task = init()
 errors = []
 
 # Go through each subject
-for current_index in range(len(files)):
+index = range(len(files))
+index = [10,11,12,13,18,19,20,21,22,23,24,25]
+for current_index in index:
 
     # current info
     current_file = files[current_index]

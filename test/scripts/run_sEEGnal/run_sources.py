@@ -12,7 +12,6 @@ Federico Ramírez-Toraño
 from test.init.init import init
 from sEEGnal.tools.bids_tools import build_BIDS_object
 from sEEGnal.sources_reconstruction.forward import make_forward_model
-from sEEGnal.sources_reconstruction.covariance import estimate_covariance
 from sEEGnal.sources_reconstruction.inverse import estimate_inverse_solution
 
 # What step to run: forward, inverse
@@ -25,7 +24,7 @@ config, files, sub, ses, task = init()
 errors = []
 
 # Go through each subject
-index = [0]
+index = range(len(files))
 for current_index in index:
 
     # current info

@@ -49,9 +49,9 @@ def init_derivatives(func):
 
             os.makedirs(derivatives_folder_path)
 
-            # Add a dummy file
-            bids_file_path = build_standardize_path(BIDS, 'channels.tsv')
-            shutil.copy(bids_file_path, derivatives_file_path)
+        # Add a dummy file
+        bids_file_path = build_standardize_path(BIDS, 'channels.tsv')
+        shutil.copy(bids_file_path, derivatives_file_path)
 
         # Continue with the call
         created_files = func(*args, **kwargs)
