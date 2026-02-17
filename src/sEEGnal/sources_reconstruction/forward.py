@@ -9,6 +9,9 @@ Federico Ramírez-Toraño
 """
 
 # Import
+import traceback
+from datetime import datetime as dt, timezone
+
 import mne
 
 from sEEGnal.tools.mne_tools import prepare_eeg
@@ -20,19 +23,46 @@ def make_forward_model(config, BIDS):
     # Add the subsystem info
     config['subsystem'] = 'source_reconstruction'
 
-    # Estimate the parameters of the forward model
-    if config['source_reconstruction']['forward']['use_template']:
-        forward_model = template_forward_model(config, BIDS)
-    else:
-        forward_model = []
+    try:
 
-    # Save the forward solution
-    write_forward_model(config, BIDS, forward_model)
+        # Choose the correct estimation
+        if config['source_reconstruction']['forward']['use_template']:
 
-    return forward_model
+            # Estimate the forward model
+            forward_model = template_forward_model(config, BIDS)
+
+        else:
+            forward_model = []
 
 
-def template_forward_model(config, bids_path):
+        # Save the metadata
+        now = dt.now(timezone.utc)
+        formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
+        results = {
+            'result': 'ok',
+            'bids_basename': BIDS.basename,
+            "date": formatted_now,
+            'forward_model': forward_model
+        }
+
+    except Exception as e:
+
+        # Save the error
+        now = dt.now(timezone.utc)
+        formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
+        results = {
+            'result': 'error',
+            'bids_basename': BIDS.basename,
+            "date": formatted_now,
+            "details": f"Exception: {str(e)}, {traceback.format_exc()}"
+        }
+
+
+
+    return results
+
+
+def template_forward_model(config, BIDS):
     """
 
     Use the Freesurfer template to create a forward model
@@ -57,7 +87,7 @@ def template_forward_model(config, bids_path):
     # Load the clean data
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -71,7 +101,7 @@ def template_forward_model(config, bids_path):
 
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi,
         freq_limits=[2, 45],
@@ -103,6 +133,9 @@ def template_forward_model(config, bids_path):
         eeg=True,
         mindist=5.0
     )
+
+    # Save the forward solution
+    write_forward_model(config, BIDS, forward_model)
 
     # Save the forward model
     return forward_model

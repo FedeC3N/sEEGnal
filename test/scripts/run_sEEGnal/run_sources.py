@@ -15,8 +15,8 @@ from sEEGnal.sources_reconstruction.forward import make_forward_model
 from sEEGnal.sources_reconstruction.covariance import estimate_covariance
 from sEEGnal.sources_reconstruction.inverse import estimate_inverse_solution
 
-# What step to run: forward, covariance, inverse
-run = [1, 1, 1]
+# What step to run: forward, inverse
+run = [1, 1]
 
 # Init the database
 config, files, sub, ses, task = init()
@@ -45,13 +45,8 @@ for current_index in index:
         print(' Result ' + results['result'])
 
     if run[1]:
-        print('   Covariance Matrix', end='. ')
-        results = estimate_covariance(config, BIDS)
-        print(' Result ' + results['result'])
-
-    if run[2]:
         print('   Inverse Solution', end='. ')
-        results = estimate_inverse_solution(config, BIDS,forward_model=forward_model,data_cov=data_cov)
+        results = estimate_inverse_solution(config, BIDS)
         print(' Result ' + results['result'])
 
 """

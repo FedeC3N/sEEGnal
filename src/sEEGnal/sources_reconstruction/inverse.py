@@ -10,15 +10,17 @@ Federico Ramírez-Toraño
 
 # Imports
 import sys
+import traceback
+from datetime import datetime as dt, timezone
 
 import mne
 
 from sEEGnal.tools.mne_tools import prepare_eeg
+from sEEGnal.tools.bids_tools import read_forward_model, write_inverse_solution
 
-def estimate_inverse_solution(config,bids_path,
-                              forward_model=None,
-                              data_cov=None,
-                              noise_cov=None):
+
+
+def estimate_inverse_solution(config, BIDS):
     """
 
     Helper to select the correct function
@@ -28,28 +30,49 @@ def estimate_inverse_solution(config,bids_path,
     # Add the subsystem info
     config['subsystem'] = 'source_reconstruction'
 
-    # Build the function name
-    func = f"estimate_{config['source_reconstruction']['inverse']['method']}"
-    to_estimate = getattr(sys.modules[__name__], func)
+    try:
 
-    # Estimate the inverse solution using the defined method
-    filters = to_estimate(config,bids_path,
-                          forward_model=forward_model,
-                          data_cov=data_cov,
-                          noise_cov=noise_cov)
+        # Build the function name
+        func = f"estimate_{config['source_reconstruction']['inverse']['method']}"
+        to_estimate = getattr(sys.modules[__name__], func)
 
-    return filters
+        # Estimate the inverse solution using the defined method
+        inverse_solution = to_estimate(config, BIDS)
+
+        # Save the metadata
+        now = dt.now(timezone.utc)
+        formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
+        results = {
+            'result': 'ok',
+            'bids_basename': BIDS.basename,
+            "date": formatted_now,
+            'inverse_solution': inverse_solution
+        }
+
+    except Exception as e:
+
+        # Save the error
+        now = dt.now(timezone.utc)
+        formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
+        results = {
+            'result': 'error',
+            'bids_basename': BIDS.basename,
+            "date": formatted_now,
+            "details": f"Exception: {str(e)}, {traceback.format_exc()}"
+        }
+
+    return results
 
 
-def estimate_LCMV(config,bids_path,
-                  forward_model=None,
-                  data_cov=None,
-                  noise_cov=None):
+def estimate_lcmv(config, BIDS):
     """
 
     Estimate LCMV beamformer filters
 
     """
+
+    # Add the subsystem info
+    config['subsystem'] = 'source_reconstruction'
 
     # Load the clean EEG
     sobi = {
@@ -70,7 +93,7 @@ def estimate_LCMV(config,bids_path,
     # Load the clean data
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         preload=True,
         channels_to_include=channels_to_include,
         channels_to_exclude=channels_to_exclude,
@@ -84,7 +107,7 @@ def estimate_LCMV(config,bids_path,
 
     raw = prepare_eeg(
         config,
-        bids_path,
+        BIDS,
         raw=raw,
         apply_sobi=sobi,
         freq_limits=[2, 45],
@@ -92,8 +115,18 @@ def estimate_LCMV(config,bids_path,
         epoch_definition=epoch_definition
     )
 
+    # Estimate the data covariance
+    data_cov = mne.compute_covariance(
+        raw,
+        method=config['source_reconstruction']['covariance']['method'],
+        rank=config['source_reconstruction']['covariance']['rank']
+    )
+
     # Estimate the rank of the covariance matrix
     rank = mne.compute_rank(data_cov,info=raw.info)
+
+    # Load the forward model
+    forward_model = read_forward_model(config,BIDS)
 
     # Estimate the LCMV beamformers filters
     filters = mne.beamformer.make_lcmv(
@@ -107,5 +140,8 @@ def estimate_LCMV(config,bids_path,
         reduce_rank=True,
         rank=rank
     )
+
+    # Save the inverse solution
+    write_inverse_solution(config, BIDS, filters)
 
     return filters

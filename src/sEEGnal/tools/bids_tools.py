@@ -433,10 +433,48 @@ def read_sobi(config,BIDS, desc='sobi'):
 def write_forward_model(config,BIDS,forward_model):
 
     # Get the output path
-    forward_path = build_derivatives_path(BIDS, config['subsystem'], 'desc-forward_model')
+    forward_path = build_derivatives_path(BIDS, config['subsystem'], 'desc-fwd.h5')
 
     # Save
-    forward_model.save(forward_path)
+    forward_model.save(forward_path,overwrite=True)
+
+    return forward_model
+
+
+def read_forward_model(config,BIDS):
+
+    # Get the forward model path
+    forward_path = build_derivatives_path(BIDS, config['subsystem'], 'desc-fwd.h5')
+
+    # Read
+    forward_model = mne.read_forward_solution(forward_path)
+
+    return forward_model
+
+
+@init_derivatives
+def write_inverse_solution(config,BIDS,inverse_solution):
+
+    # Get the output path
+    inverse_solution_path = build_derivatives_path(
+        BIDS,
+        config['subsystem'],
+        f"desc-{config['source_reconstruction']['inverse']['method']}.h5"
+    )
+
+    # Save
+    inverse_solution.save(inverse_solution_path,overwrite=True)
+
+    return inverse_solution
+
+
+def read_forward_model(config,BIDS):
+
+    # Get the forward model path
+    forward_path = build_derivatives_path(BIDS, config['subsystem'], 'desc-fwd.h5')
+
+    # Read
+    forward_model = mne.read_forward_solution(forward_path)
 
     return forward_model
 
