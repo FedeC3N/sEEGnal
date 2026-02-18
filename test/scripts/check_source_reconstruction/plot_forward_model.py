@@ -11,57 +11,78 @@ Federico Ramírez-Toraño
 
 # Imports
 import os
-import matplotlib.pyplot as plt
-import nibabel as nib
-import numpy as np
+from pathlib import Path
+import importlib
+
 import mne
+import pyvista as pv
+import matplotlib.pyplot as plt
+
 from test.init.init import init
+from sEEGnal.tools.bids_tools import build_BIDS_object, read_forward_model, build_derivatives_path
 
 # Init the database
-config, _, _, _, _ = init()
+config, files, sub, ses, task = init()
 
-# Get the FreeSurfer fsaverage information
-fs_dir = mne.datasets.fetch_fsaverage(verbose=False)
-subject = config['source_reconstruction']['forward']['template']['subject']
-trans = config['source_reconstruction']['forward']['template']['trans']
-bem = fs_dir / "bem" / config['source_reconstruction']['forward']['template']['bem']
 
-# fsaverage T1 MRI
-mri_file = os.path.join(fs_dir, 'mri', 'T1.mgz')
+# Go through each subject
+index = range(len(files))
+for current_index in index:
 
-# Load MRI
-mri = nib.load(mri_file)
-mri_data = mri.get_fdata()
+    # current info
+    current_file = files[current_index]
+    current_sub = sub[current_index]
+    current_ses = ses[current_index]
+    current_task = task[current_index]
 
-# Define our sources
-src = mne.setup_volume_source_space(
-    subject=subject,
-    pos=config['source_reconstruction']['forward']['template']['pos'],
-    mri=config['source_reconstruction']['forward']['template']['mri'],
-    bem=None,
-    add_interpolator=True
-)
+    print(current_file)
 
-# Get the positions in mm and then voxels
-coords = src[0]['rr']
-coords_vox = nib.affines.apply_affine(np.linalg.inv(mri.affine), coords * 1000)  # metros -> mm
-coords_vox = np.round(coords_vox).astype(int)
+    # Create the subjects following AI-Mind protocol
+    BIDS = build_BIDS_object(config, current_sub, current_ses, current_task)
 
-# Plot
-slices = np.unique(coords_vox[:,1])
-index = range(0,len(slices),4)
-slices = slices[index]
+    # Read forward model
+    config['subsystem'] = 'source_reconstruction'
+    forward_model = read_forward_model(config,BIDS)
+    src = forward_model['src'][0]
 
-fig, axes = plt.subplots(1, len(slices), figsize=(15,4))
-for i, y in enumerate(slices):
-    ax = axes[i]
-    slice_data = mri_data[:, y, :].T
-    ax.imshow(slice_data, cmap='gray', origin='lower')
-    mask_slice = coords_vox[:,1] == y
-    ax.scatter(coords_vox[mask_slice,0], coords_vox[mask_slice,2], s=5,
-               color='red',alpha=0.6)
-    ax.set_title(f'Coronal y={y}')
-    ax.axis('off')
+    # Get the FreeSurfer fsaverage information
+    pkg_fsaverage = importlib.resources.files("sEEGnal.data")
+    with (importlib.resources.as_file(pkg_fsaverage) as fs_dir):
 
-plt.tight_layout()
-plt.show(block=True)
+
+        fs_dir = Path(fs_dir)
+        subject = config['source_reconstruction']['forward']['template']['subject']
+        trans = mne.transforms.Transform(
+            forward_model['mri_head_t']['from'],
+            forward_model['mri_head_t']['to'],
+            trans=forward_model['mri_head_t']['trans']
+        )
+
+        pv.OFF_SCREEN = True  # Windows compatible
+        fig = mne.viz.plot_alignment(
+            info=forward_model['info'],
+            trans=trans,
+            subject=subject,
+            subjects_dir=fs_dir,
+            surfaces='white',
+            src=forward_model['src'],
+            coord_frame='head',
+            eeg=True,
+            meg=False
+        )
+
+        # Save the figure
+        process = 'check'
+        tail = 'sources_alignment'
+        figure_path = build_derivatives_path(BIDS, process, tail)
+        if not (os.path.exists(figure_path.parent)):
+            os.makedirs(figure_path.parent)
+        screenshot = fig.plotter.screenshot(figure_path)
+        fig.plotter.close()
+
+
+
+
+
+
+

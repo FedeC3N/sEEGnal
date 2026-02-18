@@ -9,17 +9,16 @@ Federico Ramírez-Toraño
 """
 
 # Imports
+import os
 import mne
 import numpy as np
-from mpmath.functions.functions import powm1
 from scipy.signal import welch
 import matplotlib.pyplot as plt
-from sympy.core.power import power
 
 from test.init.init import init
 
 from sEEGnal.tools.mne_tools import prepare_eeg
-from sEEGnal.tools.bids_tools import build_BIDS_object, read_inverse_solution, read_forward_model
+from sEEGnal.tools.bids_tools import build_BIDS_object, read_inverse_solution, read_forward_model, build_derivatives_path
 from sEEGnal.sources_reconstruction.atlas import label_aal
 
 
@@ -96,7 +95,8 @@ for current_index in index:
     stc = mne.beamformer.apply_lcmv_epochs(raw, lcmv_filters)
 
     # Get the sources of interest (occipital)
-    occipital_source_idx = range(49,55)
+    occipital_source_idx = [49,50,51,52,53,54,39]
+    occipital_sources_mask = [current_area in occipital_source_idx for current_area in atlas['src_area']]
     occipital_ts = [
         stc_epoch.data[occipital_source_idx].mean(axis=0)
         for stc_epoch in stc
@@ -121,7 +121,7 @@ for current_index in index:
     # Plot between 2 - 45 Hz
     freq_mask = (f >= 2) & (f <= 45)
     plt.figure(figsize=(8, 4))
-    plt.plot(f[freq_mask], pow_mean[freq_mask], color='blue', label='Mean PSD')
+    plt.plot(f[freq_mask], pow_mean[freq_mask], color='blue', label='Mean pow')
     plt.fill_between(f[freq_mask],
                      pow_mean[freq_mask] - pow_std[freq_mask],
                      pow_mean[freq_mask] + pow_std[freq_mask],
@@ -132,7 +132,14 @@ for current_index in index:
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
-    plt.show(block=True)
 
+    # Save the figure
+    process = 'check'
+    tail = 'occipital_pow_spectrum'
+    figure_path = build_derivatives_path(BIDS,process,tail)
+    if not(os.path.exists(figure_path.parent)):
+        os.makedirs(figure_path.parent)
+    plt.savefig(figure_path)
+    plt.close()
 
 

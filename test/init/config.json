@@ -152,7 +152,7 @@
                 "trans": "fsaverage",
                 "bem": "fsaverage-5120-5120-5120-bem-sol.fif",
                 "mri": "aseg.mgz",
-                "pos": 8
+                "pos": 5
             }
         },
         "covariance": {

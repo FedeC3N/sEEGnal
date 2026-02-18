@@ -9,6 +9,9 @@ Federico Ramírez-Toraño
 """
 
 # Import
+from pathlib import Path
+from importlib.resources import files, as_file
+
 import traceback
 from datetime import datetime as dt, timezone
 
@@ -109,30 +112,31 @@ def template_forward_model(config, BIDS):
     )
 
     # Get the FreeSurfer fsaverage information
-    fs_dir = mne.datasets.fetch_fsaverage(verbose=False)
-    subject = config['source_reconstruction']['forward']['template']['subject']
-    trans = config['source_reconstruction']['forward']['template']['trans']
-    bem = fs_dir / "bem" / config['source_reconstruction']['forward']['template']['bem']
+    pkg_fsaverage = files("sEEGnal.data")
+    with as_file(pkg_fsaverage) as fs_dir:
+        fs_dir = Path(fs_dir)
+        subject = config['source_reconstruction']['forward']['template']['subject']
+        trans = config['source_reconstruction']['forward']['template']['trans']
+        bem = fs_dir / subject / "bem" / config['source_reconstruction']['forward']['template']['bem']
 
-    # Define our sources
-    src = mne.setup_volume_source_space(
-        subject=subject,
-        pos=config['source_reconstruction']['forward']['template']['pos'],
-        mri=config['source_reconstruction']['forward']['template']['mri'],
-        bem=None,
-        add_interpolator=True
-    )
+        # Define our sources
+        src = mne.setup_volume_source_space(
+            subject=subject,
+            subjects_dir=fs_dir,
+            pos=config['source_reconstruction']['forward']['template']['pos'],
+            mri=config['source_reconstruction']['forward']['template']['mri'],
+            add_interpolator=True,
+        )
 
-    # Create the output forward model
-    forward_model = mne.make_forward_solution(
-        raw.info,
-        trans,
-        src,
-        bem,
-        meg=False,
-        eeg=True,
-        mindist=5.0
-    )
+        # Create the output forward model
+        forward_model = mne.make_forward_solution(
+            raw.info,
+            trans,
+            src,
+            bem,
+            meg=False,
+            eeg=True
+        )
 
     # Save the forward solution
     write_forward_model(config, BIDS, forward_model)
