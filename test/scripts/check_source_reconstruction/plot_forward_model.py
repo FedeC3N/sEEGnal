@@ -15,7 +15,12 @@ from pathlib import Path
 import importlib
 
 import mne
-import pyvista as pv
+from mne.transforms import Transform
+
+import numpy
+import nibabel
+import matplotlib
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 
 from test.init.init import init
@@ -23,7 +28,6 @@ from sEEGnal.tools.bids_tools import build_BIDS_object, read_forward_model, buil
 
 # Init the database
 config, files, sub, ses, task = init()
-
 
 # Go through each subject
 index = range(len(files))
@@ -43,42 +47,39 @@ for current_index in index:
     # Read forward model
     config['subsystem'] = 'source_reconstruction'
     forward_model = read_forward_model(config,BIDS)
-    src = forward_model['src'][0]
+    src = forward_model['src']
 
-    # Get the FreeSurfer fsaverage information
-    pkg_fsaverage = importlib.resources.files("sEEGnal.data")
-    with (importlib.resources.as_file(pkg_fsaverage) as fs_dir):
-
-
+    # Load the template
+    pkg_template = importlib.resources.files("sEEGnal.data")
+    with importlib.resources.as_file(pkg_template) as fs_dir:
         fs_dir = Path(fs_dir)
         subject = config['source_reconstruction']['forward']['template']['subject']
-        trans = mne.transforms.Transform(
-            forward_model['mri_head_t']['from'],
-            forward_model['mri_head_t']['to'],
-            trans=forward_model['mri_head_t']['trans']
-        )
+        mri_path = fs_dir / subject / "mri" / config['source_reconstruction']['forward']['template']['mri']
+        mri = nibabel.load(mri_path)
+        mri = nibabel.as_closest_canonical(mri)
 
-        pv.OFF_SCREEN = True  # Windows compatible
-        fig = mne.viz.plot_alignment(
-            info=forward_model['info'],
-            trans=trans,
-            subject=subject,
-            subjects_dir=fs_dir,
-            surfaces='white',
-            src=forward_model['src'],
-            coord_frame='head',
-            eeg=True,
-            meg=False
-        )
+        # Move axes content
+        for view in ['coronal', 'axial', 'sagittal']:
 
-        # Save the figure
-        process = 'check'
-        tail = 'sources_alignment'
-        figure_path = build_derivatives_path(BIDS, process, tail)
-        if not (os.path.exists(figure_path.parent)):
-            os.makedirs(figure_path.parent)
-        screenshot = fig.plotter.screenshot(figure_path)
-        fig.plotter.close()
+            trans = Transform('head', 'mri')
+            plot_bem_kwargs = dict(
+                subject=subject,
+                subjects_dir=fs_dir,
+                brain_surfaces="white",
+                orientation=view,
+                slices=[50, 100, 150, 200],
+                show=False
+            )
+            fig = mne.viz.plot_bem(src=forward_model['src'], trans=trans, **plot_bem_kwargs)
+
+            # Save the figure
+            process = 'check'
+            tail = f"sources_pos_{view}"
+            figure_path = build_derivatives_path(BIDS, process, tail)
+            if not (os.path.exists(figure_path.parent)):
+                os.makedirs(figure_path.parent)
+            plt.savefig(figure_path)
+            plt.close()
 
 
 

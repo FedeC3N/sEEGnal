@@ -16,6 +16,7 @@ import traceback
 from datetime import datetime as dt, timezone
 
 import mne
+from mne.transforms import Transform
 
 from sEEGnal.tools.mne_tools import prepare_eeg
 from sEEGnal.tools.bids_tools import write_forward_model
@@ -113,20 +114,27 @@ def template_forward_model(config, BIDS):
 
     # Get the FreeSurfer fsaverage information
     pkg_fsaverage = files("sEEGnal.data")
-    with as_file(pkg_fsaverage) as fs_dir:
-        fs_dir = Path(fs_dir)
+    with as_file(pkg_fsaverage) as subjects_dir:
+        subjects_dir = Path(subjects_dir)
         subject = config['source_reconstruction']['forward']['template']['subject']
-        trans = config['source_reconstruction']['forward']['template']['trans']
-        bem = fs_dir / subject / "bem" / config['source_reconstruction']['forward']['template']['bem']
+        bem = subjects_dir / subject / 'bem' / config['source_reconstruction']['forward']['template']['bem']
+        mri = subjects_dir / subject / 'mri' / config['source_reconstruction']['forward']['template']['mri']
 
         # Define our sources
         src = mne.setup_volume_source_space(
             subject=subject,
-            subjects_dir=fs_dir,
+            subjects_dir=subjects_dir,
             pos=config['source_reconstruction']['forward']['template']['pos'],
-            mri=config['source_reconstruction']['forward']['template']['mri'],
+            mri=mri,
             add_interpolator=True,
+            volume_label=None
         )
+
+        # Read the BEM solution (MNI template)
+        bem = mne.read_bem_solution(bem)
+
+        # Get the identity transform
+        trans = Transform('head', 'mri')
 
         # Create the output forward model
         forward_model = mne.make_forward_solution(
