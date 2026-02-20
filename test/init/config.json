@@ -148,13 +148,11 @@
         "forward": {
             "use_template": 1,
             "template": {
-                "subject": "MNI",
-                "trans": "MNI",
-                "inner_skull": "inner_skull.surf",
-                "outer_skull": "outer_skull.surf",
-                "outer_skin": "outer_skin.surf",
-                "bem": "MNI-3layer-bem-sol.fif",
+                "subject": "fsaverage",
+                "trans": "fsaverage",
+                "bem": "fsaverage-5120-5120-5120-bem-sol.fif",
                 "mri": "T1.mgz",
+                "surf": "inner_skull.surf",
                 "pos": 5
             }
         },

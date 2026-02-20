@@ -9,10 +9,9 @@ Federico Ramírez-Toraño
 """
 
 # Import
+import traceback
 from pathlib import Path
 from importlib.resources import files, as_file
-
-import traceback
 from datetime import datetime as dt, timezone
 
 import mne
@@ -73,43 +72,10 @@ def template_forward_model(config, BIDS):
 
     """
 
-    # Load the clean EEG
-    sobi = {
-        'desc': 'sobi',
-        'components_to_include': ['brain', 'other'],
-        'components_to_exclude': []
-    }
-    freq_limits = [
-        config['component_estimation']['low_freq'],
-        config['component_estimation']['high_freq']
-    ]
-    crop_seconds = config['component_estimation']['crop_seconds']
-    resample_frequency = config['component_estimation']['resample_frequency']
-    channels_to_include = config['global']["channels_to_include"]
-    channels_to_exclude = config['global']["channels_to_exclude"]
-
-    # Load the clean data
+    # Load the EEG to obtain the montage
     raw = prepare_eeg(
         config,
-        BIDS,
-        preload=True,
-        channels_to_include=channels_to_include,
-        channels_to_exclude=channels_to_exclude,
-        freq_limits=freq_limits,
-        notch_filter=True,
-        resample_frequency=resample_frequency,
-        set_annotations=True,
-        crop_seconds=crop_seconds,
-        rereference='average'
-    )
-
-    raw = prepare_eeg(
-        config,
-        BIDS,
-        raw=raw,
-        apply_sobi=sobi,
-        freq_limits=[2, 45],
-        metadata_badchannels=True,
+        BIDS
     )
 
     # Get the FreeSurfer fsaverage information
@@ -118,23 +84,22 @@ def template_forward_model(config, BIDS):
         subjects_dir = Path(subjects_dir)
         subject = config['source_reconstruction']['forward']['template']['subject']
         bem = subjects_dir / subject / 'bem' / config['source_reconstruction']['forward']['template']['bem']
-        mri = subjects_dir / subject / 'mri' / config['source_reconstruction']['forward']['template']['mri']
+        trans = config['source_reconstruction']['forward']['template']['trans']
+        surf = subjects_dir / subject / 'bem' / config['source_reconstruction']['forward']['template']['surf']
 
-        # Define our sources
+        # Define our sources with a giant sphere
+        sphere = (0.0, 0.0, 0.00, 0.2)
         src = mne.setup_volume_source_space(
-            subject=subject,
+            subject,
             subjects_dir=subjects_dir,
-            pos=config['source_reconstruction']['forward']['template']['pos'],
-            mri=mri,
-            add_interpolator=True,
-            volume_label=None
+            sphere=sphere,
+            sphere_units="m",
+            add_interpolator=False,
+            surface=surf
         )
 
         # Read the BEM solution (MNI template)
         bem = mne.read_bem_solution(bem)
-
-        # Get the identity transform
-        trans = Transform('head', 'mri')
 
         # Create the output forward model
         forward_model = mne.make_forward_solution(
