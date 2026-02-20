@@ -12,8 +12,8 @@ Federico Ramírez-Toraño
 # Imports
 import copy
 import os
-from pathlib import Path
 import importlib
+from pathlib import Path
 
 import mne
 import numpy as np
@@ -55,21 +55,21 @@ for current_index in index:
         subjects_dir = Path(subjects_dir)
         subject = config['source_reconstruction']['forward']['template']['subject']
 
-        # 1. Copy src
+        # Copy src
         src_mri = copy.deepcopy(forward_model['src'])
 
-        # 2. Create inverse Transform from mri_head_t
+        # Create inverse Transform from mri_head_t
         mri_head_t = forward_model['mri_head_t']  # this is an MNE Transform
-        mri_head_t_inv = mne.transforms.invert_transform(mri_head_t)
+        head_mri_t = mne.transforms.invert_transform(mri_head_t)
 
-        # 3. Apply inverse to each source point
+        # Apply inverse to each source point
         for s in src_mri:
             if s['type'] == 'vol':
                 coords_hom = np.hstack([s['rr'], np.ones((s['rr'].shape[0], 1))])
-                coords_mri = (mri_head_t_inv['trans'] @ coords_hom.T).T[:, :3]
+                coords_mri = (head_mri_t['trans'] @ coords_hom.T).T[:, :3]
                 s['rr'] = coords_mri
 
-        # Move axes content
+        # Plot
         for view in ['coronal', 'axial', 'sagittal']:
 
             fig = mne.viz.plot_bem(

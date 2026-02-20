@@ -13,6 +13,8 @@ import os
 import mne
 import numpy as np
 from scipy.signal import welch
+import matplotlib
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 
 from test.init.init import init
@@ -86,7 +88,11 @@ for current_index in index:
 
     # Get the atlas-sources information
     forward_model = read_forward_model(config,BIDS)
-    atlas = label_aal(forward_model['src'])
+    mri_head_t = forward_model['mri_head_t']
+    head_mri_t = mne.transforms.invert_transform(mri_head_t)
+
+    # Associate each source to atlas regions
+    atlas = label_aal(config,forward_model['src'],trans=head_mri_t['trans'])
 
     # Read LCMV beamformer
     lcmv_filters = read_inverse_solution(config,BIDS)
@@ -95,23 +101,20 @@ for current_index in index:
     stc = mne.beamformer.apply_lcmv_epochs(raw, lcmv_filters)
 
     # Get the sources of interest (occipital)
-    occipital_source_idx = [49,50,51,52,53,54,39]
+    occipital_source_idx = [49, 50, 51, 52, 53, 54]
     occipital_sources_mask = [current_area in occipital_source_idx for current_area in atlas['src_area']]
-    occipital_ts = [
-        stc_epoch.data[occipital_source_idx].mean(axis=0)
-        for stc_epoch in stc
-    ]
 
     # Compute PSD
     sfreq = raw.info['sfreq']
     all_pow = []
-    for ts in occipital_ts:
-        f, pow = welch(ts,
+    for ts in stc:
+        current_data = ts.data[occipital_sources_mask,:]
+        f, pow = welch(current_data,
                        fs=sfreq,
                        nperseg=sfreq * 2,
                        scaling='spectrum'
                        )
-        all_pow.append(pow)
+        all_pow.append(pow.mean(axis=0))
 
     # Get the mean and std of pow spectrum
     all_pow = np.array(all_pow)

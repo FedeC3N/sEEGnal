@@ -1,92 +1,121 @@
-import os
+from pathlib import Path
 from importlib.resources import files
 
 import json
-
 import numpy
-import pandas
 
-import nibabel, nibabel.affines
+import numpy as np
+import pandas as pd
+import nibabel as nib
 
 
-def label_aal(src):
+def label_aal(config, src, trans=None):
 
-    # Defines the folder for the atlas data.
-    atlas_path = files("sEEGnal.data") / 'atlas' / 'ROI_MNI_V4.nii'
-    labels_path = files("sEEGnal.data") / 'atlas' / 'ROI_MNI_V4.txt'
+    # --------------------------------------------------
+    # Load atlas (MNI space)
+    # --------------------------------------------------
+    atlas_path = files("sEEGnal.data") / 'atlas' / 'AAL_MNI_V4.nii'
+    labels_path = files("sEEGnal.data") / 'atlas' / 'AAL_MNI_V4.txt'
 
-    # Loads the AAL atlas.
-    atlas_mri = nibabel.load(atlas_path)
-    atlas_labels = pandas.read_table(labels_path, header=None)
+    atlas_img = nib.load(atlas_path)
+    atlas_img = nib.as_closest_canonical(atlas_img)
 
-    # Removes the non-cortical areas.
+    atlas_data = atlas_img.get_fdata()
+    atlas_affine = atlas_img.affine
+
+    # --------------------------------------------------
+    # Load labels (first 90 cortical areas)
+    # --------------------------------------------------
+    atlas_labels = pd.read_table(labels_path, header=None)
     atlas_labels = atlas_labels[:90]
 
-    # Initializes the raw 3D array for the relabeled atlas matrix.
-    atlas_raw = numpy.zeros(atlas_mri.shape)
+    relabeled = np.zeros_like(atlas_data)
 
-    # Relabels the atlas areas as 1 to N.
     for i in range(len(atlas_labels)):
-        # Looks for the voxels with the current label.
-        hits = atlas_mri.get_fdata() == atlas_labels[2][i]
+        relabeled[atlas_data == atlas_labels[2][i]] = i + 1
 
-        # Re-labels the voxels.
-        atlas_raw[hits] = i + 1
+    # --------------------------------------------------
+    # Compute centroids in MNI space (meters)
+    # --------------------------------------------------
+    centroids = np.zeros((len(atlas_labels) + 1, 3))
 
-    # Initializes the list of area centroids.
-    centroids = numpy.zeros([len(atlas_labels) + 1, 3])
-
-    # Gets the centroid for each area.
     for i in range(len(atlas_labels)):
-        # Looks for all the voxels in the current area.
-        voxels = numpy.where(atlas_raw == i + 1)
-        centroid = numpy.mean(voxels, axis=1)
+        vox = np.array(np.where(relabeled == i + 1)).T
+        if len(vox) == 0:
+            continue
+        centroid_vox = vox.mean(axis=0)
+        centroid_mm = nib.affines.apply_affine(atlas_affine, centroid_vox)
+        centroids[i + 1] = centroid_mm * 1e-3  # mm → m
 
-        # Transforms the centroid from voxel to RAS (MNI space) coordinates.
-        centroid = nibabel.affines.apply_affine(atlas_mri.affine, centroid)
-
-        # Transforms the centroid into SI units (meters).
-        centroid = centroid * 1e-3
-
-        # Stores the centroid.
-        centroids[i + 1] = centroid
-
-    # Transforms the volumetric grid into MRI voxels.
-
-    # Concatenates the sources in use in all the source spaces.
+    # --------------------------------------------------
+    # Get active source positions (meters)
+    # --------------------------------------------------
     src_space = [[i] * s['nuse'] for i, s in enumerate(src)]
-    src_space = numpy.concatenate(src_space)
+    src_space = np.concatenate(src_space)
+
     src_pos = [s['rr'][s['vertno']] for s in src]
-    src_pos = numpy.concatenate(src_pos)
+    src_pos = np.concatenate(src_pos)  # shape (N, 3)
 
-    # Transforms the source positions into millimeters.
-    src_pos = src_pos * 1e3
+    # --------------------------------------------------
+    # Apply transformation if provided
+    # --------------------------------------------------
+    if trans is not None:
+        # If trans is an MNE Transform dict
+        if isinstance(trans, dict) and 'trans' in trans:
+            T = trans['trans']
+        else:
+            T = trans
 
-    # Applies the affine transformation from RAS (MNI space) to voxels.
-    src_vox = nibabel.affines.apply_affine(numpy.linalg.inv(atlas_mri.affine), src_pos)
-    src_vox = src_vox.round().astype(int)
+        # Apply 4x4 affine to Nx3 coordinates
+        src_pos = (
+            T[:3, :3] @ src_pos.T + T[:3, 3:4]
+        ).T
 
-    # Initializes the list of source areas.
-    src_area = numpy.zeros(src_vox.shape[0])
+    # --------------------------------------------------
+    # Convert meters → mm (atlas is mm)
+    # --------------------------------------------------
+    src_pos_mm = src_pos * 1e3
 
-    # Lists the valid sources (those falling inside the atlas MRI space).
-    valid = numpy.all(src_vox >= 0, axis=-1) & numpy.all(src_vox < atlas_mri.shape, axis=-1)
+    # --------------------------------------------------
+    # Convert MNI mm → atlas voxel indices
+    # --------------------------------------------------
+    src_vox = nib.affines.apply_affine(
+        np.linalg.inv(atlas_affine),
+        src_pos_mm
+    )
 
-    # Transforms the 3D voxel subindexes into 1D flat indexes of the atlas.
-    src_ind = numpy.ravel_multi_index(tuple(src_vox[valid].T), atlas_mri.shape)
+    src_vox = np.round(src_vox).astype(int)
 
-    # Gets the atlas index for each (valid) source in the source model.
-    src_area[valid] = atlas_raw.flat[src_ind].astype(int)
+    # --------------------------------------------------
+    # Find valid voxel indices
+    # --------------------------------------------------
+    valid = (
+        (src_vox[:, 0] >= 0) & (src_vox[:, 0] < atlas_data.shape[0]) &
+        (src_vox[:, 1] >= 0) & (src_vox[:, 1] < atlas_data.shape[1]) &
+        (src_vox[:, 2] >= 0) & (src_vox[:, 2] < atlas_data.shape[2])
+    )
 
-    # Creates the atlas dictionary.
+    src_area = np.zeros(len(src_vox), dtype=int)
+
+    src_area[valid] = relabeled[
+        src_vox[valid, 0],
+        src_vox[valid, 1],
+        src_vox[valid, 2]
+    ].astype(int)
+
+    # --------------------------------------------------
+    # Build atlas dictionary
+    # --------------------------------------------------
     atlas = {
+        'atlas_raw': relabeled,
         'label': ['None'] + list(atlas_labels[1]),
         'nick': ['None'] + list(atlas_labels[0]),
         'rr': centroids,
-        'src_area': src_area.astype(int),
-        'src_space': src_space.astype(int)}
+        'src_area': src_area,
+        'src_space': src_space.astype(int),
+        'src_vox': src_vox
+    }
 
-    # Returns the atlas definition for these source spaces.
     return atlas
 
 
