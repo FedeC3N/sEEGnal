@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sEEGnal"
-version = "1.4.0"
+version = "2.0.0"
 description = "EEG pre-processing and analysis tools"
 readme = "README.md"
 requires-python = ">=3.12"
