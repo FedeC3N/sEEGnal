@@ -2,7 +2,7 @@ Metadata-Version: 2.4
 Name: sEEGnal
 Version: 2.0.0
 Summary: EEG pre-processing and analysis tools
-Requires-Python: >=3.12
+Requires-Python: ==3.13.7
 Description-Content-Type: text/markdown
 Requires-Dist: certifi==2025.10.5
 Requires-Dist: charset-normalizer==3.4.3
