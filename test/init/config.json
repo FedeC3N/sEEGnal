@@ -137,7 +137,6 @@
 	}
     },
 
-
     "source_reconstruction": {
         "epoch_definition": {
             "length": 8,
@@ -166,5 +165,25 @@
             "pick_ori": "max-power",
             "weight_norm": "nai"
         }
+    },
+
+    "feature_extraction": {
+        "rel_pow": {
+            "sensor": {
+                "freq_bands_name": ["delta","theta","alpha","low_beta","high_beta","gamma"],
+                "freq_bands_limits":[
+                    [2, 4],
+                    [4, 8],
+                    [8, 12],
+                    [12, 20],
+                    [20, 30],
+                    [30, 45]
+                ],
+                "bandwidth": 2,
+                "adaptive" : 1,
+                "normalization": "full"
+            }
+        }
     }
+
 }

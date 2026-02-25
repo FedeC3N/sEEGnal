@@ -13,6 +13,8 @@ import json
 import os
 
 import mne
+import h5py
+import numpy
 import mne_bids
 
 import sEEGnal.tools.mne_tools as mnetools
@@ -46,12 +48,12 @@ def init_derivatives(func):
 
         # Creates the derivatives folder, if required.
         if not os.path.isdir(derivatives_folder_path):
-
             os.makedirs(derivatives_folder_path)
 
         # Add a dummy file
-        bids_file_path = build_standardize_path(BIDS, 'channels.tsv')
-        shutil.copy(bids_file_path, derivatives_file_path)
+        if config['subsystem'] == 'preprocess':
+            bids_file_path = build_standardize_path(BIDS, 'channels.tsv')
+            shutil.copy(bids_file_path, derivatives_file_path)
 
         # Continue with the call
         created_files = func(*args, **kwargs)
@@ -481,6 +483,69 @@ def read_inverse_solution(config,BIDS):
     inverse_solution = mne.beamformer.read_beamformer(inverse_solution_path)
 
     return inverse_solution
+
+
+@init_derivatives
+def write_relative_psd(config,BIDS,relative_psd=None,metadata=None):
+    """
+    power/
+        relative_psd      (n_epochs, n_channels, n_freqs)
+        freqs             (n_freqs,)
+        ch_names          (n_channels,)
+        attrs:
+            method
+            bandwidth
+            adaptive
+            fmin
+            fmax
+            sfreq
+            epoch_length
+            normalization = "relative_per_epoch_channel"
+    """
+
+    # If sensor
+    if 'sensor' in config['feature_extraction']['rel_pow']:
+
+        # Get the output path
+        rel_pow_path = build_derivatives_path(
+            BIDS,
+            config['subsystem'],
+            "desc-rel_pow_sensor.h5"
+        )
+
+        with h5py.File(rel_pow_path, "w") as f:
+
+            grp = f.create_group("power")
+
+            # Datasets
+            grp.create_dataset("relative_psd", data=relative_psd)
+            grp.create_dataset("freqs", data=metadata['freqs'])
+
+            # Metadata as attributes
+            for key, value in metadata.items():
+                grp.attrs[key] = value
+
+
+def read_relative_psd(config,BIDS):
+
+    # Get the path
+    rel_pow_path = build_derivatives_path(
+        BIDS,
+        config['subsystem'],
+        "desc-rel_pow_sensor.h5"
+    )
+
+    with h5py.File(rel_pow_path, "r") as f:
+        grp = f["power"]
+
+        # Load datasets
+        relative_psd = grp["relative_psd"][:]
+        freqs = grp["freqs"][:]
+
+        # Load metadata attributes
+        metadata = dict(grp.attrs)
+
+    return relative_psd, freqs, metadata
 
 
 def build_standardize_path(BIDS, fname_tail):
