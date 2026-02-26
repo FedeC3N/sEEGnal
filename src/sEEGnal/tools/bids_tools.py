@@ -536,12 +536,22 @@ def write_relative_psd(config,BIDS,relative_psd=None,metadata=None):
 
 def read_relative_psd(config,BIDS):
 
-    # Get the path
-    rel_pow_path = build_derivatives_path(
-        BIDS,
-        config['subsystem'],
-        "desc-rel_pow_sensor.h5"
-    )
+    # If sensor
+    if 'sensor' in config['current_space']:
+        # Get the output path
+        rel_pow_path = build_derivatives_path(
+            BIDS,
+            config['subsystem'],
+            "desc-rel_pow_sensor.h5"
+        )
+
+    if 'source' in config['current_space']:
+        # Get the output path
+        rel_pow_path = build_derivatives_path(
+            BIDS,
+            config['subsystem'],
+            "desc-rel_pow_source.h5"
+        )
 
     with h5py.File(rel_pow_path, "r") as f:
         grp = f["power"]

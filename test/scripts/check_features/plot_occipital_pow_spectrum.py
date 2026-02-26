@@ -12,7 +12,7 @@ Federico Ramírez-Toraño
 import os
 import mne
 import numpy as np
-from scipy.signal import welch
+
 import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from test.init.init import init
 
 from sEEGnal.tools.mne_tools import prepare_eeg
-from sEEGnal.tools.bids_tools import build_BIDS_object, read_inverse_solution, read_forward_model, build_derivatives_path
+from sEEGnal.tools.bids_tools import build_BIDS_object, read_inverse_solution, read_forward_model, build_derivatives_path, read_relative_psd
 from sEEGnal.sources_reconstruction.atlas import label_aal
 
 
@@ -42,9 +42,6 @@ for current_index in index:
     # Create the subjects following AI-Mind protocol
     BIDS = build_BIDS_object(config, current_sub, current_ses, current_task)
 
-    # Add the subsystem info
-    config['subsystem'] = 'source_reconstruction'
-
     # Load the clean EEG
     sobi = {
         'desc': 'sobi',
@@ -62,6 +59,7 @@ for current_index in index:
     epoch_definition = config['source_reconstruction']['epoch_definition']
 
     # Load the clean data
+    config['subsystem'] = 'source_reconstruction'
     raw = prepare_eeg(
         config,
         BIDS,
@@ -87,6 +85,7 @@ for current_index in index:
     )
 
     # Get the atlas-sources information
+    config['subsystem'] = 'source_reconstruction'
     forward_model = read_forward_model(config,BIDS)
     mri_head_t = forward_model['mri_head_t']
     head_mri_t = mne.transforms.invert_transform(mri_head_t)
@@ -101,33 +100,37 @@ for current_index in index:
     stc = mne.beamformer.apply_lcmv_epochs(raw, lcmv_filters)
 
     # Get the sources of interest (occipital)
-    occipital_source_idx = [49, 50, 51, 52, 53, 54]
-    occipital_sources_mask = [current_area in occipital_source_idx for current_area in atlas['src_area']]
+    occipital_labels = [
+        label for label in atlas['label']
+        if any(keyword in label for keyword in [
+            'Calcarine',
+            'Cuneus',
+            'Lingual',
+            'Occipital_Inf',
+            'Occipital_Mid',
+            'Occipital_Supp'
+        ])
+    ]
+    occipital_ids = [
+        atlas['label'].index(label)
+        for label in occipital_labels
+    ]
+    occipital_sources_mask = np.isin(atlas['src_area'], occipital_ids)
 
-    # Compute PSD
-    sfreq = raw.info['sfreq']
-    all_pow = []
-    for ts in stc:
-        current_data = ts.data[occipital_sources_mask,:]
-        f, pow = welch(current_data,
-                       fs=sfreq,
-                       nperseg=sfreq * 2,
-                       scaling='spectrum'
-                       )
-        all_pow.append(pow.mean(axis=0))
+    # Read PSD
+    config['current_space'] = 'source'
+    config['subsystem'] = 'feature_extraction'
+    relative_psd, freqs, metadata = read_relative_psd(config,BIDS)
 
     # Get the mean and std of pow spectrum
-    all_pow = np.array(all_pow)
-    pow_mean = all_pow.mean(axis=0)
-    pow_std = all_pow.std(axis=0)
+    relative_psd_mean = relative_psd.mean(axis=(0, 1))
+    relative_psd_std = relative_psd.std(axis=(0, 1))
 
     # Plot between 2 - 45 Hz
-    freq_mask = (f >= 2) & (f <= 45)
-    plt.figure(figsize=(8, 4))
-    plt.plot(f[freq_mask], pow_mean[freq_mask], color='blue', label='Mean pow')
-    plt.fill_between(f[freq_mask],
-                     pow_mean[freq_mask] - pow_std[freq_mask],
-                     pow_mean[freq_mask] + pow_std[freq_mask],
+    plt.plot(freqs, relative_psd_mean, color='blue', label='Mean pow')
+    plt.fill_between(freqs,
+                     relative_psd_mean - relative_psd_std,
+                     relative_psd_mean + relative_psd_std,
                      color='skyblue', alpha=0.3)
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Power")

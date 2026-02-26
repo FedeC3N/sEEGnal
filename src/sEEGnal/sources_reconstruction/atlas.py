@@ -1,6 +1,7 @@
 from pathlib import Path
 from importlib.resources import files
 
+import mne
 import json
 import numpy
 
@@ -10,110 +11,80 @@ import nibabel as nib
 
 
 def label_aal(config, src, trans=None):
+    # --------------------------------------------------
+    # Locate fsaverage label directory
+    # --------------------------------------------------
+    subjects_dir = files("sEEGnal.data")
+    subjects_dir = Path(subjects_dir)
+
+    subject = config['source_reconstruction']['forward']['template']['subject']
 
     # --------------------------------------------------
-    # Load atlas (MNI space)
+    # Read annot files
     # --------------------------------------------------
-    atlas_path = files("sEEGnal.data") / 'atlas' / 'AAL_MNI_V4.nii'
-    labels_path = files("sEEGnal.data") / 'atlas' / 'AAL_MNI_V4.txt'
+    labels_lh = mne.read_labels_from_annot(
+        subject=subject,
+        parc="AAL",
+        hemi="lh",
+        subjects_dir=subjects_dir
+    )
 
-    atlas_img = nib.load(atlas_path)
-    atlas_img = nib.as_closest_canonical(atlas_img)
+    labels_rh = mne.read_labels_from_annot(
+        subject=subject,
+        parc="AAL",
+        hemi="rh",
+        subjects_dir=subjects_dir
+    )
 
-    atlas_data = atlas_img.get_fdata()
-    atlas_affine = atlas_img.affine
-
-    # --------------------------------------------------
-    # Load labels (first 90 cortical areas)
-    # --------------------------------------------------
-    atlas_labels = pd.read_table(labels_path, header=None)
-    atlas_labels = atlas_labels[:90]
-
-    relabeled = np.zeros_like(atlas_data)
-
-    for i in range(len(atlas_labels)):
-        relabeled[atlas_data == atlas_labels[2][i]] = i + 1
+    labels_all = labels_lh + labels_rh
 
     # --------------------------------------------------
-    # Compute centroids in MNI space (meters)
+    # Prepare vertex indexing
     # --------------------------------------------------
-    centroids = np.zeros((len(atlas_labels) + 1, 3))
+    n_vertices = sum(len(s['vertno']) for s in src)
 
-    for i in range(len(atlas_labels)):
-        vox = np.array(np.where(relabeled == i + 1)).T
-        if len(vox) == 0:
-            continue
-        centroid_vox = vox.mean(axis=0)
-        centroid_mm = nib.affines.apply_affine(atlas_affine, centroid_vox)
-        centroids[i + 1] = centroid_mm * 1e-3  # mm → m
+    src_area = np.zeros(n_vertices, dtype=int)
+    src_space = []
+    rr = []
+
+    offset = 0
+    label_names = ["None"]
 
     # --------------------------------------------------
-    # Get active source positions (meters)
+    # Assign labels hemisphere by hemisphere
     # --------------------------------------------------
-    src_space = [[i] * s['nuse'] for i, s in enumerate(src)]
+    for hemi_idx, (s, hemi_labels) in enumerate(zip(src, [labels_lh, labels_rh])):
+
+        vertno = s['vertno']
+        rr.append(s['rr'][vertno])
+
+        # Track hemisphere index per vertex
+        src_space.append(np.full(len(vertno), hemi_idx, dtype=int))
+
+        # Assign labels
+        for label_id, label in enumerate(hemi_labels, start=1):
+            # Global label index (avoid overlap between hemispheres)
+            global_label_id = len(label_names)
+
+            mask = np.isin(vertno, label.vertices)
+            src_area[offset:offset + len(vertno)][mask] = global_label_id
+
+            label_names.append(label.name)
+
+        offset += len(vertno)
+
+    # Concatenate hemisphere info
     src_space = np.concatenate(src_space)
-
-    src_pos = [s['rr'][s['vertno']] for s in src]
-    src_pos = np.concatenate(src_pos)  # shape (N, 3)
-
-    # --------------------------------------------------
-    # Apply transformation if provided
-    # --------------------------------------------------
-    if trans is not None:
-        # If trans is an MNE Transform dict
-        if isinstance(trans, dict) and 'trans' in trans:
-            T = trans['trans']
-        else:
-            T = trans
-
-        # Apply 4x4 affine to Nx3 coordinates
-        src_pos = (
-            T[:3, :3] @ src_pos.T + T[:3, 3:4]
-        ).T
-
-    # --------------------------------------------------
-    # Convert meters → mm (atlas is mm)
-    # --------------------------------------------------
-    src_pos_mm = src_pos * 1e3
-
-    # --------------------------------------------------
-    # Convert MNI mm → atlas voxel indices
-    # --------------------------------------------------
-    src_vox = nib.affines.apply_affine(
-        np.linalg.inv(atlas_affine),
-        src_pos_mm
-    )
-
-    src_vox = np.round(src_vox).astype(int)
-
-    # --------------------------------------------------
-    # Find valid voxel indices
-    # --------------------------------------------------
-    valid = (
-        (src_vox[:, 0] >= 0) & (src_vox[:, 0] < atlas_data.shape[0]) &
-        (src_vox[:, 1] >= 0) & (src_vox[:, 1] < atlas_data.shape[1]) &
-        (src_vox[:, 2] >= 0) & (src_vox[:, 2] < atlas_data.shape[2])
-    )
-
-    src_area = np.zeros(len(src_vox), dtype=int)
-
-    src_area[valid] = relabeled[
-        src_vox[valid, 0],
-        src_vox[valid, 1],
-        src_vox[valid, 2]
-    ].astype(int)
+    rr = np.concatenate(rr)
 
     # --------------------------------------------------
     # Build atlas dictionary
     # --------------------------------------------------
     atlas = {
-        'atlas_raw': relabeled,
-        'label': ['None'] + list(atlas_labels[1]),
-        'nick': ['None'] + list(atlas_labels[0]),
-        'rr': centroids,
-        'src_area': src_area,
-        'src_space': src_space.astype(int),
-        'src_vox': src_vox
+        'label': label_names,
+        'src_area': src_area,  # label index per vertex
+        'src_space': src_space,  # hemisphere index per vertex
+        'rr': rr  # vertex coordinates (meters)
     }
 
     return atlas
