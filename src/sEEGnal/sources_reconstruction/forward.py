@@ -87,15 +87,13 @@ def template_forward_model(config, BIDS):
         trans = config['source_reconstruction']['forward']['template']['trans']
         surf = subjects_dir / subject / 'bem' / config['source_reconstruction']['forward']['template']['surf']
 
-        # Define our sources with a giant sphere
-        sphere = (0.0, 0.0, 0.00, 0.2)
-        src = mne.setup_volume_source_space(
-            subject,
+        # Define our sources
+        spacing = config['source_reconstruction']['forward']['template']['spacing']
+        src = mne.setup_source_space(
+            subject=subject,
+            spacing=spacing,
             subjects_dir=subjects_dir,
-            sphere=sphere,
-            sphere_units="m",
-            add_interpolator=False,
-            surface=surf
+            add_dist=False
         )
 
         # Read the BEM solution (MNI template)

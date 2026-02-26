@@ -10,12 +10,46 @@ Federico Ramírez-Toraño
 
 # Imports
 import sys
+import pkgutil
+import importlib
 import traceback
 from datetime import datetime as dt, timezone
 
-import sEEGnal.feature_extraction.estimate_rel_pow
+import sEEGnal.feature_extraction
 
-# Modules
+
+def _load_feature_function(current_feature):
+    """
+    Dynamically load the correct feature estimation function
+    from any submodule inside sEEGnal.feature_extraction.
+    """
+
+    base_package = sEEGnal.feature_extraction
+    func_name = f"estimate_{current_feature}"
+
+    # Discover all subpackages dynamically
+    for module_info in pkgutil.iter_modules(base_package.__path__):
+
+        subpkg_name = module_info.name
+
+        module_path = (
+            f"sEEGnal.feature_extraction.{subpkg_name}.estimate_{current_feature}"
+        )
+
+        try:
+            module = importlib.import_module(module_path)
+
+            if hasattr(module, func_name):
+                return getattr(module, func_name)
+
+        except ModuleNotFoundError:
+            continue
+
+    raise ImportError(
+        f"Could not find feature '{current_feature}' "
+        f"in any feature_extraction submodule."
+    )
+
 def feature_extraction(config, BIDS):
     """
 
@@ -38,9 +72,8 @@ def feature_extraction(config, BIDS):
     for current_feature in config['feature_extraction']:
         try:
 
-            # Build the function name
-            func = f"estimate_{current_feature}"
-            to_estimate = getattr(sEEGnal.feature_extraction.estimate_rel_pow, func)
+            # Load correct function dynamically
+            to_estimate = _load_feature_function(current_feature)
 
             # Estimate the inverse solution using the defined method
             metadata = to_estimate(config, BIDS)

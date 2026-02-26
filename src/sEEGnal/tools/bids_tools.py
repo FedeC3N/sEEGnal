@@ -504,7 +504,7 @@ def write_relative_psd(config,BIDS,relative_psd=None,metadata=None):
     """
 
     # If sensor
-    if 'sensor' in config['feature_extraction']['rel_pow']:
+    if 'sensor' in config['current_space']:
 
         # Get the output path
         rel_pow_path = build_derivatives_path(
@@ -513,17 +513,25 @@ def write_relative_psd(config,BIDS,relative_psd=None,metadata=None):
             "desc-rel_pow_sensor.h5"
         )
 
-        with h5py.File(rel_pow_path, "w") as f:
+    if 'source' in config['current_space']:
+        # Get the output path
+        rel_pow_path = build_derivatives_path(
+            BIDS,
+            config['subsystem'],
+            "desc-rel_pow_source.h5"
+        )
 
-            grp = f.create_group("power")
+    with h5py.File(rel_pow_path, "w") as f:
 
-            # Datasets
-            grp.create_dataset("relative_psd", data=relative_psd)
-            grp.create_dataset("freqs", data=metadata['freqs'])
+        grp = f.create_group("power")
 
-            # Metadata as attributes
-            for key, value in metadata.items():
-                grp.attrs[key] = value
+        # Datasets
+        grp.create_dataset("relative_psd", data=relative_psd)
+        grp.create_dataset("freqs", data=metadata['freqs'])
+
+        # Metadata as attributes
+        for key, value in metadata.items():
+            grp.attrs[key] = value
 
 
 def read_relative_psd(config,BIDS):

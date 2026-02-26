@@ -22,7 +22,6 @@ errors = []
 
 # Go through each subject
 index = range(len(files))
-index = [10]
 for current_index in index:
 
     # current info
@@ -38,6 +37,4 @@ for current_index in index:
 
     # Run the feature extraction
     print('   Feature extraction.')
-    print(f'      Measures: {list(config['feature_extraction'].keys())}')
     results = feature_extraction(config,BIDS)
-    print(' Result ' + results['result'])

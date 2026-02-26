@@ -64,7 +64,6 @@ for current_index in index:
 
         # Apply inverse to each source point
         for s in src_mri:
-            if s['type'] == 'vol':
                 coords_hom = np.hstack([s['rr'], np.ones((s['rr'].shape[0], 1))])
                 coords_mri = (head_mri_t['trans'] @ coords_hom.T).T[:, :3]
                 s['rr'] = coords_mri

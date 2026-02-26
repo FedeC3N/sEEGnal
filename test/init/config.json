@@ -152,7 +152,7 @@
                 "bem": "fsaverage-5120-5120-5120-bem-sol.fif",
                 "mri": "T1.mgz",
                 "surf": "inner_skull.surf",
-                "pos": 5
+                "spacing": "ico4"
             }
         },
         "covariance": {
@@ -170,6 +170,20 @@
     "feature_extraction": {
         "rel_pow": {
             "sensor": {
+                "freq_bands_name": ["delta","theta","alpha","low_beta","high_beta","gamma"],
+                "freq_bands_limits":[
+                    [2, 4],
+                    [4, 8],
+                    [8, 12],
+                    [12, 20],
+                    [20, 30],
+                    [30, 45]
+                ],
+                "bandwidth": 2,
+                "adaptive" : 1,
+                "normalization": "full"
+            },
+            "source": {
                 "freq_bands_name": ["delta","theta","alpha","low_beta","high_beta","gamma"],
                 "freq_bands_limits":[
                     [2, 4],
