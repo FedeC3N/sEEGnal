@@ -566,6 +566,83 @@ def read_relative_psd(config,BIDS):
     return relative_psd, freqs, metadata
 
 
+@init_derivatives
+def write_plv(config,BIDS,plv=None,metadata=None):
+    """
+    power/
+        plv      (n_epochs, bands, connections)
+        attrs:
+            "method"
+            "freq_bands_name"
+            "freq_bands_limits"
+            "epoch_length"
+            "ch_names"
+            "dim"
+            "shape"
+            "triu_indices"
+    """
+
+    # If sensor
+    if 'sensor' in config['current_space']:
+
+        # Get the output path
+        plv_path = build_derivatives_path(
+            BIDS,
+            config['subsystem'],
+            "desc-plv_sensor.h5"
+        )
+
+    if 'source' in config['current_space']:
+        # Get the output path
+        plv_path = build_derivatives_path(
+            BIDS,
+            config['subsystem'],
+            "desc-plv_source.h5"
+        )
+
+    with h5py.File(plv_path, "w") as f:
+
+        grp = f.create_group("FC")
+
+        # Datasets
+        grp.create_dataset("plv", data=plv)
+
+        # Metadata as attributes
+        for key, value in metadata.items():
+            grp.attrs[key] = value
+
+
+def read_plv(config,BIDS):
+
+    # If sensor
+    if 'sensor' in config['current_space']:
+        # Get the output path
+        plv_path = build_derivatives_path(
+            BIDS,
+            config['subsystem'],
+            "desc-plv_sensor.h5"
+        )
+
+    if 'source' in config['current_space']:
+        # Get the output path
+        plv_path = build_derivatives_path(
+            BIDS,
+            config['subsystem'],
+            "desc-plv_source.h5"
+        )
+
+    with h5py.File(plv_path, "r") as f:
+        grp = f["FC"]
+
+        # Load datasets
+        plv = grp["plv"][:]
+
+        # Load metadata attributes
+        metadata = dict(grp.attrs)
+
+    return plv, metadata
+
+
 def build_standardize_path(BIDS, fname_tail):
 
     from mne_bids.config import ALLOWED_PATH_ENTITIES_SHORT

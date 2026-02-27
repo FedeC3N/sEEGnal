@@ -122,11 +122,16 @@ for current_index in index:
     config['subsystem'] = 'feature_extraction'
     relative_psd, freqs, metadata = read_relative_psd(config,BIDS)
 
+    # Get only between 2-45
+    f_mask = (freqs>2) & (freqs<45)
+    relative_psd = relative_psd[:,:,f_mask]
+    freqs = freqs[f_mask]
+
     # Get the mean and std of pow spectrum
     relative_psd_mean = relative_psd.mean(axis=(0, 1))
     relative_psd_std = relative_psd.std(axis=(0, 1))
 
-    # Plot between 2 - 45 Hz
+    # Plot
     plt.plot(freqs, relative_psd_mean, color='blue', label='Mean pow')
     plt.fill_between(freqs,
                      relative_psd_mean - relative_psd_std,

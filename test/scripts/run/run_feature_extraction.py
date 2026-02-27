@@ -16,6 +16,7 @@ from sEEGnal.feature_extraction.feature_extraction import feature_extraction
 
 # Init the database
 config, files, sub, ses, task = init()
+del config['feature_extraction']['rel_pow']
 
 # List of subjects with errors
 errors = []

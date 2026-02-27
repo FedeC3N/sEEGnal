@@ -17,9 +17,7 @@ from sEEGnal.tools.psd_tools import multitaper_psd, normalize_psd
 
 def estimate_rel_pow(config, BIDS):
 
-    # --------------------------------------------------
     # Load cleaned EEG
-    # --------------------------------------------------
     print(f'      Measure: Relative PSD')
 
     sobi = {
@@ -34,8 +32,8 @@ def estimate_rel_pow(config, BIDS):
     ]
 
     freq_limits_signal = [
-        config['feature_extraction']['rel_pow']['sensor']['freq_bands_limits'][0][0],
-        config['feature_extraction']['rel_pow']['sensor']['freq_bands_limits'][-1][-1]
+        config['feature_extraction']['rel_pow']['sensor']['freq_limits'][0],
+        config['feature_extraction']['rel_pow']['sensor']['freq_limits'][-1]
     ]
 
     raw = prepare_eeg(
@@ -59,24 +57,22 @@ def estimate_rel_pow(config, BIDS):
         apply_sobi=sobi,
         freq_limits=freq_limits_signal,
         metadata_badchannels=True,
-        epoch_definition=config['source_reconstruction']['epoch_definition']
+        epoch_definition=config['feature_extraction']['rel_pow']['epoch_definition']
     )
 
     sfreq = raw.info["sfreq"]
 
-    # ==================================================
     # SENSOR LEVEL
-    # ==================================================
-
     if 'sensor' in config['feature_extraction']['rel_pow']:
 
         print('          Sensors.')
 
         params = config['feature_extraction']['rel_pow']['sensor']
 
-        # raw is epoched here → shape (n_epochs, n_channels, n_times)
+        # raw
         data = raw.get_data()
 
+        # Estimate power
         psd, freqs = multitaper_psd(
             data=data,
             sfreq=raw.info['sfreq'],
@@ -87,6 +83,7 @@ def estimate_rel_pow(config, BIDS):
             dtype=numpy.float32
         )
 
+        # Normalize
         relative_psd = normalize_psd(psd, mode="relative")
 
         metadata = {
@@ -114,10 +111,7 @@ def estimate_rel_pow(config, BIDS):
         )
         del config['current_space']
 
-    # ==================================================
     # SOURCE LEVEL
-    # ==================================================
-
     if 'source' in config['feature_extraction']['rel_pow']:
 
         print('          Sources.')
@@ -132,9 +126,10 @@ def estimate_rel_pow(config, BIDS):
         # Apply LCMV per epoch
         stcs = mne.beamformer.apply_lcmv_epochs(raw, filters)
 
-        # Stack → (n_epochs, n_vertices, n_times)
+        # Stack (n_epochs, n_vertices, n_times)
         data = numpy.stack([stc.data for stc in stcs])
 
+        # Estimate power
         psd, freqs = multitaper_psd(
             data=data,
             sfreq=raw.info['sfreq'],

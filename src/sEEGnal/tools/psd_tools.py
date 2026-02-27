@@ -2,9 +2,6 @@
 """
 Spectral estimation utilities for sEEGnal
 
-Custom multitaper implementation using NumPy/SciPy only,
-with memory-efficient epoch-by-epoch and taper-by-taper computation.
-
 Federico Ramírez-Toraño (and ChatGPT 5-mini)
 26/02/2026
 """
