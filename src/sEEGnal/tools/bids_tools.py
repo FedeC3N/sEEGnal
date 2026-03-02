@@ -569,8 +569,8 @@ def read_relative_psd(config,BIDS):
 @init_derivatives
 def write_plv(config,BIDS,plv=None,metadata=None):
     """
-    power/
-        plv      (n_epochs, bands, connections)
+    FC/
+        plv      (bands, connections)
         attrs:
             "method"
             "freq_bands_name"
@@ -641,6 +641,83 @@ def read_plv(config,BIDS):
         metadata = dict(grp.attrs)
 
     return plv, metadata
+
+
+@init_derivatives
+def write_ciplv(config, BIDS, ciplv=None, metadata=None):
+    """
+    FC/
+        ciplv      (bands, connections)
+        attrs:
+            "method"
+            "freq_bands_name"
+            "freq_bands_limits"
+            "epoch_length"
+            "ch_names"
+            "dim"
+            "shape"
+            "triu_indices"
+    """
+
+    # If sensor
+    if 'sensor' in config['current_space']:
+
+        # Get the output path
+        ciplv_path = build_derivatives_path(
+            BIDS,
+            config['subsystem'],
+            "desc-ciplv_sensor.h5"
+        )
+
+    if 'source' in config['current_space']:
+        # Get the output path
+        ciplv_path = build_derivatives_path(
+            BIDS,
+            config['subsystem'],
+            "desc-ciplv_source.h5"
+        )
+
+    with h5py.File(ciplv_path, "w") as f:
+
+        grp = f.create_group("FC")
+
+        # Datasets
+        grp.create_dataset("ciplv", data=ciplv)
+
+        # Metadata as attributes
+        for key, value in metadata.items():
+            grp.attrs[key] = value
+
+
+def read_ciplv(config,BIDS):
+
+    # If sensor
+    if 'sensor' in config['current_space']:
+        # Get the output path
+        ciplv_path = build_derivatives_path(
+            BIDS,
+            config['subsystem'],
+            "desc-ciplv_sensor.h5"
+        )
+
+    if 'source' in config['current_space']:
+        # Get the output path
+        ciplv_path = build_derivatives_path(
+            BIDS,
+            config['subsystem'],
+            "desc-ciplv_source.h5"
+        )
+
+    with h5py.File(ciplv_path, "r") as f:
+        grp = f["FC"]
+
+        # Load datasets
+        ciplv = grp["ciplv"][:]
+
+        # Load metadata attributes
+        metadata = dict(grp.attrs)
+
+    return ciplv, metadata
 
 
 def build_standardize_path(BIDS, fname_tail):

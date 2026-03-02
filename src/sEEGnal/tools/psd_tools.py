@@ -56,6 +56,7 @@ def multitaper_psd(
     adaptive=False,
     low_bias=True,
     scaling="density",
+    average_epochs=True,
     dtype=np.float32
 ):
     """
@@ -131,6 +132,9 @@ def multitaper_psd(
             epoch_psd = taper_psds.mean(axis=1)
 
         psd[e] = epoch_psd
+
+    if average_epochs:
+        psd = psd.mean(axis=0)
 
     return psd, freqs
 

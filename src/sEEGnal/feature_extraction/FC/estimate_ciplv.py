@@ -11,16 +11,16 @@ import numpy
 import mne
 
 from sEEGnal.tools.mne_tools import prepare_eeg
-from sEEGnal.tools.bids_tools import read_inverse_solution, write_plv
-from sEEGnal.tools.fc_tools import compute_plv
+from sEEGnal.tools.bids_tools import read_inverse_solution, write_ciplv
+from sEEGnal.tools.fc_tools import compute_ciplv
 
 
-def estimate_plv(config, BIDS):
+def estimate_ciplv(config, BIDS):
 
     # --------------------------------------------------
     # Load cleaned EEG
     # --------------------------------------------------
-    print(f'      Measure: PLV')
+    print(f'      Measure: ciplv')
 
     sobi = {
         'desc': 'sobi',
@@ -34,8 +34,8 @@ def estimate_plv(config, BIDS):
     ]
 
     freq_limits_signal = [
-        config['feature_extraction']['plv']['freq_limits'][0],
-        config['feature_extraction']['plv']['freq_limits'][-1]
+        config['feature_extraction']['ciplv']['freq_limits'][0],
+        config['feature_extraction']['ciplv']['freq_limits'][-1]
     ]
 
     raw = prepare_eeg(
@@ -59,22 +59,22 @@ def estimate_plv(config, BIDS):
         apply_sobi=sobi,
         freq_limits=freq_limits_signal,
         metadata_badchannels=True,
-        epoch_definition=config['feature_extraction']['plv']['epoch_definition']
+        epoch_definition=config['feature_extraction']['ciplv']['epoch_definition']
     )
 
     # SENSOR LEVEL
-    if 'sensor' in config['feature_extraction']['plv']:
+    if 'sensor' in config['feature_extraction']['ciplv']:
 
         print('          Sensors.')
 
-        params = config['feature_extraction']['plv']['sensor']
+        params = config['feature_extraction']['ciplv']['sensor']
 
         # Save memory
         _, nsources, nsamples = raw.get_data().shape
         nbands = len(params['freq_bands_name'])
         conn_indices = numpy.triu_indices(nsources, k=1)
         n_connections = len(conn_indices[0])
-        plv = numpy.zeros((nbands, n_connections), dtype=numpy.float32)
+        ciplv = numpy.zeros((nbands, n_connections), dtype=numpy.float32)
 
         for iband,current_band in enumerate(params['freq_bands_name']):
 
@@ -85,42 +85,42 @@ def estimate_plv(config, BIDS):
                 params['freq_bands_limits'][iband][1]
             )
 
-            # PLV
-            band_plv_vector = compute_plv(
+            # ciplv
+            band_ciplv_vector = compute_ciplv(
                 data=banddata.get_data(),
                 average_epochs=True
             )
 
             # Save it
-            plv[iband,:] = band_plv_vector
+            ciplv[iband,:] = band_ciplv_vector
 
         metadata = {
-            "method": "PLV",
+            "method": "ciplv",
             "freq_bands_name": params['freq_bands_name'],
             "freq_bands_limits":  params['freq_bands_limits'],
             "epoch_length": raw.tmax - raw.tmin,
             "ch_names": raw.ch_names,
             "dim": "bands × connections",
-            "shape": plv.shape,
+            "shape": ciplv.shape,
             "triu_indices": conn_indices
         }
 
         # Save the result
         config['current_space'] = 'sensor'
-        write_plv(
+        write_ciplv(
             config,
             BIDS,
-            plv=plv,
+            ciplv=ciplv,
             metadata=metadata
         )
         del config['current_space']
 
     # SOURCE LEVEL
-    if 'source' in config['feature_extraction']['plv']:
+    if 'source' in config['feature_extraction']['ciplv']:
 
         print('          Sources.')
 
-        params = config['feature_extraction']['plv']['source']
+        params = config['feature_extraction']['ciplv']['source']
 
         dummy = config['subsystem']
         config['subsystem'] = 'source_reconstruction'
@@ -135,7 +135,7 @@ def estimate_plv(config, BIDS):
         nbands = len(params['freq_bands_name'])
         conn_indices = numpy.triu_indices(nsources, k=1)
         n_connections = len(conn_indices[0])
-        plv = numpy.zeros((nbands, n_connections), dtype=numpy.float32)
+        ciplv = numpy.zeros((nbands, n_connections), dtype=numpy.float32)
 
         for iband, current_band in enumerate(params['freq_bands_name']):
 
@@ -151,31 +151,31 @@ def estimate_plv(config, BIDS):
 
             banddata = numpy.stack([stc.data for stc in filtered_stcs])
 
-            # PLV
-            band_plv_vector = compute_plv(
+            # ciplv
+            band_ciplv_vector = compute_ciplv(
                 data=banddata,
                 average_epochs=True
             )
 
             # Save it
-            plv[iband, :] = band_plv_vector
+            ciplv[iband, :] = band_ciplv_vector
 
         metadata = {
-            "method": "PLV",
+            "method": "ciplv",
             "freq_bands_name": params['freq_bands_name'],
             "freq_bands_limits": params['freq_bands_limits'],
             "epoch_length": raw.tmax - raw.tmin,
             "dim": "bands × connections",
-            "shape": plv.shape,
+            "shape": ciplv.shape,
             "triu_indices": "numpy.triu_indices(nsources, k=1)"
         }
 
         # Save the result
         config['current_space'] = 'source'
-        write_plv(
+        write_ciplv(
             config,
             BIDS,
-            plv=plv,
+            ciplv=ciplv,
             metadata=metadata
         )
         del config['current_space']

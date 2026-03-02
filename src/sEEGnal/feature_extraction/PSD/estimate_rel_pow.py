@@ -80,6 +80,7 @@ def estimate_rel_pow(config, BIDS):
             fmax=freq_limits_signal[-1],
             bandwidth=params['bandwidth'],
             adaptive=params['adaptive'],
+            average_epochs=True,
             dtype=numpy.float32
         )
 
@@ -97,7 +98,7 @@ def estimate_rel_pow(config, BIDS):
             "normalization": "relative_per_epoch_channel",
             "ch_names": raw.ch_names,
             "freqs": freqs,
-            "dim": "epochs x sensor x freqs",
+            "dim": "sensor x freqs",
             "shape": relative_psd.shape
         }
 
@@ -137,6 +138,7 @@ def estimate_rel_pow(config, BIDS):
             fmax=freq_limits_signal[-1],
             bandwidth=params['bandwidth'],
             adaptive=params['adaptive'],
+            average_epochs=True,
             dtype=numpy.float32
         )
 

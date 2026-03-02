@@ -314,6 +314,7 @@ src/sEEGnal/data/MNI/touch/wmaparc.stats.touch
 src/sEEGnal/data/MNI/touch/wmaparc.touch
 src/sEEGnal/data/MNI/touch/wmsegment.touch
 src/sEEGnal/data/MNI/trash/__init__.py
+src/sEEGnal/data/__pycache__/__init__.cpython-313.pyc
 src/sEEGnal/data/atlas/AAL_MNI_V4.nii
 src/sEEGnal/data/atlas/AAL_MNI_V4.txt
 src/sEEGnal/data/atlas/__init__.py
@@ -335,6 +336,7 @@ src/sEEGnal/data/fsaverage/bem/inner_skull.surf
 src/sEEGnal/data/fsaverage/bem/outer_skin.surf
 src/sEEGnal/data/fsaverage/bem/outer_skull.surf
 src/sEEGnal/data/fsaverage/label/__init__.py
+src/sEEGnal/data/fsaverage/label/lh.AAL.annot
 src/sEEGnal/data/fsaverage/label/lh.BA1.label
 src/sEEGnal/data/fsaverage/label/lh.BA2.label
 src/sEEGnal/data/fsaverage/label/lh.BA3a.label
@@ -362,9 +364,11 @@ src/sEEGnal/data/fsaverage/label/lh.aparc.a2009s.annot
 src/sEEGnal/data/fsaverage/label/lh.aparc.annot
 src/sEEGnal/data/fsaverage/label/lh.aparc.label
 src/sEEGnal/data/fsaverage/label/lh.aparc_sub.annot
+src/sEEGnal/data/fsaverage/label/lh.atlas55_RSN.annot
 src/sEEGnal/data/fsaverage/label/lh.cortex.label
 src/sEEGnal/data/fsaverage/label/lh.entorhinal.label
 src/sEEGnal/data/fsaverage/label/lh.oasis.chubs.annot
+src/sEEGnal/data/fsaverage/label/rh.AAL.annot
 src/sEEGnal/data/fsaverage/label/rh.BA1.label
 src/sEEGnal/data/fsaverage/label/rh.BA2.label
 src/sEEGnal/data/fsaverage/label/rh.BA3a.label
@@ -392,6 +396,7 @@ src/sEEGnal/data/fsaverage/label/rh.aparc.a2009s.annot
 src/sEEGnal/data/fsaverage/label/rh.aparc.annot
 src/sEEGnal/data/fsaverage/label/rh.aparc.label
 src/sEEGnal/data/fsaverage/label/rh.aparc_sub.annot
+src/sEEGnal/data/fsaverage/label/rh.atlas55_RSN.annot
 src/sEEGnal/data/fsaverage/label/rh.cortex.label
 src/sEEGnal/data/fsaverage/label/rh.entorhinal.label
 src/sEEGnal/data/fsaverage/label/rh.oasis.chubs.annot
@@ -521,6 +526,13 @@ src/sEEGnal/data/surfaces/__init__.py
 src/sEEGnal/data/surfaces/inner_skull.surf
 src/sEEGnal/data/surfaces/outer_skin.surf
 src/sEEGnal/data/surfaces/outer_skull.surf
+src/sEEGnal/feature_extraction/__init__.py
+src/sEEGnal/feature_extraction/feature_extraction.py
+src/sEEGnal/feature_extraction/FC/__init__.py
+src/sEEGnal/feature_extraction/FC/estimate_ciplv.py
+src/sEEGnal/feature_extraction/FC/estimate_plv.py
+src/sEEGnal/feature_extraction/PSD/__init__.py
+src/sEEGnal/feature_extraction/PSD/estimate_rel_pow.py
 src/sEEGnal/io/__init__.py
 src/sEEGnal/io/eep.py
 src/sEEGnal/io/read_source_files.py
@@ -540,7 +552,9 @@ src/sEEGnal/standardize/standardize.py
 src/sEEGnal/tools/__init__.py
 src/sEEGnal/tools/bids_tools.py
 src/sEEGnal/tools/bss.py
+src/sEEGnal/tools/fc_tools.py
 src/sEEGnal/tools/mne_tools.py
+src/sEEGnal/tools/psd_tools.py
 src/sEEGnal/tools/signal.py
 src/sEEGnal/tools/spheres.py
 src/sEEGnal/tools/tools.py
