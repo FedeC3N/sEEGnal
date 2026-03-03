@@ -36,7 +36,7 @@ from scipy.signal import welch
 from test.init.init import init
 from sEEGnal.tools.mne_tools import prepare_eeg
 from sEEGnal.tools.bids_tools import build_BIDS_object, read_inverse_solution, read_forward_model, build_derivatives_path
-from sEEGnal.sources_reconstruction.atlas import label_aal
+from sEEGnal.tools.atlas_tools import label_aal
 
 
 # Init the database

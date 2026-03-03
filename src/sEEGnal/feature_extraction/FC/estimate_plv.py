@@ -102,7 +102,7 @@ def estimate_plv(config, BIDS):
             "ch_names": raw.ch_names,
             "dim": "bands × connections",
             "shape": plv.shape,
-            "triu_indices": conn_indices
+            "triu_indices": "numpy.triu_indices(nsources, k=1)"
         }
 
         # Save the result

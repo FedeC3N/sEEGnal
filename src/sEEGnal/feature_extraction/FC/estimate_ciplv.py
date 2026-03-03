@@ -7,8 +7,9 @@ Federico Ramírez-Toraño
 """
 
 # Imports
-import numpy
 import mne
+import numpy
+import mne_connectivity
 
 from sEEGnal.tools.mne_tools import prepare_eeg
 from sEEGnal.tools.bids_tools import read_inverse_solution, write_ciplv
@@ -67,6 +68,16 @@ def estimate_ciplv(config, BIDS):
 
         print('          Sensors.')
 
+        mne_connectivity.spectral_connectivity_epochs(
+            raw.get_data(),
+            names=raw.ch_names,
+            method='ciplv',
+            fmin=None, fmax=inf,
+            faverage=True,
+            mt_adaptive=True,
+            mt_low_bias=True
+        )
+
         params = config['feature_extraction']['ciplv']['sensor']
 
         # Save memory
@@ -102,7 +113,7 @@ def estimate_ciplv(config, BIDS):
             "ch_names": raw.ch_names,
             "dim": "bands × connections",
             "shape": ciplv.shape,
-            "triu_indices": conn_indices
+            "triu_indices": "numpy.triu_indices(nsources, k=1)"
         }
 
         # Save the result

@@ -544,12 +544,12 @@ src/sEEGnal/preprocess/badchannel_detection.py
 src/sEEGnal/preprocess/find_artifacts.py
 src/sEEGnal/preprocess/find_badchannels.py
 src/sEEGnal/sources_reconstruction/__init__.py
-src/sEEGnal/sources_reconstruction/atlas.py
 src/sEEGnal/sources_reconstruction/forward.py
 src/sEEGnal/sources_reconstruction/inverse.py
 src/sEEGnal/standardize/__init__.py
 src/sEEGnal/standardize/standardize.py
 src/sEEGnal/tools/__init__.py
+src/sEEGnal/tools/atlas_tools.py
 src/sEEGnal/tools/bids_tools.py
 src/sEEGnal/tools/bss.py
 src/sEEGnal/tools/fc_tools.py
