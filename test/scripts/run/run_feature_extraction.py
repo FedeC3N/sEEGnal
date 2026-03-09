@@ -16,14 +16,13 @@ from sEEGnal.feature_extraction.feature_extraction import feature_extraction
 
 # Init the database
 config, files, sub, ses, task = init()
-del config['feature_extraction']['rel_pow']
-del config['feature_extraction']['plv']
 
 # List of subjects with errors
 errors = []
 
 # Go through each subject
 index = range(len(files))
+index = [index[0]]
 for current_index in index:
 
     # current info

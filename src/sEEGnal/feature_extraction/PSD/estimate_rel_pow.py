@@ -11,7 +11,7 @@ import numpy
 import mne
 
 from sEEGnal.tools.mne_tools import prepare_eeg
-from sEEGnal.tools.bids_tools import write_relative_psd, read_inverse_solution
+from sEEGnal.tools.bids_tools import write_power_spectrum, read_inverse_solution
 from sEEGnal.tools.psd_tools import multitaper_psd, normalize_psd
 
 
@@ -69,46 +69,23 @@ def estimate_rel_pow(config, BIDS):
 
         params = config['feature_extraction']['rel_pow']['sensor']
 
-        # raw
-        data = raw.get_data()
-
-        # Estimate power
-        psd, freqs = multitaper_psd(
-            data=data,
-            sfreq=raw.info['sfreq'],
+        spectrum = raw.compute_psd(
+            method=params['method'],
             fmin=freq_limits_signal[0],
             fmax=freq_limits_signal[-1],
             bandwidth=params['bandwidth'],
-            adaptive=params['adaptive'],
-            average_epochs=True,
-            dtype=numpy.float32
+            adaptive=bool(params['adaptive']),
+            low_bias=bool(params['low_bias']),
+            normalization=params['normalization']
         )
-
-        # Normalize
-        relative_psd = normalize_psd(psd, mode="relative")
-
-        metadata = {
-            "method": "custom_multitaper",
-            "bandwidth": params['bandwidth'],
-            "adaptive": params['adaptive'],
-            "fmin": freq_limits_signal[0],
-            "fmax": freq_limits_signal[-1],
-            "sfreq": sfreq,
-            "epoch_length": raw.tmax - raw.tmin,
-            "normalization": "relative_per_epoch_channel",
-            "ch_names": raw.ch_names,
-            "freqs": freqs,
-            "dim": "sensor x freqs",
-            "shape": relative_psd.shape
-        }
+        spectrum = spectrum.average()
 
         # Save the result
         config['current_space'] = 'sensor'
-        write_relative_psd(
+        write_power_spectrum(
             config,
             BIDS,
-            relative_psd=relative_psd,
-            metadata=metadata
+            power_spectrum=spectrum
         )
         del config['current_space']
 
@@ -160,10 +137,10 @@ def estimate_rel_pow(config, BIDS):
 
         # Save the result
         config['current_space'] = 'source'
-        write_relative_psd(
+        write_power_spectrum(
             config,
             BIDS,
-            relative_psd=relative_psd,
+            power_spectrum=relative_psd,
             metadata=metadata
         )
         del config['current_space']

@@ -14,8 +14,9 @@ import os
 
 import mne
 import h5py
-import numpy
 import mne_bids
+import numpy
+import mne_connectivity
 
 import sEEGnal.tools.mne_tools as mnetools
 import sEEGnal.tools.tools as tools
@@ -49,11 +50,6 @@ def init_derivatives(func):
         # Creates the derivatives folder, if required.
         if not os.path.isdir(derivatives_folder_path):
             os.makedirs(derivatives_folder_path)
-
-        # Add a dummy file
-        if config['subsystem'] == 'preprocess':
-            bids_file_path = build_standardize_path(BIDS, 'channels.tsv')
-            shutil.copy(bids_file_path, derivatives_file_path)
 
         # Continue with the call
         created_files = func(*args, **kwargs)
@@ -149,6 +145,12 @@ def write_badchannels(config, BIDS, badchannels=None, badchannels_description=No
 
     # Builds the path to the file.
     tsv_file = build_derivatives_path(BIDS, 'preprocess', 'channels.tsv')
+
+    # If not exists, copy from the standardize folder
+    if not(tsv_file.exists()):
+        bids_file_path = build_standardize_path(BIDS, 'channels.tsv')
+        derivatives_file_path = build_derivatives_path(BIDS, config['subsystem'], 'channels.tsv')
+        shutil.copy(bids_file_path, derivatives_file_path)
 
     # Reads the contents of the raw file.
     tsv_data = mne_bids.tsv_handler._from_tsv(tsv_file)
@@ -486,103 +488,56 @@ def read_inverse_solution(config,BIDS):
 
 
 @init_derivatives
-def write_relative_psd(config,BIDS,relative_psd=None,metadata=None):
-    """
-    power/
-        relative_psd      (n_epochs, n_channels, n_freqs)
-        freqs             (n_freqs,)
-        ch_names          (n_channels,)
-        attrs:
-            method
-            bandwidth
-            adaptive
-            fmin
-            fmax
-            sfreq
-            epoch_length
-            normalization = "relative_per_epoch_channel"
-    """
+def write_power_spectrum(config, BIDS, power_spectrum=None):
 
-    # If sensor
     if 'sensor' in config['current_space']:
 
         # Get the output path
-        rel_pow_path = build_derivatives_path(
+        pow_path = build_derivatives_path(
             BIDS,
             config['subsystem'],
-            "desc-rel_pow_sensor.h5"
+            "desc-pow_sensor.h5"
         )
 
     if 'source' in config['current_space']:
         # Get the output path
-        rel_pow_path = build_derivatives_path(
+        pow_path = build_derivatives_path(
             BIDS,
             config['subsystem'],
-            "desc-rel_pow_source.h5"
+            "desc-pow_source.h5"
         )
 
-    with h5py.File(rel_pow_path, "w") as f:
-
-        grp = f.create_group("power")
-
-        # Datasets
-        grp.create_dataset("relative_psd", data=relative_psd)
-        grp.create_dataset("freqs", data=metadata['freqs'])
-
-        # Metadata as attributes
-        for key, value in metadata.items():
-            grp.attrs[key] = value
+    power_spectrum.save(pow_path)
+    
 
 
-def read_relative_psd(config,BIDS):
+def read_power_spectrum(config, BIDS):
 
     # If sensor
     if 'sensor' in config['current_space']:
         # Get the output path
-        rel_pow_path = build_derivatives_path(
+        pow_path = build_derivatives_path(
             BIDS,
             config['subsystem'],
-            "desc-rel_pow_sensor.h5"
+            "desc-pow_sensor.h5"
         )
 
     if 'source' in config['current_space']:
         # Get the output path
-        rel_pow_path = build_derivatives_path(
+        pow_path = build_derivatives_path(
             BIDS,
             config['subsystem'],
-            "desc-rel_pow_source.h5"
+            "desc-pow_source.h5"
         )
 
-    with h5py.File(rel_pow_path, "r") as f:
-        grp = f["power"]
+    power_spectrum = mne.time_frequency.read_spectrum(pow_path)
 
-        # Load datasets
-        relative_psd = grp["relative_psd"][:]
-        freqs = grp["freqs"][:]
-
-        # Load metadata attributes
-        metadata = dict(grp.attrs)
-
-    return relative_psd, freqs, metadata
+    return power_spectrum
 
 
 @init_derivatives
 def write_plv(config,BIDS,plv=None,metadata=None):
-    """
-    FC/
-        plv      (bands, connections)
-        attrs:
-            "method"
-            "freq_bands_name"
-            "freq_bands_limits"
-            "epoch_length"
-            "ch_names"
-            "dim"
-            "shape"
-            "triu_indices"
-    """
 
-    # If sensor
     if 'sensor' in config['current_space']:
 
         # Get the output path
@@ -600,21 +555,22 @@ def write_plv(config,BIDS,plv=None,metadata=None):
             "desc-plv_source.h5"
         )
 
-    with h5py.File(plv_path, "w") as f:
+    # Create the metadata for mne-connectivity
+    con = mne_connectivity.SpectralConnectivity(
+        data=plv,
+        indices=metadata['indices'],
+        n_nodes=metadata['n_nodes'],
+        method="plv",
+        freqs=metadata['freqs'],
+        n_epochs_used=metadata['n_epochs_used']
+    )
 
-        grp = f.create_group("FC")
-
-        # Datasets
-        grp.create_dataset("plv", data=plv)
-
-        # Metadata as attributes
-        for key, value in metadata.items():
-            grp.attrs[key] = value
+    # Save
+    con.save(plv_path)
 
 
 def read_plv(config,BIDS):
 
-    # If sensor
     if 'sensor' in config['current_space']:
         # Get the output path
         plv_path = build_derivatives_path(
@@ -631,32 +587,15 @@ def read_plv(config,BIDS):
             "desc-plv_source.h5"
         )
 
-    with h5py.File(plv_path, "r") as f:
-        grp = f["FC"]
+    plv = mne_connectivity.read_connectivity(plv_path)
 
-        # Load datasets
-        plv = grp["plv"][:]
-
-        # Load metadata attributes
-        metadata = dict(grp.attrs)
-
-    return plv, metadata
+    return plv
 
 
 @init_derivatives
 def write_ciplv(config, BIDS, ciplv=None, metadata=None):
     """
-    FC/
-        ciplv      (bands, connections)
-        attrs:
-            "method"
-            "freq_bands_name"
-            "freq_bands_limits"
-            "epoch_length"
-            "ch_names"
-            "dim"
-            "shape"
-            "triu_indices"
+    Save a mne-connectivity object
     """
 
     # If sensor
@@ -677,16 +616,20 @@ def write_ciplv(config, BIDS, ciplv=None, metadata=None):
             "desc-ciplv_source.h5"
         )
 
-    with h5py.File(ciplv_path, "w") as f:
+    # Create the metadata for mne-connectivity
+    con = mne_connectivity.SpectralConnectivity(
+        data=ciplv,
+        indices=metadata['indices'],
+        n_nodes=metadata['n_nodes'],
+        method="ciplv",
+        names=metadata['names'],
+        freqs=metadata['freqs'],
+        n_epochs_used=metadata['n_epochs_used']
+    )
 
-        grp = f.create_group("FC")
+    # Save
+    con.save(ciplv_path)
 
-        # Datasets
-        grp.create_dataset("ciplv", data=ciplv)
-
-        # Metadata as attributes
-        for key, value in metadata.items():
-            grp.attrs[key] = value
 
 
 def read_ciplv(config,BIDS):
@@ -708,16 +651,9 @@ def read_ciplv(config,BIDS):
             "desc-ciplv_source.h5"
         )
 
-    with h5py.File(ciplv_path, "r") as f:
-        grp = f["FC"]
+    ciplv = mne_connectivity.read_connectivity(ciplv_path)
 
-        # Load datasets
-        ciplv = grp["ciplv"][:]
-
-        # Load metadata attributes
-        metadata = dict(grp.attrs)
-
-    return ciplv, metadata
+    return ciplv
 
 
 def build_standardize_path(BIDS, fname_tail):

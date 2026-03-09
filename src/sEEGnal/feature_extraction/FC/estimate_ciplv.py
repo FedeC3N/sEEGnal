@@ -9,7 +9,6 @@ Federico Ramírez-Toraño
 # Imports
 import mne
 import numpy
-import mne_connectivity
 
 from sEEGnal.tools.mne_tools import prepare_eeg
 from sEEGnal.tools.bids_tools import read_inverse_solution, write_ciplv
@@ -68,24 +67,14 @@ def estimate_ciplv(config, BIDS):
 
         print('          Sensors.')
 
-        mne_connectivity.spectral_connectivity_epochs(
-            raw.get_data(),
-            names=raw.ch_names,
-            method='ciplv',
-            fmin=None, fmax=inf,
-            faverage=True,
-            mt_adaptive=True,
-            mt_low_bias=True
-        )
-
         params = config['feature_extraction']['ciplv']['sensor']
 
         # Save memory
-        _, nsources, nsamples = raw.get_data().shape
+        nepochs, nsources, nsamples = raw.get_data().shape
         nbands = len(params['freq_bands_name'])
         conn_indices = numpy.triu_indices(nsources, k=1)
-        n_connections = len(conn_indices[0])
-        ciplv = numpy.zeros((nbands, n_connections), dtype=numpy.float32)
+        nconnections = len(conn_indices[0])
+        ciplv = numpy.zeros((nconnections, nbands), dtype=numpy.float32)
 
         for iband,current_band in enumerate(params['freq_bands_name']):
 
@@ -103,17 +92,15 @@ def estimate_ciplv(config, BIDS):
             )
 
             # Save it
-            ciplv[iband,:] = band_ciplv_vector
+            ciplv[:,iband] = band_ciplv_vector
 
         metadata = {
             "method": "ciplv",
-            "freq_bands_name": params['freq_bands_name'],
-            "freq_bands_limits":  params['freq_bands_limits'],
-            "epoch_length": raw.tmax - raw.tmin,
-            "ch_names": raw.ch_names,
-            "dim": "bands × connections",
-            "shape": ciplv.shape,
-            "triu_indices": "numpy.triu_indices(nsources, k=1)"
+            "n_nodes": nsources,
+            "freqs":  [numpy.median(current) for current in params['freq_bands_limits']],
+            "names": raw.ch_names,
+            "indices": numpy.triu_indices(nsources, k=1),
+            "n_epochs_used":nepochs
         }
 
         # Save the result
@@ -145,8 +132,8 @@ def estimate_ciplv(config, BIDS):
         nsources, nsamples = stcs[0].shape
         nbands = len(params['freq_bands_name'])
         conn_indices = numpy.triu_indices(nsources, k=1)
-        n_connections = len(conn_indices[0])
-        ciplv = numpy.zeros((nbands, n_connections), dtype=numpy.float32)
+        nconnections = len(conn_indices[0])
+        ciplv = numpy.zeros((nconnections,nbands), dtype=numpy.float32)
 
         for iband, current_band in enumerate(params['freq_bands_name']):
 
@@ -169,16 +156,15 @@ def estimate_ciplv(config, BIDS):
             )
 
             # Save it
-            ciplv[iband, :] = band_ciplv_vector
+            ciplv[:,iband] = band_ciplv_vector
 
         metadata = {
             "method": "ciplv",
-            "freq_bands_name": params['freq_bands_name'],
-            "freq_bands_limits": params['freq_bands_limits'],
-            "epoch_length": raw.tmax - raw.tmin,
-            "dim": "bands × connections",
-            "shape": ciplv.shape,
-            "triu_indices": "numpy.triu_indices(nsources, k=1)"
+            "n_nodes": nsources,
+            "freqs": [numpy.median(current) for current in params['freq_bands_limits']],
+            "names": raw.ch_names,
+            "indices": numpy.triu_indices(nsources, k=1),
+            "n_epochs_used": len(stcs)
         }
 
         # Save the result
@@ -192,5 +178,4 @@ def estimate_ciplv(config, BIDS):
         del config['current_space']
 
 
-    metadata = []
     return metadata

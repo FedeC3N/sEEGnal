@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from test.init.init import init
 
 from sEEGnal.tools.mne_tools import prepare_eeg
-from sEEGnal.tools.bids_tools import build_BIDS_object, read_inverse_solution, read_forward_model, build_derivatives_path, read_relative_psd
+from sEEGnal.tools.bids_tools import build_BIDS_object, read_inverse_solution, read_forward_model, build_derivatives_path, read_power_spectrum
 from sEEGnal.tools.atlas_tools import label_aal, label_rsn
 
 
@@ -120,7 +120,7 @@ for current_index in index:
     # Read PSD
     config['current_space'] = 'source'
     config['subsystem'] = 'feature_extraction'
-    relative_psd, freqs, metadata = read_relative_psd(config,BIDS)
+    relative_psd, freqs, metadata = read_power_spectrum(config, BIDS)
 
     # Get only between 2-45
     f_mask = (freqs>2) & (freqs<45)

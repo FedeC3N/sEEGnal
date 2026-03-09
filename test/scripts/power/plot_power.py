@@ -48,6 +48,7 @@ for subject_index in permutated_index:
     channels_to_include = config['global']["channels_to_include"]
     channels_to_exclude = config['global']["channels_to_exclude"]
     epoch_definition = {"length": 4, "overlap": 0, "padding": 0}
+    config['subsystem'] = 'preprocess'
 
 
     # Load the clean data

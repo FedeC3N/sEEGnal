@@ -8,6 +8,7 @@ Federico Ramírez-Toraño
 
 # Imports
 import numpy
+from scipy.signal import hilbert
 
 
 def compute_plv(data=None,average_epochs=True,dtype=numpy.complex64):
@@ -29,20 +30,16 @@ def compute_plv(data=None,average_epochs=True,dtype=numpy.complex64):
 
     # Loop over trials
     for iepoch in range(nepochs):
+        sourcedata = data[iepoch, :, :]  # (nsources, nsamples)
 
-        sourcedata = data[iepoch,:,:]  # (nsources, nsamples)
-
-        # Avoid division by zero
-        abs_data = numpy.abs(sourcedata)
-        abs_data[abs_data == 0] = 1e-12
-
-        # Extract phase vector (e^{iφ})
-        sourcevector = sourcedata / abs_data
+        # Compute analytic signal to extract phase
+        analytic_signal = hilbert(sourcedata, axis=-1)  # señal compleja
+        sourcevector = analytic_signal / numpy.abs(analytic_signal)  # e^{iφ}, fase
 
         # Complex PLV
         plv[:, :, iepoch] = (
-                                   sourcevector @ numpy.conjugate(sourcevector.T)
-                           ) / nsamples
+                                    sourcevector @ numpy.conj(sourcevector.T)
+                            ) / sourcedata.shape[1]
 
     # Remove diagonal (NaN)
     diag_idx = numpy.arange(nsources)
@@ -75,30 +72,26 @@ def compute_ciplv(data=None, average_epochs=True, dtype=numpy.complex64):
 
     # Loop over trials
     for iepoch in range(nepochs):
-
         sourcedata = data[iepoch, :, :]  # (nsources, nsamples)
 
-        # Avoid division by zero
-        abs_data = numpy.abs(sourcedata)
-        abs_data[abs_data == 0] = 1e-12
-
-        # Extract phase vector (e^{iφ})
-        sourcevector = sourcedata / abs_data
+        # Compute analytic signal to extract phase
+        analytic_signal = hilbert(sourcedata, axis=-1)  # señal compleja
+        sourcevector = analytic_signal / numpy.abs(analytic_signal)  # e^{iφ}, fase
 
         # Complex PLV (temporary)
-        cplv = (sourcevector @ numpy.conjugate(sourcevector.T)) / nsamples
+        cplv = (sourcevector @ numpy.conj(sourcevector.T)) / sourcedata.shape[1]
 
         # Remove diagonal (set to zero before ciPLV computation)
         numpy.fill_diagonal(cplv, 0)
 
         # Estimate the real and imaginary part
-        real_plv = numpy.abs(numpy.real(cplv))
-        imag_plv = numpy.abs(numpy.imag(cplv))
-        denom = numpy.sqrt(1 - real_plv**2)
+        real_plv = numpy.real(cplv)
+        imag_plv = numpy.imag(cplv)
+        denom = numpy.sqrt(1 - real_plv ** 2)
         denom[denom == 0] = numpy.finfo(numpy.float32).eps
 
         # Estimate ciPLV
-        ciplv_epoch = imag_plv / denom
+        ciplv_epoch = numpy.abs(imag_plv / denom)
 
         # Store result for this epoch
         ciplv[:, :, iepoch] = ciplv_epoch.astype(numpy.float32)
