@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Estimate relative power with multitaper for sensors or sources
+Estimate ciplv for sensors or sources
 
 Federico Ramírez-Toraño
 24/02/2026
@@ -17,9 +17,7 @@ from sEEGnal.tools.fc_tools import compute_ciplv
 
 def estimate_ciplv(config, BIDS):
 
-    # --------------------------------------------------
     # Load cleaned EEG
-    # --------------------------------------------------
     print(f'      Measure: ciplv')
 
     sobi = {
@@ -70,11 +68,7 @@ def estimate_ciplv(config, BIDS):
         params = config['feature_extraction']['ciplv']['sensor']
 
         # Save memory
-        nepochs, nsources, nsamples = raw.get_data().shape
-        nbands = len(params['freq_bands_name'])
-        conn_indices = numpy.triu_indices(nsources, k=1)
-        nconnections = len(conn_indices[0])
-        ciplv = numpy.zeros((nconnections, nbands), dtype=numpy.float32)
+        nepochs, nchannels, nsamples = raw.get_data().shape
 
         for iband,current_band in enumerate(params['freq_bands_name']):
 
@@ -91,27 +85,25 @@ def estimate_ciplv(config, BIDS):
                 average_epochs=True
             )
 
-            # Save it
-            ciplv[:,iband] = band_ciplv_vector
+            # Save the metadata
+            metadata = {
+                "method": "ciplv",
+                "n_nodes": nchannels,
+                "ch_names": raw.ch_names,
+                "n_epochs_used":nepochs,
+                "band_name": current_band,
+                "description": "Upper triangluar of ciPLV matrix of [n_nodes, n_nodes] obatined by numpy.triu_indices(nsources, k=1)"
+            }
 
-        metadata = {
-            "method": "ciplv",
-            "n_nodes": nsources,
-            "freqs":  [numpy.median(current) for current in params['freq_bands_limits']],
-            "names": raw.ch_names,
-            "indices": numpy.triu_indices(nsources, k=1),
-            "n_epochs_used":nepochs
-        }
-
-        # Save the result
-        config['current_space'] = 'sensor'
-        write_ciplv(
-            config,
-            BIDS,
-            ciplv=ciplv,
-            metadata=metadata
-        )
-        del config['current_space']
+            # Save the result
+            config['current_space'] = 'sensor'
+            write_ciplv(
+                config,
+                BIDS,
+                ciplv=band_ciplv_vector,
+                metadata=metadata
+            )
+            del config['current_space']
 
     # SOURCE LEVEL
     if 'source' in config['feature_extraction']['ciplv']:
@@ -130,10 +122,6 @@ def estimate_ciplv(config, BIDS):
 
         # Save memory
         nsources, nsamples = stcs[0].shape
-        nbands = len(params['freq_bands_name'])
-        conn_indices = numpy.triu_indices(nsources, k=1)
-        nconnections = len(conn_indices[0])
-        ciplv = numpy.zeros((nconnections,nbands), dtype=numpy.float32)
 
         for iband, current_band in enumerate(params['freq_bands_name']):
 
@@ -155,27 +143,25 @@ def estimate_ciplv(config, BIDS):
                 average_epochs=True
             )
 
-            # Save it
-            ciplv[:,iband] = band_ciplv_vector
+            # Save the metadata
+            metadata = {
+                "method": "ciplv",
+                "n_nodes": nsources,
+                "ch_names": '',
+                "n_epochs_used": len(stcs),
+                "band_name": current_band,
+                "description": "Upper triangluar of ciPLV matrix of [n_nodes, n_nodes] obatined by numpy.triu_indices(nsources, k=1)"
+            }
 
-        metadata = {
-            "method": "ciplv",
-            "n_nodes": nsources,
-            "freqs": [numpy.median(current) for current in params['freq_bands_limits']],
-            "names": raw.ch_names,
-            "indices": numpy.triu_indices(nsources, k=1),
-            "n_epochs_used": len(stcs)
-        }
-
-        # Save the result
-        config['current_space'] = 'source'
-        write_ciplv(
-            config,
-            BIDS,
-            ciplv=ciplv,
-            metadata=metadata
-        )
-        del config['current_space']
+            # Save the result
+            config['current_space'] = 'source'
+            write_ciplv(
+                config,
+                BIDS,
+                ciplv=band_ciplv_vector,
+                metadata=metadata
+            )
+            del config['current_space']
 
 
     return metadata

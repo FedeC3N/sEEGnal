@@ -14,15 +14,14 @@ import os
 
 import mne
 import h5py
-import mne_bids
 import numpy
+import mne_bids
 import mne_connectivity
+from sympy.physics.units import planck_voltage
 
-import sEEGnal.tools.mne_tools as mnetools
 import sEEGnal.tools.tools as tools
 import sEEGnal.tools.tsv_tools as tsv
-
-
+import sEEGnal.tools.mne_tools as mnetools
 
 def init_derivatives(func):
     """
@@ -486,53 +485,55 @@ def read_inverse_solution(config,BIDS):
 
     return inverse_solution
 
-
 @init_derivatives
-def write_power_spectrum(config, BIDS, power_spectrum=None):
-
+def write_relative_power_spectrum(config, BIDS, relative_power_spectrum=None, metadata=None):
+    """
+    Save relative power_spectrum as HDF5 with metadata.
+    """
+    # Determine file name
     if 'sensor' in config['current_space']:
+        filename = "desc-rel_pow_sensor.h5"
+    elif 'source' in config['current_space']:
+        filename = "desc-rel_pow_source.h5"
+    else:
+        raise ValueError("current_space must be 'sensor' or 'source'")
 
-        # Get the output path
-        pow_path = build_derivatives_path(
-            BIDS,
-            config['subsystem'],
-            "desc-pow_sensor.h5"
-        )
+    rel_pow_path = build_derivatives_path(BIDS, config['subsystem'], filename)
 
-    if 'source' in config['current_space']:
-        # Get the output path
-        pow_path = build_derivatives_path(
-            BIDS,
-            config['subsystem'],
-            "desc-pow_source.h5"
-        )
+    overwrite = bool(config['feature_extraction']['relative_power_spectrum'].get('overwrite', True))
+    mode = "w" if overwrite else "x"
 
-    power_spectrum.save(pow_path)
-    
+    with h5py.File(rel_pow_path, mode) as f:
+        grp = f.create_group("power")
+
+        # Datasets
+        grp.create_dataset("relative_power_spectrum", data=relative_power_spectrum, compression="gzip")
+        grp.create_dataset("freqs", data=metadata['freqs'], compression="gzip")
+        if "ch_names" in metadata:
+            grp.create_dataset("ch_names", data=numpy.array(metadata["ch_names"], dtype="S"))
+
+        # Attributes for scalar/short metadata
+        for key, value in metadata.items():
+            if key not in ["freqs", "ch_names"]:
+                grp.attrs[key] = value
 
 
-def read_power_spectrum(config, BIDS):
+def read_relative_power_spectrum(config, BIDS, space='sensor'):
+    """
+    Read relative power_spectrum HDF5 and metadata.
+    """
+    filename = "desc-rel_pow_sensor.h5" if space=='sensor' else "desc-rel_pow_source.h5"
+    rel_pow_path = build_derivatives_path(BIDS, config['subsystem'], filename)
 
-    # If sensor
-    if 'sensor' in config['current_space']:
-        # Get the output path
-        pow_path = build_derivatives_path(
-            BIDS,
-            config['subsystem'],
-            "desc-pow_sensor.h5"
-        )
+    with h5py.File(rel_pow_path, "r") as f:
+        grp = f["power"]
+        relative_power_spectrum = grp["relative_power_spectrum"][:]
+        freqs = grp["freqs"][:]
+        metadata = dict(grp.attrs)
+        if "ch_names" in grp:
+            metadata["ch_names"] = [c.decode("utf-8") for c in grp["ch_names"][:]]
 
-    if 'source' in config['current_space']:
-        # Get the output path
-        pow_path = build_derivatives_path(
-            BIDS,
-            config['subsystem'],
-            "desc-pow_source.h5"
-        )
-
-    power_spectrum = mne.time_frequency.read_spectrum(pow_path)
-
-    return power_spectrum
+    return relative_power_spectrum, freqs, metadata
 
 
 @init_derivatives
@@ -544,7 +545,7 @@ def write_plv(config,BIDS,plv=None,metadata=None):
         plv_path = build_derivatives_path(
             BIDS,
             config['subsystem'],
-            "desc-plv_sensor.h5"
+            f"desc-plv_sensor_{metadata['band_name']}_band.h5"
         )
 
     if 'source' in config['current_space']:
@@ -552,60 +553,53 @@ def write_plv(config,BIDS,plv=None,metadata=None):
         plv_path = build_derivatives_path(
             BIDS,
             config['subsystem'],
-            "desc-plv_source.h5"
+            f"desc-plv_source_{metadata['band_name']}_band.h5"
         )
 
-    # Create the metadata for mne-connectivity
-    con = mne_connectivity.SpectralConnectivity(
-        data=plv,
-        indices=metadata['indices'],
-        n_nodes=metadata['n_nodes'],
-        method="plv",
-        freqs=metadata['freqs'],
-        n_epochs_used=metadata['n_epochs_used']
-    )
+    with h5py.File(plv_path, "w") as f:
 
-    # Save
-    con.save(plv_path)
+        g = f.create_group("fc")
+
+        # datasets
+        g.create_dataset("plv", data=plv.astype(numpy.float32))
+
+        # attributes
+        g.attrs["method"] = metadata["method"]
+        g.attrs["n_nodes"] = metadata["n_nodes"]
+        g.attrs["ch_names"] = metadata['ch_names']
+        g.attrs["n_epochs_used"] = metadata["n_epochs_used"]
+        g.attrs["band_name"] = metadata["band_name"]
+        g.attrs["description"] = metadata["description"]
 
 
-def read_plv(config,BIDS):
+def read_plv(config, BIDS, space='sensor',band_name=None):
+    """
+    Read PLV HDF5 and metadata.
+    """
+    filename = f"desc-plv_sensor_{band_name}_band.h5" if space == 'sensor' else f"desc-plv_source_{band_name}_band.h5"
+    plv_path = build_derivatives_path(BIDS, config['subsystem'], filename)
 
-    if 'sensor' in config['current_space']:
-        # Get the output path
-        plv_path = build_derivatives_path(
-            BIDS,
-            config['subsystem'],
-            "desc-plv_sensor.h5"
-        )
+    with h5py.File(plv_path, "r") as f:
 
-    if 'source' in config['current_space']:
-        # Get the output path
-        plv_path = build_derivatives_path(
-            BIDS,
-            config['subsystem'],
-            "desc-plv_source.h5"
-        )
+        grp = f["fc"]
+        plv = grp["plv"][:]
+        metadata = dict(grp.attrs)
+        if "ch_names" in grp:
+            metadata["ch_names"] = [c.decode("utf-8") for c in grp["ch_names"][:]]
 
-    plv = mne_connectivity.read_connectivity(plv_path)
-
-    return plv
+    return plv, metadata
 
 
 @init_derivatives
-def write_ciplv(config, BIDS, ciplv=None, metadata=None):
-    """
-    Save a mne-connectivity object
-    """
+def write_ciplv(config,BIDS,ciplv=None,metadata=None):
 
-    # If sensor
     if 'sensor' in config['current_space']:
 
         # Get the output path
         ciplv_path = build_derivatives_path(
             BIDS,
             config['subsystem'],
-            "desc-ciplv_sensor.h5"
+            f"desc-ciplv_sensor_{metadata['band_name']}_band.h5"
         )
 
     if 'source' in config['current_space']:
@@ -613,47 +607,41 @@ def write_ciplv(config, BIDS, ciplv=None, metadata=None):
         ciplv_path = build_derivatives_path(
             BIDS,
             config['subsystem'],
-            "desc-ciplv_source.h5"
+            f"desc-ciplv_source_{metadata['band_name']}_band.h5"
         )
 
-    # Create the metadata for mne-connectivity
-    con = mne_connectivity.SpectralConnectivity(
-        data=ciplv,
-        indices=metadata['indices'],
-        n_nodes=metadata['n_nodes'],
-        method="ciplv",
-        names=metadata['names'],
-        freqs=metadata['freqs'],
-        n_epochs_used=metadata['n_epochs_used']
-    )
+    with h5py.File(ciplv_path, "w") as f:
 
-    # Save
-    con.save(ciplv_path)
+        g = f.create_group("fc")
+
+        # datasets
+        g.create_dataset("ciplv", data=ciplv.astype(numpy.float32))
 
 
+        # attributes
+        g.attrs["method"] = metadata["method"]
+        g.attrs["n_nodes"] = metadata["n_nodes"]
+        g.attrs["ch_names"] = metadata['ch_names']
+        g.attrs["n_epochs_used"] = metadata["n_epochs_used"]
+        g.attrs["band_name"] = metadata["band_name"]
+        g.attrs["description"] = metadata["description"]
 
-def read_ciplv(config,BIDS):
 
-    # If sensor
-    if 'sensor' in config['current_space']:
-        # Get the output path
-        ciplv_path = build_derivatives_path(
-            BIDS,
-            config['subsystem'],
-            "desc-ciplv_sensor.h5"
-        )
+def read_ciplv(config, BIDS, space='sensor',band_name=None):
+    """
+    Read ciPLV HDF5 and metadata.
+    """
+    filename = f"desc-ciplv_sensor_{band_name}_band.h5" if space == 'sensor' else f"desc-ciplv_source_{band_name}_band.h5"
+    plv_path = build_derivatives_path(BIDS, config['subsystem'], filename)
 
-    if 'source' in config['current_space']:
-        # Get the output path
-        ciplv_path = build_derivatives_path(
-            BIDS,
-            config['subsystem'],
-            "desc-ciplv_source.h5"
-        )
+    with h5py.File(plv_path, "r") as f:
+        grp = f["fc"]
+        plv = grp["ciplv"][:]
+        metadata = dict(grp.attrs)
+        if "ch_names" in grp:
+            metadata["ch_names"] = [c.decode("utf-8") for c in grp["ch_names"][:]]
 
-    ciplv = mne_connectivity.read_connectivity(ciplv_path)
-
-    return ciplv
+    return plv, metadata
 
 
 def build_standardize_path(BIDS, fname_tail):

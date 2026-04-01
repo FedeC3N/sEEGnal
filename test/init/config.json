@@ -168,22 +168,15 @@
     },
 
     "feature_extraction": {
-        "rel_pow": {
+        "relative_power_spectrum": {
             "epoch_definition": {
                 "length": 8,
                 "overlap": 0,
                 "padding": 0,
                 "reject_by_annotation": 1
             },
+            "overwrite": 1,
             "sensor": {
-                "method": "multitaper",
-                "freq_limits":[0.5, 50],
-                "bandwidth": 2,
-                "adaptive" : 1,
-                "normalization": "length",
-                "low_bias": 1
-            },
-            "source": {
                 "method": "multitaper",
                 "freq_limits":[0.5, 50],
                 "bandwidth": 2,
@@ -210,17 +203,6 @@
                     [20, 30],
                     [30, 45]
                 ]
-            },
-            "source": {
-                "freq_bands_name": ["delta","theta","alpha","low_beta","high_beta","gamma"],
-                "freq_bands_limits":[
-                    [2, 4],
-                    [4, 8],
-                    [8, 12],
-                    [12, 20],
-                    [20, 30],
-                    [30, 45]
-                ]
             }
         },
         "ciplv": {
@@ -232,17 +214,6 @@
                 "reject_by_annotation": 1
             },
             "sensor": {
-                "freq_bands_name": ["delta","theta","alpha","low_beta","high_beta","gamma"],
-                "freq_bands_limits":[
-                    [2, 4],
-                    [4, 8],
-                    [8, 12],
-                    [12, 20],
-                    [20, 30],
-                    [30, 45]
-                ]
-            },
-            "source": {
                 "freq_bands_name": ["delta","theta","alpha","low_beta","high_beta","gamma"],
                 "freq_bands_limits":[
                     [2, 4],

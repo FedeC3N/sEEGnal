@@ -22,7 +22,6 @@ errors = []
 
 # Go through each subject
 index = range(len(files))
-index = [index[0]]
 for current_index in index:
 
     # current info
