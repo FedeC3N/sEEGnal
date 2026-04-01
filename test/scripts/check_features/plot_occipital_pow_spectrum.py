@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Plot power spectrum of occipital areas to check quality
 
@@ -20,7 +18,7 @@ import matplotlib.pyplot as plt
 from test.init.init import init
 
 from sEEGnal.tools.mne_tools import prepare_eeg
-from sEEGnal.tools.bids_tools import build_BIDS_object, read_inverse_solution, read_forward_model, build_derivatives_path, read_power_spectrum
+from sEEGnal.tools.bids_tools import build_BIDS_object, read_inverse_solution, read_forward_model, build_derivatives_path, read_relative_power_spectrum
 from sEEGnal.tools.atlas_tools import label_aal, label_rsn
 
 
@@ -93,12 +91,6 @@ for current_index in index:
     # Associate each source to atlas regions
     atlas = label_aal(config,forward_model['src'],trans=head_mri_t['trans'])
 
-    # Read LCMV beamformer
-    lcmv_filters = read_inverse_solution(config,BIDS)
-
-    # Apply filters
-    stc = mne.beamformer.apply_lcmv_epochs(raw, lcmv_filters)
-
     # Get the sources of interest (occipital)
     occipital_labels = [
         label for label in atlas['label']
@@ -117,29 +109,29 @@ for current_index in index:
     ]
     occipital_sources_mask = np.isin(atlas['src_area'], occipital_ids)
 
-    # Read PSD
-    config['current_space'] = 'source'
+    # Read the power spectrum
     config['subsystem'] = 'feature_extraction'
-    relative_psd, freqs, metadata = read_power_spectrum(config, BIDS)
+    relative_power_spectrum,freqs,metadata = read_relative_power_spectrum(config,BIDS,space='sensor')
 
     # Get only between 2-45
-    f_mask = (freqs>2) & (freqs<45)
-    relative_psd = relative_psd[:,:,f_mask]
+    f_mask = (freqs > 2) & (freqs < 45)
+    f_mask = (freqs > 0) & (freqs < 450)
+    relative_power_spectrum = relative_power_spectrum[:, f_mask]
     freqs = freqs[f_mask]
 
     # Get the mean and std of pow spectrum
-    relative_psd_mean = relative_psd.mean(axis=(0, 1))
-    relative_psd_std = relative_psd.std(axis=(0, 1))
+    relative_power_spectrum_mean = relative_power_spectrum.mean(axis=0)
+    relative_power_spectrum_std = relative_power_spectrum.std(axis=0)
 
     # Plot
-    plt.plot(freqs, relative_psd_mean, color='blue', label='Mean pow')
+    plt.plot(freqs, relative_power_spectrum_mean, color='blue', label='Mean pow')
     plt.fill_between(freqs,
-                     relative_psd_mean - relative_psd_std,
-                     relative_psd_mean + relative_psd_std,
+                     relative_power_spectrum_mean - relative_power_spectrum_std,
+                     relative_power_spectrum_mean + relative_power_spectrum_std,
                      color='skyblue', alpha=0.3)
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Power")
-    plt.title("Occipital Lobe Power Spectrum (2–45 Hz, Averaged Across Epochs)")
+    plt.title("Occipital Lobe Power Spectrum (Averaged Across Soruces)")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
@@ -147,10 +139,8 @@ for current_index in index:
     # Save the figure
     process = 'check'
     tail = 'occipital_pow_spectrum'
-    figure_path = build_derivatives_path(BIDS,process,tail)
-    if not(os.path.exists(figure_path.parent)):
+    figure_path = build_derivatives_path(BIDS, process, tail)
+    if not (os.path.exists(figure_path.parent)):
         os.makedirs(figure_path.parent)
     plt.savefig(figure_path)
     plt.close()
-
-
