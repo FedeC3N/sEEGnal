@@ -7,7 +7,7 @@ Federico Ramírez-Toraño
 """
 
 # Imports
-from dev.init.init import init
+from init.init import init
 from sEEGnal.tools.bids_tools import build_BIDS_object
 from sEEGnal.feature_extraction.feature_extraction import feature_extraction
 
