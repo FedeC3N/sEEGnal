@@ -7,12 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## v.2.1.0
-Use surfaces for source reconstruction (instead of volumetric)
-Power in sensors and sources
-PLV in sensors and sources
-ciPLV in sensors and sources
-Add RSN atlas
-Tests for feature extraction
+Use surfaces for source reconstruction (instead of volumetric)  
+Power in sensors and sources  
+PLV in sensors and sources  
+ciPLV in sensors and sources  
+Add RSN atlas  
+Tests for feature extraction  
+Use fsaverage from MNE-Python  
+Test folder is now called dev folder  
 Hotfix: Badchannels file were overwritten
 
 ## v2.0.0
