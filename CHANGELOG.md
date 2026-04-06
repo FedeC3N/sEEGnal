@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## v.2.1.0
+Use surfaces for source reconstruction (instead of volumetric)
+Power in sensors and sources
+PLV in sensors and sources
+ciPLV in sensors and sources
+Add RSN atlas
+Tests for feature extraction
+Hotfix: Badchannels file were overwritten
+
+## v2.0.0
+Source estimation and feature extraction added!
+BIDS structure is changed
+config structure is changed
+
+## v1.3.2
+Parameters tuned
+Add "other_annotations" in the first round of artifacts
+Flag to reject_by_annotation when creating epochs
+
+## v1.3.1
+median and MAD estimated through all the matrix
+You can add bad channels to metadata
+Correct select SOBI when applying it twice
+Simplify function get_epcoch(). Length and steps in seconds.
+Artifacts indexes reviewed
+
 ## v1.3.0
 Artifacts are correctly removed before second SOBI in artifacts detection  
 Now you can apply new parameters to a previous loaded eeg pasing the raw as 

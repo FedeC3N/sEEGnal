@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Build the forward model
 
@@ -10,15 +8,14 @@ Federico Ramírez-Toraño
 
 # Import
 import traceback
-from pathlib import Path
-from importlib.resources import files, as_file
 from datetime import datetime as dt, timezone
 
 import mne
-from mne.transforms import Transform
 
 from sEEGnal.tools.mne_tools import prepare_eeg
 from sEEGnal.tools.bids_tools import write_forward_model
+from sEEGnal.tools.template_tools import get_subjects_dir
+
 
 
 def make_forward_model(config, BIDS):
@@ -79,35 +76,38 @@ def template_forward_model(config, BIDS):
     )
 
     # Get the FreeSurfer fsaverage information
-    pkg_fsaverage = files("sEEGnal.data")
-    with as_file(pkg_fsaverage) as subjects_dir:
-        subjects_dir = Path(subjects_dir)
-        subject = config['source_reconstruction']['forward']['template']['subject']
-        bem = subjects_dir / subject / 'bem' / config['source_reconstruction']['forward']['template']['bem']
-        trans = config['source_reconstruction']['forward']['template']['trans']
-        surf = subjects_dir / subject / 'bem' / config['source_reconstruction']['forward']['template']['surf']
+    subject = config['source_reconstruction']['forward']['template']['subject']
+    subjects_dir, subject = get_subjects_dir(subject)
 
-        # Define our sources
-        spacing = config['source_reconstruction']['forward']['template']['spacing']
-        src = mne.setup_source_space(
-            subject=subject,
-            spacing=spacing,
-            subjects_dir=subjects_dir,
-            add_dist=False
-        )
+    bem = (
+            subjects_dir
+            / subject
+            / 'bem'
+            / config['source_reconstruction']['forward']['template']['bem']
+    )
+    trans = config['source_reconstruction']['forward']['template']['trans']
 
-        # Read the BEM solution (MNI template)
-        bem = mne.read_bem_solution(bem)
+    # Define our sources
+    spacing = config['source_reconstruction']['forward']['template']['spacing']
+    src = mne.setup_source_space(
+        subject=subject,
+        spacing=spacing,
+        subjects_dir=subjects_dir,
+        add_dist=False
+    )
 
-        # Create the output forward model
-        forward_model = mne.make_forward_solution(
-            raw.info,
-            trans,
-            src,
-            bem,
-            meg=False,
-            eeg=True
-        )
+    # Read the BEM solution (MNI template)
+    bem = mne.read_bem_solution(bem)
+
+    # Create the output forward model
+    forward_model = mne.make_forward_solution(
+        raw.info,
+        trans,
+        src,
+        bem,
+        meg=False,
+        eeg=True
+    )
 
     # Save the forward solution
     write_forward_model(config, BIDS, forward_model)

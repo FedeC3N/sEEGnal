@@ -1,5 +1,5 @@
-# Ignore data for testing
-data/
+# Ignore data for developing
+dev/data/
 
 # Ignore .venv
 .venv*/

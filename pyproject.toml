@@ -72,7 +72,7 @@ dependencies = [
 
 # Find the data included
 [tool.setuptools.package-data]
-"sEEGnal.data" = ["**/*"]
+"sEEGnal.data" = ["annots/*.annot"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

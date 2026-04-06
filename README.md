@@ -2,203 +2,169 @@
 
 Package for automatic preprocessing of EEG recordings.
 
-This repository comprises three high-level blocks, namely, standardize, badchannel detection and artifact detection.
+This repository comprises three high-level blocks: **standardize**, **bad channel detection**, and **artifact detection**.
 
-## Instalation  
-The files included in the repository allows you to build the sEEGnal package wheel.
-Download the zip and extract the content in a folder.
-Open a terminal in the folder.
+---
+
+## Installation  
+
+The files included in the repository allow you to build the sEEGnal package wheel.
+
+1. Download the repository and extract it into a folder  
+2. Open a terminal in that folder  
+3. Run:
+
 ```
 python -m pip install setuptools wheel build
 python -m build --wheel
-python -m pip install .\dist\*.whl
-````
+python -m pip install ./dist/*.whl
+```
 
+---
 
 ## Use
 
-An example folder structure and scripts needed for preprocessing a single EEG recording are provided in "demo" folder. To run a first test, your test folder should be structured like these:  
+An example folder structure and scripts needed for preprocessing a single EEG recording are provided in the `demo` folder.
 
 ```
 demo
-├───data
-│   └───sourcedata
-│       └───eeg
-│               HIQ_001_0_2EC_2024-07-16_13-19-47.eeg
-│               HIQ_001_0_2EC_2024-07-16_13-19-47.vhdr
-│               HIQ_001_0_2EC_2024-07-16_13-19-47.vmrk
+├── data
+│   └── sourcedata
+│       └── eeg
+│           HIQ_001_0_2EC_2024-07-16_13-19-47.eeg
+│           HIQ_001_0_2EC_2024-07-16_13-19-47.vhdr
+│           HIQ_001_0_2EC_2024-07-16_13-19-47.vmrk
 │
-└───scripts
-        config.json
-        init.py
-        run_sEEGnal.py
-		
-		
-#### Files
-- run_sEEGnal.py provides a script for preprocessing automatically any number of files.  
-- confi.json is a mandatory file with all the configuration parameters needed for running sEEGnal: frequencies, channels, filenames, paths, ...  
-- init.py simplifies run_sEEGnal.py by looking for files and defining some parameters.   
-
+└── scripts
+    config.json
+    init.py
+    run_sEEGnal.py
 ```
 
-Steps to run a first test:  
-1- Copy some EEG files in BrainVision format (.eeg, .vhdr, .vmrk).  
-2- Define the specific parameters of your interest in config.json.  
-3- Define you specific folders' path and a regular expression to find your files in init.py.  
-4- Run run_sEEGnal.py using as working directory the top folder (in this case, "demo").  
+### Files
 
+- `run_sEEGnal.py`: script for preprocessing any number of files automatically  
+- `config.json`: mandatory configuration file (frequencies, channels, paths, etc.)  
+- `init.py`: helper script to locate files and define parameters  
 
+### Steps to run a first test
 
-After execution, the folder structure will look like these:  
-```
-demo
-├───data
-│   │   dataset_description.json
-│   │   participants.json
-│   │   participants.tsv
-│   │   README
-│   │
-│   ├───derivatives
-│   │   └───sEEGnal
-│   │       └───clean
-│   │           └───sub-001
-│   │               └───ses-0
-│   │                   └───eeg
-│   │                           sub-001_ses-0_task-2EC_channels.tsv
-│   │                           sub-001_ses-0_task-2EC_desc-artifacts_annotations.json
-│   │                           sub-001_ses-0_task-2EC_desc-artifacts_annotations.tsv
-│   │                           sub-001_ses-0_task-2EC_desc-sobi-badchannels_annotations.json
-│   │                           sub-001_ses-0_task-2EC_desc-sobi-badchannels_annotations.tsv
-│   │                           sub-001_ses-0_task-2EC_desc-sobi-badchannels_mixing.json
-│   │                           sub-001_ses-0_task-2EC_desc-sobi-badchannels_mixing.tsv
-│   │                           sub-001_ses-0_task-2EC_desc-sobi-badchannels_prediction_scores.json
-│   │                           sub-001_ses-0_task-2EC_desc-sobi-badchannels_prediction_scores.tsv
-│   │                           sub-001_ses-0_task-2EC_desc-sobi-badchannels_unmixing.json
-│   │                           sub-001_ses-0_task-2EC_desc-sobi-badchannels_unmixing.tsv
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_annotations.json
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_annotations.tsv
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_artifacts_annotations.json
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_artifacts_annotations.tsv
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_artifacts_mixing.json
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_artifacts_mixing.tsv
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_artifacts_prediction_scores.json
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_artifacts_prediction_scores.tsv
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_artifacts_unmixing.json
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_artifacts_unmixing.tsv
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_mixing.json
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_mixing.tsv
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_prediction_scores.json
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_prediction_scores.tsv
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_unmixing.json
-│   │                           sub-001_ses-0_task-2EC_desc-sobi_unmixing.tsv
-│   │
-│   ├───sourcedata
-│   │   └───eeg
-│   │           HIQ_001_0_2EC_2024-07-16_13-19-47.eeg
-│   │           HIQ_001_0_2EC_2024-07-16_13-19-47.vhdr
-│   │           HIQ_001_0_2EC_2024-07-16_13-19-47.vmrk
-│   │
-│   └───sub-001
-│       └───ses-0
-│           │   sub-001_ses-0_scans.tsv
-│           │
-│           └───eeg
-│                   sub-001_ses-0_task-2EC_channels.tsv
-│                   sub-001_ses-0_task-2EC_eeg.eeg
-│                   sub-001_ses-0_task-2EC_eeg.json
-│                   sub-001_ses-0_task-2EC_eeg.vhdr
-│                   sub-001_ses-0_task-2EC_eeg.vmrk
-│
-└───scripts
-       config.json
-       init.py
-       run_sEEGnal.py
+1. Copy EEG files in BrainVision format (`.eeg`, `.vhdr`, `.vmrk`)  
+2. Define parameters in `config.json`  
+3. Define paths and file patterns in `init.py`  
+4. Run `run_sEEGnal.py` from the top folder (`demo`)  
 
-```
-
+---
 
 ## Standardize
 
-Converts the original data structure to a BIDS-compliance data structure.
+Converts the original data structure into a BIDS-compliant dataset.
 
-For more information regarding BIDS, consult [BIDS official website](https://bids-specification.readthedocs.io/en/stable/index.html).
+For more information, see the [BIDS specification](https://bids-specification.readthedocs.io/en/stable/index.html).
 
-##### Inputs
-```
+### Usage
+
+```python
 from sEEGnal.standardize.standardize import standardize
 
-results = standardize(config,current_file,BIDS)
+results = standardize(config, current_file, BIDS)
 ```
-config (dict): Configuration parameters (paths, parameters, etc).  
-current_file (str): Name of the file to process.  
-BIDS (BIDSpath): Associated BIDS.  
 
+### Outputs
 
-##### Outputs
-results (dict): Main information of the process.
+In addition to returning a results dictionary, the module creates BIDS-compliant files:
 
-In addition, the module creates new BIDS-folders in the path specified in config.
+- `*_eeg.*` — EEG recording in BIDS format  
+- `*_channels.tsv` — updated channel information (including impedance)  
+- `*_channels.json` — channel metadata  
+- `*_eeg.json` — recording metadata  
+- `*_coordsystem.json` / `*_electrodes.tsv` — electrode positions (if available)  
 
+---
 
-## Badchannel detection
+## Bad Channel Detection
 
-Marks badchannels in EEG recordings based on different criteria.
+Automated detection of bad EEG channels using complementary criteria:
 
-For EEG:
+1. Impossible amplitude detection  
+2. Component-based anomaly detection (SOBI)  
+3. Gel bridge detection (correlation + spatial proximity)  
+4. High deviation detection (robust statistics)  
 
-- Channels with impossible low or high amplitudes.
-- Channels with significantly higher energy in 45-55 Hz range compared to the rest of channels.
-- Channels with gel bridge.
-- Channels with significantly higher standard deviation of amplitude compared to the rest of channels.
+### Usage
 
-##### Inputs
-```
+```python
 from sEEGnal.preprocess.badchannel_detection import badchannel_detection
 
-results = badchannel_detection(config,BIDS)
+results = badchannel_detection(config, BIDS)
 ```
-config (dict): Configuration parameters (paths, parameters, etc).  
-BIDS (BIDSpath): Associated BIDS.
 
+### Outputs
 
-##### Outputs
-results (dict): Main information of the process.
+In addition to returning a results dictionary, the module creates BIDS derivative files:
 
-In addition, the module creates new BIDS-derivatives files in the corresponding path. The files are:  
-- *_channels.tsv: File with all channels classified as good or bad and the reason of "bad channel". Also include impedance information.
-- *_desc-sobi-badchannels_*: Files with information about the Independent Component Analysis (mixing, unmixing, classification,...)
+- `*_channels.tsv`  
+  - Channel classification (good/bad)  
+  - Reason(s) for rejection  
+  - Impedance information (if available)  
 
+- `*_desc-sobi-badchannels_*`  
+  - Mixing/unmixing matrices  
+  - Component classification  
+  - Metadata for reproducibility  
 
+---
 
-## Artifact detection
+## Artifact Detection
 
-First, performs an independent component analysis (ICA) and then label the ICs using [MNE-ICALabel](https://mne.tools/mne-icalabel/stable/index.html).
+Automated detection of EEG artifacts using an iterative SOBI-based workflow.
 
-Then looks for EOG arrtifacts, muscle artifacts, sensor artifacts, and "other" artifacts.
+### Artifact types
 
-- EOG. Filter the recording in low frequencies. Compare frontal channels vs rest of the channels and look for high amplitude peaks significantly different.
-- Muscle. Get the time series reconstructed using "muscle" components. Filter between 110-145 Hz and look for high amplitude bursts.
-- Sensor. Filter the data in low frequencies. Look for high amplitude peaks.
-- Other. Look for bursts with impossible amplitudes.
+- **EOG**: low-frequency frontal activity with large amplitude peaks  
+- **Muscle**: high-frequency bursts (110–145 Hz) from muscle components  
+- **Sensor (jumps)**: abrupt signal discontinuities  
+- **Other**: segments with implausible amplitudes  
 
-##### Inputs
-```
+### Workflow
+
+1. Estimate SOBI components (`desc-sobi_artifacts`)  
+2. Detect muscle, sensor, and other artifacts  
+3. Save preliminary annotations  
+4. Re-estimate SOBI excluding detected artifacts (`desc-sobi`)  
+5. Detect muscle, sensor, EOG, and other artifacts  
+6. Merge and save final annotations  
+
+### Usage
+
+```python
 from sEEGnal.preprocess.artifact_detection import artifact_detection
 
 results = artifact_detection(config, BIDS)
 ```
-config (dict): Configuration parameters (paths, parameters, etc).  
-BIDS (BIDSpath): Associated BIDS.
 
+### Outputs
 
-##### Outputs
-results (dict): Main information of the process.
+In addition to returning a results dictionary, the module creates:
 
-In addition, the module creates new BIDS-derivatives files in the corresponding path. The files are:
-- *_artifacts_annotations: Files with information about the artifacts: onset (seconds), duration (seconds), label (type of artifact).
-- \*_desc-sobi-artifacts: Files with information about the Independent Component Analysis in the artifact detection module (mixing, unmixing, classification,...)
+- `*_artifacts_annotations`  
+  - Onset (seconds)  
+  - Duration (seconds)  
+  - Label (e.g., `bad_muscle`, `bad_EOG`, `bad_jump`, `bad_other`)  
 
+- `*_desc-sobi_artifacts_*`  
+  - Initial SOBI decomposition  
+  - Mixing/unmixing matrices  
+  - Component classification  
+
+- `*_desc-sobi_*`  
+  - Final SOBI decomposition  
+  - Updated component classification  
+  - Metadata for reproducibility  
+
+---
 
 ## Contributors
+
 [Federico Ramírez Toraño](https://github.com/FedeC3N)  
-[Ricardo Bruña](https://github.com/rbruna) 
+[Ricardo Bruña](https://github.com/rbruna)  
