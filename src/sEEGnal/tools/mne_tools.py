@@ -569,7 +569,8 @@ def prepare_eeg(
             )
 
             # Save it again
-            raw.original_last_samp = dummy
+            if 'dummy' in locals():
+                raw.original_last_samp = dummy
 
 
     return raw

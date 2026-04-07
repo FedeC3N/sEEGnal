@@ -7,13 +7,13 @@ Federico Ramírez-Toraño
 
 # Imports
 import os
+from collections import Counter
+
 import numpy
-
 import mne
-
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.patches import Circle, Polygon
+from matplotlib.patches import Circle, Polygon, Rectangle
 from matplotlib.lines import Line2D
 
 
@@ -197,6 +197,9 @@ def artifact_qc(config, BIDS):
     # Plot components classification
     plot_components_type(config, BIDS)
 
+    # Plot artifactual epochs
+    plot_bad_epochs(config,BIDS)
+
 
 def plot_components_type(config,BIDS):
 
@@ -288,10 +291,6 @@ def plot_components_type(config,BIDS):
 
     plt.savefig(figure_path)
     plt.close()
-
-
-
-
 
 
 def plot_occipital_power_spectrum(config, BIDS):
@@ -414,3 +413,149 @@ def plot_occipital_power_spectrum(config, BIDS):
 
     plt.savefig(figure_path)
     plt.close()
+
+
+def plot_bad_epochs(config, BIDS):
+
+    # Load the clean EEG
+    epoch_definition = config['source_reconstruction']['epoch_definition']
+    crop_seconds = config['component_estimation']['crop_seconds']
+
+    # Load the clean data
+    epochs = prepare_eeg(
+        config,
+        BIDS,
+        preload=True,
+        crop_seconds=crop_seconds,
+        set_annotations=True,
+        epoch_definition=epoch_definition
+    )
+
+    # Get the bad epochs info
+    epoch_mask = []
+    epoch_status = []
+    for x in epochs.drop_log:
+        if 'NO_DATA' in x:
+            continue
+        elif len(x) == 0:
+            epoch_mask.append(True)
+            epoch_status.append('good')
+        else:
+            epoch_mask.append(False)
+            epoch_status.append(str(x[0]))
+
+    # Define colors
+    color_dict = {
+        'good': 'white',
+        'bad_muscle': 'tomato',
+        'bad_jump': 'orange',
+        'bad_other': 'gold',
+        'bad_EOG': 'magenta'
+    }
+    default_color = 'red'
+    edge_color = 'black'
+
+    # Create figure
+    fig, (ax_timeline, ax_pie) = plt.subplots(
+        1, 2,
+        figsize=(14, 2.8),
+        gridspec_kw={'width_ratios': [5, 1.8]}
+    )
+
+    # Plot one rectangle per epoch
+    for iepoch, current_status in enumerate(epoch_status):
+        current_color = color_dict.get(current_status, default_color)
+
+        rect = Rectangle(
+            (iepoch, 0),  # bottom-left corner
+            1,  # width
+            1,  # height
+            facecolor=current_color,
+            edgecolor='none'
+        )
+        ax_timeline.add_patch(rect)
+
+    # Axis formatting
+    ax_timeline.set_xlim(0, len(epoch_status))
+    ax_timeline.set_ylim(0, 1)
+    ax_timeline.set_xticks([])
+    ax_timeline.set_yticks([])
+
+    for spine in ax_timeline.spines.values():
+        spine.set_visible(True)
+        spine.set_linewidth(1.0)
+
+    # Legend below
+    legend_order = ['good', 'bad_muscle', 'bad_jump', 'bad_other', 'bad_EOG']
+    legend_elements = []
+
+    for key in legend_order:
+        legend_elements.append(
+            Line2D(
+                [0], [0],
+                marker='s',
+                color='w',
+                label=key,
+                markerfacecolor=color_dict[key],
+                markeredgecolor=edge_color,
+                markersize=10
+            )
+        )
+
+    ax_timeline.legend(
+        handles=legend_elements,
+        loc='upper center',
+        bbox_to_anchor=(0.5, -0.35),
+        ncol=3,
+        frameon=True,
+        fontsize=9
+    )
+
+    counts = Counter(epoch_status)
+
+    # Orden fijo (para consistencia entre sujetos)
+    row_order = ['good', 'bad_muscle', 'bad_jump', 'bad_other', 'bad_EOG']
+
+    # Crear datos para la tabla
+    table_data = []
+    row_colors = []
+
+    for key in row_order:
+        n = counts.get(key, 0)
+        table_data.append([key, str(n)])
+        row_colors.append(color_dict[key])
+
+    # Crear tabla
+    ax_pie.axis('off')
+
+    table = ax_pie.table(
+        cellText=table_data,
+        colLabels=['Type', 'N'],
+        cellLoc='center',
+        loc='center'
+    )
+
+    # Ajustar tamaño
+    table.auto_set_font_size(False)
+    table.set_fontsize(9)
+    table.scale(1.2, 1.5)
+
+    # Colorear filas
+    for i, color in enumerate(row_colors, start=1):  # start=1 porque fila 0 son headers
+        table[(i, 0)].set_facecolor(color)
+        table[(i, 1)].set_facecolor(color)
+
+    # Adjust layout so the legend fits below
+    plt.subplots_adjust(bottom=0.45, wspace=0.3)
+
+    # Save the figure
+    process = 'check'
+    tail = 'bad_epochs'
+    figure_path = build_derivatives_path(BIDS, process, tail)
+
+    if not os.path.exists(figure_path.parent):
+        os.makedirs(figure_path.parent)
+
+    plt.savefig(figure_path)
+    plt.close()
+
