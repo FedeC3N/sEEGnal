@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Spectral estimation utilities for sEEGnal
 

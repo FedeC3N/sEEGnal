@@ -22,6 +22,7 @@ import mne_icalabel as iclabel
 import sEEGnal.tools.bids_tools as bids
 import sEEGnal.tools.mne_tools as mne_tools
 import sEEGnal.preprocess.find_artifacts as find_artifacts
+from sEEGnal.tools.qc_tools import artifact_qc
 
 # Set the output levels
 mne.utils.set_log_level(verbose='ERROR')
@@ -154,6 +155,9 @@ def eeg_artifact_detection(config, BIDS):
 
     # Save the annotations in BIDS format
     _ = bids.write_annotations(config,BIDS, annotations)
+
+    # QC
+    artifact_qc(config, BIDS)
 
     return annotations
 
