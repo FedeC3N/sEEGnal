@@ -10,11 +10,16 @@ import os
 import numpy as np
 
 import matplotlib
-matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 
 from sEEGnal.tools.mne_tools import prepare_eeg
-from sEEGnal.tools.bids_tools import build_derivatives_path
+from sEEGnal.tools.bids_tools import build_derivatives_path, read_sobi
+
+# Activate plot in debugging
+matplotlib.use('Qt5Agg')
+
+
+### BADCHANNELS 
 
 
 ### ARTIFACTS QC
@@ -22,6 +27,105 @@ def artifact_qc(config, BIDS):
 
     # Check whether the occipital power spectrum looks correct
     plot_occipital_power_spectrum(config, BIDS)
+
+    # Plot components classification
+    plot_components_type(config, BIDS)
+
+
+def plot_components_type(config,BIDS):
+
+    # Parameters for loading EEG recordings
+    freq_limits = [
+        config['component_estimation']['low_freq'],
+        config['component_estimation']['high_freq']
+    ]
+    crop_seconds = config['component_estimation']['crop_seconds']
+    resample_frequency = config['component_estimation']['resample_frequency']
+    channels_to_include = config['global']["channels_to_include"]
+    channels_to_exclude = config['global']["channels_to_exclude"]
+    epoch_definition = config['component_estimation']['epoch_definition']
+    set_annotations = True
+
+    # Load raw EEG
+    raw = prepare_eeg(
+        config,
+        BIDS,
+        preload=True,
+        channels_to_include=channels_to_include,
+        channels_to_exclude=channels_to_exclude,
+        notch_filter=True,
+        freq_limits=freq_limits,
+        resample_frequency=resample_frequency,
+        metadata_badchannels=True,
+        interpolate_badchannels=True,
+        set_annotations=set_annotations,
+        crop_seconds=crop_seconds,
+        rereference='average',
+        epoch_definition=epoch_definition
+    )
+
+    # Read the ICA information
+    sobi_dict = {
+        'desc': 'sobi',
+        'components_to_include': [],
+        'components_to_exclude': []
+    }
+    sobi = read_sobi(config, BIDS, sobi_dict['desc'])
+    ICs_time_series = sobi.get_sources(raw)
+
+    # Get the common figure
+    fig, axes = plt.subplots(2, 4,
+                             figsize=(16, 8),
+                             constrained_layout=True)
+    axes = axes.flatten()
+
+    # Plot IC classification
+    IClabel_componets = ['brain', 'muscle', 'eog', 'ecg', 'line_noise',
+                         'ch_noise', 'other']
+
+    # Plots
+    for current_category, current_ax in zip(IClabel_componets, axes):
+
+        # Print the values
+        component_index = sobi.labels_[current_category]
+
+        if len(component_index) > 0:
+            current_IC_time_series = ICs_time_series.copy().pick(component_index)
+
+            # Estimate the power
+            spectrum = current_IC_time_series.compute_psd(
+                method='welch',
+                fmin=2,
+                fmax=45,
+                picks='all'
+            )
+            spectrum = spectrum.average()
+
+            # Plot
+            spectrum.plot(
+                dB=False,
+                amplitude=True,
+                picks='all',
+                axes=current_ax,
+                show=False)
+
+        # Add info
+        current_ax.set_title(current_category)
+
+    # Save the figure
+    process = 'check'
+    tail = 'check_components'
+    figure_path = build_derivatives_path(BIDS, process, tail)
+
+    if not os.path.exists(figure_path.parent):
+        os.makedirs(figure_path.parent)
+
+    plt.savefig(figure_path)
+    plt.close()
+
+
+
+
 
 
 def plot_occipital_power_spectrum(config, BIDS):
