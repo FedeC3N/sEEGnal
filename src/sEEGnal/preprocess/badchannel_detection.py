@@ -20,6 +20,7 @@ import mne_icalabel as iclabel
 import sEEGnal.tools.bids_tools as bids
 import sEEGnal.tools.mne_tools as mne_tools
 import sEEGnal.preprocess.find_badchannels as find_badchannels
+from sEEGnal.tools.qc_tools import badchannels_qc
 
 # Set the output levels
 mne.utils.set_log_level(verbose='ERROR')
@@ -144,6 +145,9 @@ def eeg_badchannel_detection(config, BIDS):
     badchannels.extend(high_deviation_badchannels)
     current_badchannel_description = ['bad_high_deviation' for i in range(len(high_deviation_badchannels))]
     badchannels_description.extend(current_badchannel_description)
+
+    # QC
+    badchannels_qc(config, BIDS)
 
     # Save the results
     bids.write_badchannels(config, BIDS, badchannels, badchannels_description)
