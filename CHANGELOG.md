@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v2.1.1
+
+Add automatic quality checks:  
+- Bad channels  
+  - Plot bad channels in 2D head  
+- Artifacts    
+  - Power spectrum from occipital channels with clean EEG.  
+  - Plot components power spectrum.  
+  - Number of clean epochs
+- Source
+  - Plot forward model
 
 ## v.2.1.0
 Use surfaces for source reconstruction (instead of volumetric)  
