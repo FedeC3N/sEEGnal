@@ -52,6 +52,9 @@ def badchannel_detection(config, BIDS):
             # Detect badchannels in the current recording
             badchannels = eeg_badchannel_detection(config, BIDS)
 
+            # QC
+            badchannels_qc(config, BIDS)
+
             # Save the results
             now = dt.now(timezone.utc)
             formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
@@ -145,9 +148,6 @@ def eeg_badchannel_detection(config, BIDS):
     badchannels.extend(high_deviation_badchannels)
     current_badchannel_description = ['bad_high_deviation' for i in range(len(high_deviation_badchannels))]
     badchannels_description.extend(current_badchannel_description)
-
-    # QC
-    badchannels_qc(config, BIDS)
 
     # Save the results
     bids.write_badchannels(config, BIDS, badchannels, badchannels_description)

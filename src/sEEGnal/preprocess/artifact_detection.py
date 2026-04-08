@@ -54,6 +54,9 @@ def artifact_detection(config, BIDS):
             # Detect badchannels in the current recording
             annotations = eeg_artifact_detection(config, BIDS)
 
+            # QC
+            artifact_qc(config, BIDS)
+
             # Save the results
             now = dt.now(timezone.utc)
             formatted_now = now.strftime("%d-%m-%Y %H:%M:%S")
@@ -155,9 +158,6 @@ def eeg_artifact_detection(config, BIDS):
 
     # Save the annotations in BIDS format
     _ = bids.write_annotations(config,BIDS, annotations)
-
-    # QC
-    artifact_qc(config, BIDS)
 
     return annotations
 

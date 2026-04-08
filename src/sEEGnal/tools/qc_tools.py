@@ -7,18 +7,20 @@ Federico Ramírez-Toraño
 
 # Imports
 import os
+import copy
 from collections import Counter
 
 import numpy
 import mne
+from mne.transforms import Transform
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Polygon, Rectangle
 from matplotlib.lines import Line2D
 
-
 from sEEGnal.tools.mne_tools import prepare_eeg
-from sEEGnal.tools.bids_tools import build_derivatives_path, read_sobi, read_badchannels
+from sEEGnal.tools.bids_tools import build_derivatives_path, read_sobi, read_badchannels, read_forward_model
+from sEEGnal.tools.template_tools import get_subjects_dir
 
 # Activate plot in debugging
 matplotlib.use('Qt5Agg')
@@ -29,7 +31,6 @@ def badchannels_qc(config,BIDS):
 
     # Plot the badchannels in the head
     plot_badchannels_head(config,BIDS)
-
 
 
 def plot_badchannels_head(config,BIDS):
@@ -186,6 +187,7 @@ def plot_badchannels_head(config,BIDS):
 
     plt.savefig(figure_path)
     plt.close()
+
 
 
 ### ARTIFACTS QC
@@ -387,20 +389,35 @@ def plot_occipital_power_spectrum(config, BIDS):
     relative_power_spectrum_mean = numpy.mean(relative_power_spectrum_epochs_mean, axis=0)
     power_spectrum_std = numpy.std(relative_power_spectrum_epochs_mean, axis=0)
 
+    # Reshape to plot all epoch x channel spectra
+    # shape: (n_epochs * n_channels, n_freqs)
+    relative_power_spectrum_all = relative_power_spectrum.reshape(-1, relative_power_spectrum.shape[-1])
+
     # Plot
-    plt.figure(figsize=(8, 5))
-    plt.plot(freqs, relative_power_spectrum_mean, label='Mean power spectrum')
-    plt.fill_between(
+    fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+
+    # Top subplot: mean ± std across occipital channels
+    axes[0].plot(freqs, relative_power_spectrum_mean, label='Mean power spectrum')
+    axes[0].fill_between(
         freqs,
         relative_power_spectrum_mean - power_spectrum_std,
         relative_power_spectrum_mean + power_spectrum_std,
         alpha=0.3
     )
-    plt.xlabel("Frequency (Hz)")
-    plt.ylabel("Power")
-    plt.title(f"Occipital Power Spectrum (averaged across {len(picks)} channels)")
-    plt.grid(True, alpha=0.3)
-    plt.legend()
+    axes[0].set_ylabel("Relative power")
+    axes[0].set_title(f"Occipital Power Spectrum (averaged across {len(picks)} channels)")
+    axes[0].grid(True, alpha=0.3)
+    axes[0].legend()
+
+    # Bottom subplot: all spectra from all epochs and channels
+    for i_spectrum in range(relative_power_spectrum_all.shape[0]):
+        axes[1].plot(freqs, relative_power_spectrum_all[i_spectrum, :], alpha=0.15, linewidth=0.8)
+
+    axes[1].set_xlabel("Frequency (Hz)")
+    axes[1].set_ylabel("Relative power")
+    axes[1].set_title("Relative power spectrum of all occipital epochs and channels")
+    axes[1].grid(True, alpha=0.3)
+
     plt.tight_layout()
 
     # Save the figure
@@ -559,3 +576,52 @@ def plot_bad_epochs(config, BIDS):
     plt.savefig(figure_path)
     plt.close()
 
+
+
+### FORWARD MODEL
+def forward_model_qc(config,BIDS):
+    
+    # Read forward model
+    config['subsystem'] = 'source_reconstruction'
+    forward_model = read_forward_model(config, BIDS)
+    src = forward_model['src']
+
+    # Get the FreeSurfer fsaverage information
+    subject = config['source_reconstruction']['forward']['template']['subject']
+    subjects_dir, subject = get_subjects_dir(subject)
+
+    # Copy src
+    src_mri = copy.deepcopy(forward_model['src'])
+
+    # Create inverse Transform from mri_head_t
+    mri_head_t = forward_model['mri_head_t']  # this is an MNE Transform
+    head_mri_t = mne.transforms.invert_transform(mri_head_t)
+
+    # Apply inverse to each source point
+    for s in src_mri:
+        coords_hom = numpy.hstack([s['rr'], numpy.ones((s['rr'].shape[0], 1))])
+        coords_mri = (head_mri_t['trans'] @ coords_hom.T).T[:, :3]
+        s['rr'] = coords_mri
+
+    # Plot
+    for view in ['coronal', 'axial', 'sagittal']:
+
+        fig = mne.viz.plot_bem(
+            src=src_mri,
+            trans=Transform('mri', 'head', numpy.eye(4)),  # identity transform
+            subject=subject,
+            subjects_dir=subjects_dir,
+            brain_surfaces='white',
+            orientation=view,
+            slices=[50, 100, 150, 200],
+            show=False
+        )
+
+        # Save the figure
+        process = 'check'
+        tail = f"sources_pos_{view}"
+        figure_path = build_derivatives_path(BIDS, process, tail)
+        if not (os.path.exists(figure_path.parent)):
+            os.makedirs(figure_path.parent)
+        plt.savefig(figure_path)
+        plt.close()

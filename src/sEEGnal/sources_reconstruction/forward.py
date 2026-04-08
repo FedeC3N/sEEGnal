@@ -15,6 +15,7 @@ import mne
 from sEEGnal.tools.mne_tools import prepare_eeg
 from sEEGnal.tools.bids_tools import write_forward_model
 from sEEGnal.tools.template_tools import get_subjects_dir
+from sEEGnal.tools.qc_tools import forward_model_qc
 
 
 
@@ -34,6 +35,9 @@ def make_forward_model(config, BIDS):
         else:
             forward_model = []
 
+        # If estimated, QC
+        if isinstance(forward_model,mne.forward.forward.Forward):
+            forward_model_qc(config,BIDS)
 
         # Save the metadata
         now = dt.now(timezone.utc)
