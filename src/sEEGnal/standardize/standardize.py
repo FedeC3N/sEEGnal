@@ -9,6 +9,7 @@ Created on Mon May 1 11:30:42 2023
 """
 
 # Imports
+import re
 import os
 import traceback
 from datetime import datetime as dt, timezone
@@ -100,6 +101,28 @@ def standardize_eeg_file(config, current_file, BIDS):
     source_filepath = os.path.join(config['path']['sourcedata'], current_file)
     mnedata = read_source_files(source_filepath)
 
+    # Keep the original event_ids
+    descriptions = sorted(set(mnedata.annotations.description))
+    event_id = {}
+    used_codes = set()
+
+    for desc in descriptions:
+        match = re.search(r'^Stimulus/s(\d+)$', desc)
+        if match:
+            code = int(match.group(1))
+            event_id[desc] = code
+            used_codes.add(code)
+
+    # Añadir anotaciones no experimentales con códigos reservados
+    next_code = 10000
+    for desc in descriptions:
+        if desc not in event_id:
+            while next_code in used_codes:
+                next_code += 1
+            event_id[desc] = next_code
+            used_codes.add(next_code)
+            next_code += 1
+
     # Include and exclude channels explicitly
     channels_to_include = config['global']['channels_to_include']
     channels_to_exclude = config['global']['channels_to_exclude']
@@ -111,10 +134,10 @@ def standardize_eeg_file(config, current_file, BIDS):
     mnedata.info['subject_info'] = dict()
     mnedata.info['subject_info']['his_id'] = BIDS.subject
 
-    # Writes the data into the BIDS path.
     mne_bids.write_raw_bids(
         mnedata,
         BIDS,
+        event_id=event_id,
         allow_preload=True,
         format=config['preprocess']['standardization']['format'],
         overwrite=bool(config['preprocess']['standardization']['overwrite'])

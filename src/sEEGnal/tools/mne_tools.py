@@ -17,6 +17,7 @@ import sEEGnal.tools.signal as signal
 import sEEGnal.tools.spheres as spheres
 import sEEGnal.tools.bids_tools as bids
 from sEEGnal.io.read_source_files import read_source_files
+from sEEGnal.io.read_bids_files import read_BIDS_files
 
 # Lists the valid MNE objects.
 mnevalid = (mne.io.BaseRaw, mne.BaseEpochs)
@@ -402,8 +403,15 @@ def prepare_eeg(
     ##################################################################
 
     if not raw:
-        # Read the file
-        raw = read_source_files(str(BIDS.fpath),preload=preload)
+        raw, bids_event_id = read_BIDS_files(BIDS, preload=preload)
+        raw._event_id = bids_event_id
+    else:
+        bids_event_id = getattr(raw, "_event_id", None)
+
+    if epoch_definition and epoch_definition.get("mode", "fixed") == "events":
+        if bids_event_id is None:
+            _, bids_event_id = mne.events_from_annotations(raw, verbose=False)
+            bids_event_id = {str(k): int(v) for k, v in bids_event_id.items()}
 
     # Set montage
     raw.set_montage('standard_1005', on_missing='ignore')
@@ -511,12 +519,19 @@ def prepare_eeg(
 
     if set_annotations:
 
-        # Reads the annotations.
-        annotations = bids.read_annotations(config,BIDS)
+        annotations = bids.read_annotations(config, BIDS)
 
-        # Adds the annotations to the MNE object.
         if len(annotations):
-            raw.set_annotations(annotations)
+
+            if annotations.orig_time != raw.annotations.orig_time:
+                annotations = mne.Annotations(
+                    onset=annotations.onset,
+                    duration=annotations.duration,
+                    description=annotations.description,
+                    orig_time=raw.annotations.orig_time
+                )
+
+            raw.set_annotations(raw.annotations + annotations)
 
     ##################################################################
     # Crop (in seconds)
@@ -565,7 +580,8 @@ def prepare_eeg(
             raw = get_epochs(
                 raw,
                 preload,
-                epoch_definition
+                epoch_definition,
+                bids_event_id=bids_event_id
             )
 
             # Save it again
@@ -576,40 +592,175 @@ def prepare_eeg(
     return raw
 
 
-# Function to segment and MNE raw data object avoiding the artifacts.
-def get_epochs(raw, preload, epoch_definition):
+# Function to segment an MNE raw data object
+def get_epochs(raw, preload, epoch_definition, bids_event_id=None):
+    """
+    Segment an MNE Raw object into epochs.
 
-    # Get the parameters for epochs
-    length = epoch_definition['length']
-    overlap = epoch_definition['overlap']
-    padding = epoch_definition['padding']
-    if 'reject_by_annotation' in epoch_definition:
-        reject_by_annotation = bool(epoch_definition['reject_by_annotation'])
-    else:
-        reject_by_annotation = False
+    Parameters
+    ----------
+    raw : mne.io.BaseRaw
+        The MNE Raw object.
+    preload : bool
+        Whether to preload the epochs data.
+    epoch_definition : dict
+        Dictionary defining the epoching strategy.
+    bids_event_id : dict | None
+        Event mapping recovered from BIDS. Used only when mode == 'events'.
 
-    # Get the index of the events
-    last_samp = int(numpy.fix(raw.times[-1]*raw.info['sfreq']))
-    first_samp = int(numpy.fix(raw.times[0]*raw.info['sfreq']))
-    step = int(numpy.fix(raw.info['sfreq'] * (length - overlap)))
+    Returns
+    -------
+    epochs : mne.Epochs
+        The epoched data.
+    """
 
-    # Create the events list
-    onsets = numpy.arange(first_samp, last_samp, step)
-    events = numpy.zeros([len(onsets), 3], 'int')
-    events[:, 0] = onsets
-    events[:, 2] = 1
+    ##################################################################
+    # General parameters
+    ##################################################################
 
-    # Generates a MNE epoch structure from the data and the events.
-    epochs = mne.Epochs(
-        raw,
-        events,
-        preload=preload,
-        tmin=-padding,
-        tmax=length + padding,
-        baseline=None,
-        reject_by_annotation=reject_by_annotation,
-        verbose=False
+    mode = epoch_definition.get('mode', 'fixed')
+
+    reject_by_annotation = bool(
+        epoch_definition.get('reject_by_annotation', False)
     )
 
-    # Returns the epochs object.
-    return epochs
+    ##################################################################
+    # Fixed-length epochs
+    ##################################################################
+
+    if mode == 'fixed':
+
+        length = epoch_definition['length']
+        overlap = epoch_definition.get('overlap', 0)
+        padding = epoch_definition.get('padding', 0)
+
+        # Get the sample limits
+        last_samp = int(numpy.fix(raw.times[-1] * raw.info['sfreq']))
+        first_samp = int(numpy.fix(raw.times[0] * raw.info['sfreq']))
+        step = int(numpy.fix(raw.info['sfreq'] * (length - overlap)))
+
+        # Create equally spaced events
+        onsets = numpy.arange(first_samp, last_samp, step)
+        events = numpy.zeros((len(onsets), 3), dtype=int)
+        events[:, 0] = onsets
+        events[:, 2] = 1
+
+        # Build epochs
+        epochs = mne.Epochs(
+            raw,
+            events,
+            event_id={'fixed': 1},
+            preload=preload,
+            tmin=-padding,
+            tmax=length + padding,
+            baseline=None,
+            reject_by_annotation=reject_by_annotation,
+            verbose=False
+        )
+
+        return epochs
+
+    ##################################################################
+    # Event-based epochs
+    ##################################################################
+
+    elif mode == 'events':
+
+        event_source = epoch_definition.get('event_source', 'annotations')
+        event_code = epoch_definition['event_code']
+        tmin = epoch_definition['tmin']
+        tmax = epoch_definition['tmax']
+        baseline = epoch_definition.get('baseline', None)
+
+        # Convert JSON-style baseline lists into tuples for MNE
+        if baseline is not None and isinstance(baseline, list):
+            baseline = tuple(baseline)
+
+        ##############################################################
+        # Events from annotations
+        ##############################################################
+
+        if event_source == 'annotations':
+
+            # Use the BIDS event mapping if available
+            if bids_event_id is not None:
+                found_event_id = {
+                    str(key): int(value) for key, value in bids_event_id.items()
+                }
+            else:
+                # Fallback: reconstruct from current annotations
+                _, found_event_id = mne.events_from_annotations(raw, verbose=False)
+                found_event_id = {
+                    str(key): int(value) for key, value in found_event_id.items()
+                }
+
+            # Keep only event labels that are actually present in the raw
+            available_descriptions = set(map(str, raw.annotations.description))
+
+            valid_event_id = {
+                key: value
+                for key, value in found_event_id.items()
+                if key in available_descriptions
+            }
+
+            if len(valid_event_id) == 0:
+                raise ValueError(
+                    'No valid event annotations were found in raw.annotations. '
+                    f'Available annotations: {sorted(available_descriptions)}'
+                )
+
+            # Create events using only valid annotations
+            events, _ = mne.events_from_annotations(
+                raw,
+                event_id=valid_event_id,
+                verbose=False
+            )
+
+            # Select only the requested trigger code
+            selected_event_id = {
+                key: value
+                for key, value in valid_event_id.items()
+                if value == event_code
+            }
+
+            if len(selected_event_id) == 0:
+                raise ValueError(
+                    f'No annotation found for event_code {event_code}. '
+                    f'Available event_id: {valid_event_id}'
+                )
+
+        ##############################################################
+        # Events from stim channel
+        ##############################################################
+
+        elif event_source == 'stim_channel':
+
+            events = mne.find_events(raw, verbose=False)
+            selected_event_id = {str(event_code): int(event_code)}
+
+        else:
+            raise ValueError(
+                "event_source must be 'annotations' or 'stim_channel'"
+            )
+
+        # Build epochs
+        epochs = mne.Epochs(
+            raw,
+            events,
+            event_id=selected_event_id,
+            preload=preload,
+            tmin=tmin,
+            tmax=tmax,
+            baseline=baseline,
+            reject_by_annotation=reject_by_annotation,
+            verbose=False
+        )
+
+        return epochs
+
+    ##################################################################
+    # Unknown mode
+    ##################################################################
+
+    else:
+        raise ValueError("epoch_definition['mode'] must be 'fixed' or 'events'")

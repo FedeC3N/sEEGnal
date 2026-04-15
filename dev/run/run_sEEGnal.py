@@ -14,7 +14,7 @@ from sEEGnal.preprocess.artifact_detection import artifact_detection
 from sEEGnal.preprocess.badchannel_detection import badchannel_detection
 
 # What step to run: standardize, badchannel, artifact
-run = [0, 0, 1]
+run = [1, 0, 0]
 
 # Init the database
 config, files, sub, ses, task = init()

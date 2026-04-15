@@ -30,6 +30,7 @@
         "crop_seconds": 10,
         "unclear_threshold": 0.7,
         "epoch_definition": {
+            "mode": "fixed",
             "length": 1,
             "overlap": 0,
             "padding": 0,
@@ -55,6 +56,7 @@
                 "high_threshold": 0.0005,
                 "percentage_threshold": 0.5,
                 "epoch_definition": {
+                    "mode": "fixed",
                     "length": 1,
                     "overlap": 0,
                     "padding": 0,
@@ -67,6 +69,7 @@
                 "high_freq": 45,
                 "percentage_threshold": 0.5,
                 "epoch_definition": {
+                    "mode": "fixed",
                     "length": 2,
                     "overlap": 0,
                     "padding": 0,
@@ -86,6 +89,7 @@
                 "high_freq": 45,
                 "percentage_threshold": 0.5,
                 "epoch_definition": {
+                    "mode": "fixed",
                     "length": 4,
                     "overlap": 0,
                     "padding": 0,
@@ -106,6 +110,7 @@
 			"high_freq":10,
 			"threshold": 7,
             "epoch_definition":{
+                "mode": "fixed",
 				"length": 0.05,
 				"overlap": 0,
 				"padding": 0,
@@ -117,10 +122,11 @@
 			"high_freq":45,
 			"threshold": 0.0005,
             "epoch_definition":{
-                  "length": 0.5,
-                  "overlap": 0,
-                  "padding": 0,
-                  "reject_by_annotation": 1
+                "mode": "fixed",
+                "length": 0.5,
+                "overlap": 0,
+                "padding": 0,
+                "reject_by_annotation": 1
               }
 		},
 		"EOG":{
@@ -128,6 +134,7 @@
 			"high_freq":2,
 			"threshold": 7,
             "epoch_definition":{
+                "mode": "fixed",
 				"length": 0.5,
 				"overlap": 0.25,
 				"padding": 0,
@@ -139,6 +146,7 @@
 
     "source_reconstruction": {
         "epoch_definition": {
+            "mode": "fixed",
             "length": 8,
             "overlap": 0,
             "padding": 0,
@@ -170,9 +178,11 @@
     "feature_extraction": {
         "relative_power_spectrum": {
             "epoch_definition": {
-                "length": 8,
-                "overlap": 0,
-                "padding": 0,
+                "mode": "events",
+                "event_code": 32,
+                "tmin": 0,
+                "tmax": 1,
+                "baseline": null,
                 "reject_by_annotation": 1
             },
             "overwrite": 1,
@@ -191,68 +201,6 @@
                 "adaptive" : 1,
                 "normalization": "length",
                 "low_bias": 1
-            }
-        },
-        "plv": {
-            "freq_limits": [0.5,50],
-            "epoch_definition": {
-                "length": 8,
-                "overlap": 0,
-                "padding": 0,
-                "reject_by_annotation": 1
-            },
-            "sensor": {
-                "freq_bands_name": ["delta","theta","alpha","low_beta","high_beta","gamma"],
-                "freq_bands_limits":[
-                    [2, 4],
-                    [4, 8],
-                    [8, 12],
-                    [12, 20],
-                    [20, 30],
-                    [30, 45]
-                ]
-            },
-            "source": {
-                "freq_bands_name": ["delta","theta","alpha","low_beta","high_beta","gamma"],
-                "freq_bands_limits":[
-                    [2, 4],
-                    [4, 8],
-                    [8, 12],
-                    [12, 20],
-                    [20, 30],
-                    [30, 45]
-                ]
-            }
-        },
-        "ciplv": {
-            "freq_limits": [0.5,50],
-            "epoch_definition": {
-                "length": 8,
-                "overlap": 0,
-                "padding": 0,
-                "reject_by_annotation": 1
-            },
-            "sensor": {
-                "freq_bands_name": ["delta","theta","alpha","low_beta","high_beta","gamma"],
-                "freq_bands_limits":[
-                    [2, 4],
-                    [4, 8],
-                    [8, 12],
-                    [12, 20],
-                    [20, 30],
-                    [30, 45]
-                ]
-            },
-            "source": {
-                "freq_bands_name": ["delta","theta","alpha","low_beta","high_beta","gamma"],
-                "freq_bands_limits":[
-                    [2, 4],
-                    [4, 8],
-                    [8, 12],
-                    [12, 20],
-                    [20, 30],
-                    [30, 45]
-                ]
             }
         }
     }

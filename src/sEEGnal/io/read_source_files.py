@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Decide how to read a original EEG file based on the file type
 
@@ -23,9 +22,6 @@ def read_source_files(source_filepath,preload=True):
 
         # Read the file
         mnedata = mne.io.read_raw_brainvision(source_filepath, preload=preload)
-
-        # Create RawArray
-        mnedata = mne.io.RawArray(mnedata.get_data(), mnedata.info)
 
     elif extension == 'cnt':
 
